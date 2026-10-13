@@ -29,7 +29,20 @@ Nenhuma etapa abaixo foi executada. Todas dependem das decisões D1 a D4 de `PEN
    - O teste de recuperação de senha usa a caixa postal do gateway local e não funciona no projeto real; valide-o manualmente.
    - Apague os usuários de teste ao final (*Authentication → Users*).
 
-## 2. App web (Cloudflare Pages, recomendado)
+## 2a. Ambiente de TESTE na Vercel (escolhido)
+
+O `vercel.json` na raiz já define instalação, build, pasta de saída, rotas da SPA e cabeçalhos de segurança. Não é preciso mudar nada na importação.
+
+1. Em vercel.com/new, importe `scjorge1908-cyber/App-Saas-Psicologas` e mantenha as configurações detectadas.
+2. Em *Settings → Environment Variables*, cadastre:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `VITE_PUBLIC_APP_URL` (o endereço `https://<projeto>.vercel.app`)
+3. Faça um novo deploy.
+
+O plano Hobby da Vercel é **apenas para uso não comercial**: serve para testes. No lançamento comercial, use Vercel Pro ou Cloudflare Pages (seção 2b).
+
+## 2b. App web em produção (Cloudflare Pages, recomendado)
 
 1. Conecte o repositório no Cloudflare Pages.
 2. Configure o build:

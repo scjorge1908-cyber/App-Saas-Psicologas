@@ -5,12 +5,16 @@
 | # | Decisão | Por que bloqueia | Opções | Custo |
 |---|---------|------------------|--------|-------|
 | D1 | **Projeto Supabase** | A conta já tem 2 projetos gratuitos ativos (limite do plano Free); a criação foi recusada pela plataforma | (a) pausar um projeto existente (ex.: `hope-agenda` já está inativo; verificar qual conta como ativo, inclusive em outra organização); (b) usar outra conta Supabase só para este produto; (c) plano Pro | (a)/(b) R$ 0; (c) ~US$ 25/mês |
-| D2 | **Hospedagem do app web** | Vercel Hobby e GitHub Pages proíbem uso comercial/SaaS | Cloudflare Pages (recomendado) ou Netlify Free; ambos sem cobrança automática | R$ 0 (conta e domínio por sua conta) |
+| D2 | **Hospedagem do app web** | Teste: **Vercel Hobby (decidido)**, permitido para uso não comercial. Lançamento: Hobby e GitHub Pages proíbem SaaS comercial | Produção: Cloudflare Pages ou Vercel Pro | Teste R$ 0; produção R$ 0 (Cloudflare) ou US$ 20/mês (Vercel Pro) |
 | D3 | **Domínio** | Necessário para links de confirmação estáveis, e-mails e lojas | Ex.: `app.seudominio.com.br` | ~R$ 40/ano (registro.br) |
 | D4 | **E-mail transacional (SMTP)** | O SMTP embutido do Supabase só envia para membros da equipe → recuperação de senha e confirmação de cadastro não chegam às usuárias | Brevo Free (300/dia) ou Resend Free (100/dia), com domínio próprio | R$ 0; exige criar conta e chave (credencial) |
 | D5 | **Nome comercial** | Nome provisório "PsiConsultório"; verificar marca no INPI antes de publicar | — | — |
 | D6 | **Revisão jurídica** | Termos de uso, política de privacidade, contrato de operador (DPA), prazos de guarda e destino do acervo (ver `CONFORMIDADE.md`) | Advogado com experiência em LGPD/saúde | Honorários |
-| D7 | **Repositório remoto** | O código está com histórico git local; nenhum repositório foi criado no seu GitHub | Criar repositório **privado** e eu envio os commits | R$ 0 |
+| D7 | ~~Repositório remoto~~ | **Resolvido**: https://github.com/scjorge1908-cyber/App-Saas-Psicologas, com CI verde | — | — |
+
+## Objetivo de distribuição
+
+O produto final será **app na Google Play e na App Store**. A versão web e a PWA servem para testes e uso pelo navegador. Os projetos nativos (Capacitor) já estão em `web/android` e `web/ios`.
 
 ## Etapas pendentes que dependem de equipamento, conta ou taxa
 

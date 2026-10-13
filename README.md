@@ -20,7 +20,7 @@ link para confirmar ou cancelar a sessão.
 
 Detalhes em `docs/PROGRESSO.md` e `docs/PENDENCIAS.md`.
 
-Repositório: https://github.com/scjorge1908-cyber/App-Saas-Psicologas. O GitHub Actions roda todos os testes a cada envio (`.github/workflows/ci.yml`) e publica o app de teste no GitHub Pages quando as variáveis do Supabase estiverem configuradas (`deploy-pages.yml`).
+Repositório: https://github.com/scjorge1908-cyber/App-Saas-Psicologas. O GitHub Actions roda todos os testes a cada envio (`.github/workflows/ci.yml`) e gera o APK Android de teste e o build iOS (`mobile.yml`). O ambiente web de teste é publicado pela Vercel (`vercel.json`).
 
 ## Funcionalidades
 

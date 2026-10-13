@@ -10,3 +10,4 @@ test-results/
 playwright-report/
 web/e2e/.auth/
 .DS_Store
+.storage/

@@ -1,0 +1,8 @@
+{
+  "name": "psi-dev-gateway",
+  "private": true,
+  "type": "module",
+  "description": "Gateway local compatível com Supabase (somente desenvolvimento/testes)",
+  "scripts": { "start": "node server.mjs" },
+  "dependencies": { "pg": "^8.23.1" }
+}

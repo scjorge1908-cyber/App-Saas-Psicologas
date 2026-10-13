@@ -3,7 +3,11 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// VITE_BASE: subcaminho de publicação (ex.: /psi-gestao-facil-ideia-jorge/ no GitHub Pages)
+const base = process.env.VITE_BASE || '/';
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     tailwindcss(),
@@ -15,8 +19,8 @@ export default defineConfig({
         short_name: 'PsiConsultório',
         description: 'Agenda, pacientes, prontuário e recebimentos para psicólogas.',
         lang: 'pt-BR',
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         display: 'standalone',
         orientation: 'portrait',
         background_color: '#F3F4EF',
@@ -31,7 +35,7 @@ export default defineConfig({
         // Somente o "esqueleto" do app é guardado offline.
         // Dados clínicos e respostas da API NUNCA são armazenados em cache.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        navigateFallback: '/index.html',
+        navigateFallback: `${base}index.html`,
         runtimeCaching: [],
       },
     }),

@@ -28,5 +28,6 @@ export const STORAGE_BUCKET = 'prontuario';
  */
 export function publicOrigin(): string {
   const env = import.meta.env.VITE_PUBLIC_APP_URL as string | undefined;
-  return (env && env.trim()) || window.location.origin;
+  const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+  return ((env && env.trim()) || `${window.location.origin}${base}`).replace(/\/$/, '');
 }

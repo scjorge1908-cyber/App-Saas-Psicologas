@@ -1,0 +1,78 @@
+name: Apps móveis
+
+# Gera, a cada envio na main:
+#  - APK Android de depuração (instalável direto no celular para teste)
+#  - Build iOS para simulador (comprova que o projeto Xcode compila)
+# Assinatura para Google Play / App Store exige chaves e contas pagas (ver docs/PENDENCIAS.md).
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/mobile.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    name: Android (APK de teste)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - name: Build web
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://configure-o-supabase.invalid' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'nao-configurado' }}
+          VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
+        run: npm run build
+      - run: npx cap sync android
+      - name: Gradle assembleDebug
+        working-directory: web/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-android-debug
+          path: web/android/app/build/outputs/apk/debug/*.apk
+
+  ios:
+    name: iOS (simulador)
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Build web
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://configure-o-supabase.invalid' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'nao-configurado' }}
+          VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
+        run: npm run build
+      - run: npx cap sync ios
+      - name: xcodebuild (simulador, sem assinatura)
+        working-directory: web/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -30

@@ -1,13 +1,13 @@
 == Preparando banco de origem (psi_bk_src)
 == Exportando (export_my_data)
-   tamanho do backup: 10094 bytes
+   tamanho do backup: 10086 bytes
 == Restaurando num banco novo e vazio (psi_bk_dst)
 == Comparando origem x restaurado
-   origem   : 2|6|1|1|1|1|1|1|1|1|1|70.00|120.00|Evolução fictícia retificada|Evolução fictícia original|1715bec6-0ca8-4cf8-8360...
-   restauro : 2|6|1|1|1|1|1|1|1|1|1|70.00|120.00|Evolução fictícia retificada|Evolução fictícia original|1715bec6-0ca8-4cf8-8360...
+   origem   : 2|6|1|1|1|1|1|1|1|1|1|70.00|120.00|Evolução fictícia retificada|Evolução fictícia original|0b91e309-70c9-4521-9091...
+   restauro : 2|6|1|1|1|1|1|1|1|1|1|70.00|120.00|Evolução fictícia retificada|Evolução fictícia original|0b91e309-70c9-4521-9091...
 ok - restauração lógica idêntica (contagens, valores, textos clínicos e versões); owner e caminhos remapeados
 ok - restauração sobre conta com dados é recusada
 == Backup operacional: pg_dump (formato custom) + pg_restore
-   dump: 168541 bytes
+   dump: 168544 bytes
 ok - pg_dump/pg_restore reproduz o banco integralmente
 == Backup e restauração: TODOS OS TESTES PASSARAM

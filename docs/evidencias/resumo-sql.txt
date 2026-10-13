@@ -1,0 +1,20 @@
+==> Recriando banco psi_test
+==> Shim local do Supabase
+==> Migrations
+    20261012000100_base.sql
+    20261012000200_patients_agenda.sql
+    20261012000300_confirmations.sql
+    20261012000400_records_documents.sql
+    20261012000500_finance.sql
+    20261012000600_export_import.sql
+    20261012000700_views.sql
+    20261012000800_hardening.sql
+==> Testes SQL
+    PASSOU  00_helpers.sql
+    PASSOU  01_isolation.sql
+    PASSOU  02_agenda.sql
+    PASSOU  03_confirmation.sql
+    PASSOU  04_records.sql
+    PASSOU  05_finance.sql
+    PASSOU  06_hardening.sql
+==> Asserções aprovadas: 159 (log: docs/evidencias/testes-sql.log)

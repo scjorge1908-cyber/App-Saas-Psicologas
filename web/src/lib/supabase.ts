@@ -20,3 +20,13 @@ export const supabase = createClient(url ?? 'http://localhost:54321', anonKey ??
 });
 
 export const STORAGE_BUCKET = 'prontuario';
+
+/**
+ * Endereço público do app web. Links enviados a pacientes e redirecionamentos de
+ * e-mail usam este endereço — dentro do app Android/iOS (Capacitor) a origem local
+ * é "https://localhost", que não serve para quem recebe o link.
+ */
+export function publicOrigin(): string {
+  const env = import.meta.env.VITE_PUBLIC_APP_URL as string | undefined;
+  return (env && env.trim()) || window.location.origin;
+}

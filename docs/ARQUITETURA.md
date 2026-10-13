@@ -115,4 +115,4 @@ O banco recusa nota "emitida" sem número e data. Ver `PENDENCIAS.md`.
   - Inclui papéis `anon`/`authenticated`, `auth.uid()` lido do JWT, `storage.objects` e `storage.foldername`.
   - As migrations são as mesmas que vão para o Supabase.
   - Os testes SQL exercitam RLS exatamente como o PostgREST faz (`SET ROLE` + `request.jwt.claims`).
-- **Testes de interface:** usam um backend falso em memória (`web/src/lib/mockBackend`) com as mesmas regras críticas. Valida fluxos e layout mobile, mas **não** substitui o teste de integração real (pendente).
+- **Testes de interface e integração:** um gateway local (`dev-gateway/`) fala o protocolo HTTP do Supabase (Auth, PostgREST, Storage) e executa tudo no mesmo Postgres assumindo o papel do usuário. Assim o app e o `supabase-js` reais exercitam RLS, gatilhos e RPCs de verdade. A validação no Supabase gerenciado continua pendente (ver `TESTES.md`).

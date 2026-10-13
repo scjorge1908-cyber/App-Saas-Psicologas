@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../../lib/supabase';
+import { publicOrigin, supabase } from '../../lib/supabase';
 import { errorMessage } from '../../lib/errors';
 import { normalizeCrp, onlyDigits } from '../../lib/format';
 import { Button, ErrorBox, Notice, TextField } from '../../components/ui';
@@ -73,7 +73,7 @@ export function SignupPage() {
     const { data, error } = await supabase.auth.signUp({
       email: form.email.trim(),
       password: form.password,
-      options: { data: { full_name: form.name.trim() }, emailRedirectTo: `${window.location.origin}/` },
+      options: { data: { full_name: form.name.trim() }, emailRedirectTo: `${publicOrigin()}/` },
     });
     setBusy(false);
     if (error) return setError(errorMessage(error));
@@ -116,7 +116,7 @@ export function ForgotPasswordPage() {
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true); setError(null);
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${window.location.origin}/redefinir-senha` });
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: `${publicOrigin()}/redefinir-senha` });
     setBusy(false);
     if (error) return setError(errorMessage(error));
     setSent(true);

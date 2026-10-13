@@ -1,3 +1,4 @@
+import { publicOrigin } from '../../lib/supabase';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,7 +27,7 @@ export function useInvalidateAgenda() {
 /** Abre o WhatsApp com lembrete + link de confirmação (gera o link na hora). */
 export async function openReminder(item: AgendaItem, tz: string, professional: string) {
   const token = await api.createConfirmationLink(item.id);
-  const link = confirmationUrl(window.location.origin, token);
+  const link = confirmationUrl(publicOrigin(), token);
   const text = reminderText({ patientName: item.patient_social_name || item.patient_name, startsAt: item.starts_at, tz, professionalName: professional, link, modality: item.modality });
   return { link, text, wa: whatsappLink(item.patient_phone, text) };
 }

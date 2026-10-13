@@ -1,0 +1,19 @@
+
+Running 14 tests using 1 worker
+
+  ✓   1 [celular] › e2e/flows.spec.ts:42:1 › cadastro, perfil e tela inicial (2.6s)
+  ✓   2 [celular] › e2e/flows.spec.ts:48:1 › cadastro de paciente com validação (1.5s)
+  ✓   3 [celular] › e2e/flows.spec.ts:65:1 › agenda: série semanal e sessão passada (1.6s)
+  ✓   4 [celular] › e2e/flows.spec.ts:93:1 › registro de presença gera cobrança; recebimento quita (2.4s)
+  ✓   5 [celular] › e2e/flows.spec.ts:122:1 › lembrete com link e confirmação pelo paciente (4.8s)
+  ✓   6 [celular] › e2e/flows.spec.ts:152:1 › prontuário com retificação preservada (1.3s)
+  ✓   7 [celular] › e2e/flows.spec.ts:170:1 › emissão de documento em PDF (1.8s)
+  ✓   8 [celular] › e2e/flows.spec.ts:189:1 › anexo em armazenamento privado (350ms)
+  ✓   9 [celular] › e2e/flows.spec.ts:198:1 › backup completo em ZIP (517ms)
+  ✓  10 [celular] › e2e/flows.spec.ts:213:1 › outra profissional não acessa os dados (6.0s)
+  ✓  11 [celular] › e2e/flows.spec.ts:226:1 › restauração do backup em conta nova (dados + arquivos) (5.2s)
+  ✓  12 [celular] › e2e/flows.spec.ts:245:1 › agenda nas visões dia, semana e mês (1.8s)
+  ✓  13 [celular] › e2e/flows.spec.ts:255:1 › sem rolagem horizontal nas telas principais (celular) (8.1s)
+  ✓  14 [desktop] › e2e/desktop.spec.ts:7:1 › desktop: agenda semanal em grade e ficha do paciente (10.6s)
+
+  14 passed (52.9s)

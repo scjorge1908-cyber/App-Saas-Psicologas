@@ -1,0 +1,12 @@
+
+ RUN  v5.0.4 /home/claude/psi-consultorio/web
+
+
+ Test Files  2 passed (2)
+      Tests  27 passed (27)
+   Start at  22:48:14
+   Duration  2.94s (environment 42%, tests 25%, import 16%, setup 15%, transform 2%, worker 1%)
+
+    Isolate  2 workers spawned · ~720ms startup each (spawn + environment, per file)
+             at least ~720ms faster with isolate: false — reuses workers across files instead of one per file
+

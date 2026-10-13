@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+.env
+.env.*
+!.env.example
+*.local
+test-results/
+playwright-report/
+web/e2e/.auth/
+.DS_Store

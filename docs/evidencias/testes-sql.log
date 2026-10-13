@@ -1,0 +1,1100 @@
+                 put                  
+--------------------------------------
+ 2395fb08-22b8-407c-97a3-6027228e9ee3
+(1 row)
+
+                 put                  
+--------------------------------------
+ 31f796a8-ad0f-4477-afa1-bac8526f133b
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 5da92d53-1def-4a37-822b-3d4f8b80501f
+(1 row)
+
+                 put                  
+--------------------------------------
+ aaa78590-f5e5-43e5-a069-e6c5d6dafe6d
+(1 row)
+
+                 put                  
+--------------------------------------
+ b7ccdab2-e992-4048-9d29-0b7adbb5e05a
+(1 row)
+
+                 put                  
+--------------------------------------
+ adae549c-81d6-4196-9dee-ec498fa4ca98
+(1 row)
+
+                 put                  
+--------------------------------------
+ c14c7bc8-0640-43c7-89be-64c74caa1295
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:24: NOTICE:  ok - A: cobrança automática criada para sessão atendida
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:25: NOTICE:  ok - A: versão anterior do registro preservada
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:30: NOTICE:  ok - B não vê pacientes de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:31: NOTICE:  ok - B não vê agendamentos de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:32: NOTICE:  ok - B não vê séries de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:33: NOTICE:  ok - B não vê prontuário de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:34: NOTICE:  ok - B não vê versões do prontuário de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:35: NOTICE:  ok - B não vê cobranças de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:36: NOTICE:  ok - B não vê saldos (view) de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:37: NOTICE:  ok - B não vê despesas de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:38: NOTICE:  ok - B não vê auditoria de A (só a própria)
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:39: NOTICE:  ok - B vê apenas o próprio perfil
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:40: NOTICE:  ok - B não vê arquivos de A no storage
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:42: NOTICE:  ok - B não altera paciente de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:43: NOTICE:  ok - B não altera prontuário de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:44: NOTICE:  ok - B não exclui despesa de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:45: NOTICE:  ok - B não altera perfil de A
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:48: NOTICE:  ok - B não insere linhas em nome de A (RLS WITH CHECK)
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:50: NOTICE:  ok - B não agenda sessão para paciente de A (FK composta)
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:52: NOTICE:  ok - B não escreve no prontuário de paciente de A (FK composta)
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:54: NOTICE:  ok - B não grava arquivo na pasta de A no storage
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:56: NOTICE:  ok - B não gera link de confirmação para sessão de A
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:58: NOTICE:  ok - B não manipula séries inexistentes/alheias
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:59: NOTICE:  ok - Tabela de tokens inacessível a usuários
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:61: NOTICE:  ok - Usuário não escreve diretamente na auditoria
+ throws 
+--------
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:66: NOTICE:  ok - Anônimo sem acesso a pacientes
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:67: NOTICE:  ok - Anônimo sem acesso a prontuário
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:68: NOTICE:  ok - Anônimo sem acesso a perfis
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:69: NOTICE:  ok - Anônimo sem acesso a financeiro
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:70: NOTICE:  ok - Anônimo não gera links
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:71: NOTICE:  ok - Anônimo não exporta dados
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:72: NOTICE:  ok - Anônimo não lista arquivos
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:78: NOTICE:  ok - Auditoria não contém conteúdo clínico, apenas nomes de colunas
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:81: NOTICE:  ok - Auditoria registra QUE o prontuário foi alterado (coluna), sem o texto
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:88: NOTICE:  ok - RLS habilitado em todas as tabelas do schema public
+ ok 
+----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ ac0c3511-75de-4ef1-bda4-7fc4ce9602d4
+(1 row)
+
+                 put                  
+--------------------------------------
+ 2116ef6f-1095-4a83-b35b-95e31b854d57
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 60b67586-4737-4638-b0d7-cb116785d0d4
+(1 row)
+
+                 put                  
+--------------------------------------
+ 9425d5eb-7ba4-4408-8611-ee171cca1030
+(1 row)
+
+                 put                  
+--------------------------------------
+ 9a999c90-206a-43ef-9d21-9bfe97c0ac71
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:19: NOTICE:  ok - Sobreposição parcial é bloqueada pelo banco
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:22: NOTICE:  ok - Sessão que engloba outra é bloqueada
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:25: NOTICE:  ok - Sessões encostadas (fim = início) são permitidas
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:27: NOTICE:  ok - Remarcação para horário ocupado é bloqueada
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:32: NOTICE:  ok - Horário de sessão cancelada fica livre
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:34: NOTICE:  ok - Reativar sessão cancelada em horário já ocupado é bloqueado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:36: NOTICE:  ok - Cancelamento exige informar quem cancelou
+ throws 
+--------
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ bf644e88-1c27-42bb-a1d2-4619837d70c9
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:44: NOTICE:  ok - Mesmo horário em agendas de profissionais diferentes não conflita
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:55: NOTICE:  ok - Série semanal de 4: 3 criadas
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:56: NOTICE:  ok - Série semanal de 4: 1 conflito reportado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:58: NOTICE:  ok - Conflito reportado na data correta (25/03)
+ eq 
+----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 1cd17c9d-966e-4d72-b077-92cb3ac3e7dc
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:63: NOTICE:  ok - Ocorrências semanais no horário local correto, pulando o conflito
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:66: NOTICE:  ok - Ocorrências herdam valor e duração da série
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:72: NOTICE:  ok - Série quinzenal respeita intervalo de 14 dias e data final
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:78: NOTICE:  ok - Série "mensal" = a cada 4 semanas, mesmo dia da semana
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:83: NOTICE:  ok - Série sem data final materializa 26 semanas à frente
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:87: NOTICE:  ok - Extensão gera apenas as ocorrências novas
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:90: NOTICE:  ok - Encerrar série remove ocorrências a partir da data
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:91: NOTICE:  ok - Ocorrência anterior à data é mantida
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:93: NOTICE:  ok - Série marcada como encerrada
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:100: NOTICE:  ok - Série antiga mantém só o que veio antes da alteração
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:103: NOTICE:  ok - Nova série criada com novo horário/valor até a data final original
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:108: NOTICE:  ok - Não marca "atendido" em sessão futura
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 997979e3-fc3b-4bb6-a682-5af045f4c62c
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:114: NOTICE:  ok - Sessão passada pode ser marcada como falta
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:116: NOTICE:  ok - Sessão já registrada não pode ser remarcada
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ cfe7d119-c516-42b4-b6ef-8743490c5b5a
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:124: NOTICE:  ok - Remarcação de sessão confirmada exige nova confirmação
+ eq 
+----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ c8579e35-d442-474f-9a8c-98e5042ef4f8
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:129: NOTICE:  ok - Paciente sem histórico pode ser excluído
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:130: NOTICE:  ok - Paciente com atendimento registrado não pode ser excluído
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ cb0508e7-1609-4921-83f3-73c76441d9be
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 3469b382-e6cc-4610-82f8-327d13db537c
+(1 row)
+
+                 put                  
+--------------------------------------
+ 6371e8ba-ce30-4a4d-9711-f1fed5daa594
+(1 row)
+
+                 put                  
+--------------------------------------
+ b9e392d6-a69e-4857-ace9-6102e93bd4ec
+(1 row)
+
+                 put                  
+--------------------------------------
+ b8e5a3a4-4c7f-4dff-b6b2-08255e5ce08a
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:25: NOTICE:  ok - Token com 32 caracteres (192 bits)
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:26: NOTICE:  ok - Token seguro para URL
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:30: NOTICE:  ok - Banco guarda apenas o hash, não o token
+ ok 
+----
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:35: NOTICE:  ok - Link válido mostra estado pendente
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:36: NOTICE:  ok - Mostra apenas o primeiro nome do paciente
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:37: NOTICE:  ok - Mostra CRP da profissional
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:38: NOTICE:  ok - Sem dados sensíveis na resposta
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:39: NOTICE:  ok - Token malformado é inválido
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:40: NOTICE:  ok - Token inexistente é inválido
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:42: NOTICE:  ok - Paciente confirma pelo link
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:44: NOTICE:  ok - Agendamento atualizado para confirmado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:45: NOTICE:  ok - Registra data e resposta
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:46: NOTICE:  ok - Auditoria marca ação feita pelo link
+ ok 
+----
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:50: NOTICE:  ok - Paciente pode cancelar após confirmar
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:53: NOTICE:  ok - Cancelamento com antecedência registrado como do paciente e não tardio
+ ok 
+----
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:57: NOTICE:  ok - Cancelamento pelo link a menos de 24h
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:58: NOTICE:  ok - Sessão cancelada não pode ser reconfirmada pelo link
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:59: NOTICE:  ok - Ação inválida rejeitada
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:61: NOTICE:  ok - Cancelamento tardio sinalizado para a profissional decidir cobrança
+ ok 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:68: NOTICE:  ok - Link antigo deixa de valer após remarcação
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:77: NOTICE:  ok - Link expirado é identificado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:78: NOTICE:  ok - Link expirado não altera o agendamento
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:80: NOTICE:  ok - Agendamento permanece agendado após tentativa expirada
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 99e2b346-b749-4cf5-b253-ecc173593809
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:86: NOTICE:  ok - Sem link para sessão que já passou
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 41a54649-60a0-46c5-9fe2-d1ccf6bb9719
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 36052eb9-475f-4315-bf7b-6be2cf0a357d
+(1 row)
+
+                 put                  
+--------------------------------------
+ c84dd378-4491-4b2b-978b-5b8b96427b06
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:16: NOTICE:  ok - Versão incrementa a cada retificação
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:18: NOTICE:  ok - Versões anteriores preservadas na íntegra
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:19: NOTICE:  ok - Exclusão de registro bloqueada por permissão
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:22: NOTICE:  ok - Exclusão de registro bloqueada também para administrador
+ throws 
+--------
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:24: NOTICE:  ok - Versões são somente leitura
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:25: NOTICE:  ok - Registro vazio rejeitado
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 5cb7ca3d-809c-4acd-a47e-60f473c8f7ac
+(1 row)
+
+                 put                  
+--------------------------------------
+ 98965e71-0b63-4faa-87f8-ae4183a6f54f
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:38: NOTICE:  ok - Anexo de avaliação não pode ser excluído
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:40: NOTICE:  ok - Arquivo de avaliação não pode ser apagado do storage
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:41: NOTICE:  ok - Anexo comum pode ser excluído
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:43: NOTICE:  ok - Arquivo comum pode ser apagado do storage
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:44: NOTICE:  ok - Sem política de UPDATE no storage: nada é sobrescrito
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:46: NOTICE:  ok - Caminho do anexo deve estar na pasta da profissional
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:48: NOTICE:  ok - Limite de 10 MB por anexo
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 2545197f-75a8-4140-b8c6-2e1f5c526a4b
+(1 row)
+
+                 put                  
+--------------------------------------
+ e7882db7-5542-43d3-9b2e-3010e0373837
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:57: NOTICE:  ok - Documento emitido não pode ser editado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:58: NOTICE:  ok - Documento emitido não pode ser excluído
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:60: NOTICE:  ok - Registro de entrega (protocolo) é permitido
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:61: NOTICE:  ok - Cópia do documento emitido não pode ser excluída
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:64: NOTICE:  ok - Paciente com prontuário não pode ser excluído
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ fc592ff3-9dd5-40ac-9f80-96af1f1ec72d
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:72: NOTICE:  ok - Outra profissional não vê registros, versões, anexos ou documentos
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:73: NOTICE:  ok - Outra profissional não vê arquivos
+ eq 
+----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 61714657-4ba4-4ebf-b238-c49bcefb2259
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 6041e9f2-3368-4e00-a3d6-5409cc79cf68
+(1 row)
+
+                 put                  
+--------------------------------------
+ bba214e2-74ce-4817-a5fd-aead50f44368
+(1 row)
+
+                 put                  
+--------------------------------------
+ c2a7f140-605c-4de4-9a45-1762bae8b732
+(1 row)
+
+                 put                  
+--------------------------------------
+ 15e4e929-b6a5-40f1-b889-38beadab6824
+(1 row)
+
+                 put                  
+--------------------------------------
+ 99e53654-b7c7-434b-a2a9-49d61e1314d2
+(1 row)
+
+                 put                  
+--------------------------------------
+ 80dccaae-cc4b-4308-a0ac-bbef750c142f
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:26: NOTICE:  ok - Cobranças automáticas: 2 sessões atendidas por sessão
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:27: NOTICE:  ok - Paciente mensalista não gera cobrança por sessão
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:28: NOTICE:  ok - Falta sem cobrança não gera valor
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:31: NOTICE:  ok - Falta cobrada gera cobrança "Falta de ..."
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:35: NOTICE:  ok - Desmarcar cobrança de falta cancela o valor
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:37: NOTICE:  ok - Remarcar cobrança reativa o mesmo lançamento (sem duplicar)
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:38: NOTICE:  ok - Sem duplicidade de cobrança por sessão
+ eq 
+----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 2b01bdbd-4b99-4661-97c2-27b555e19896
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:53: NOTICE:  ok - Pagamento acima do saldo é rejeitado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:55: NOTICE:  ok - Pagamento de outro paciente na cobrança é rejeitado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:56: NOTICE:  ok - Pagamento zero rejeitado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:58: NOTICE:  ok - Status "paga"
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:59: NOTICE:  ok - Status "parcial" com saldo 50,00
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:60: NOTICE:  ok - Falta cobrada em aberto
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:61: NOTICE:  ok - Saldo com centavos correto (600 - 250,50)
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:62: NOTICE:  ok - Mensalidade vencida marcada como inadimplente
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:65: NOTICE:  ok - Total a receber confere
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:69: NOTICE:  ok - Não altera status de sessão já paga
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:71: NOTICE:  ok - Não exclui cobrança paga
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:73: NOTICE:  ok - Não reduz cobrança abaixo do recebido
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:82: NOTICE:  ok - Recebido no mês = 150 + 100 + 250,50
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:83: NOTICE:  ok - Despesas no mês = 400 + 99,90
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:84: NOTICE:  ok - Resultado = recebido - despesas
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:88: NOTICE:  ok - Painel: a receber
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:89: NOTICE:  ok - Painel: recebido no mês
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:90: NOTICE:  ok - Painel: recibos Receita Saúde pendentes (PF)
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:94: NOTICE:  ok - NFS-e "emitida" exige número e data reais
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:97: NOTICE:  ok - Status da NFS-e atualizado após emissão externa
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:99: NOTICE:  ok - Chave de acesso inválida rejeitada
+ throws 
+--------
+ 
+(1 row)
+

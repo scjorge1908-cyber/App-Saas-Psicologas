@@ -11,3 +11,5 @@ playwright-report/
 web/e2e/.auth/
 .DS_Store
 .storage/
+web/test-results/
+dev-gateway/.storage/

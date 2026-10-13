@@ -28,6 +28,11 @@ const ACCESS_TTL = 3600;
 
 fs.mkdirSync(STORAGE_DIR, { recursive: true });
 const pool = new pg.Pool({ connectionString: DATABASE_URL, max: 10 });
+// Mesmo formato JSON do PostgREST: numeric/bigint como número; date como 'YYYY-MM-DD'.
+pg.types.setTypeParser(1700, (v) => (v === null ? null : Number(v)));
+pg.types.setTypeParser(20, (v) => (v === null ? null : Number(v)));
+pg.types.setTypeParser(1082, (v) => v);
+pg.types.setTypeParser(1114, (v) => v);
 const mailbox = []; // {to, type, link, at}
 const refreshTokens = new Map(); // token -> user id
 

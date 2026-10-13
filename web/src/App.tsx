@@ -1,122 +1,65 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { useAuth, useProfile } from './auth/AuthProvider';
+import { supabaseConfigured } from './lib/supabase';
+import { AppShell, MorePage } from './components/AppShell';
+import { ErrorBox, Loading } from './components/ui';
+import { ForgotPasswordPage, LoginPage, OnboardingPage, ResetPasswordPage, SignupPage } from './pages/auth/AuthPages';
+import { TodayPage } from './pages/TodayPage';
+import { AgendaPage } from './pages/AgendaPage';
+import { PatientsPage } from './pages/PatientsPage';
+import { PatientDetailPage } from './pages/PatientDetailPage';
+import { FinancePage } from './pages/FinancePage';
+import { InvoicesPage } from './pages/InvoicesPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { PublicConfirmPage } from './pages/PublicConfirmPage';
+import { TermsPage } from './pages/TermsPage';
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function RequireAuth({ children }: { children: ReactNode }) {
+  const { session, loading, recovering } = useAuth();
+  const { profile, isLoading, error } = useProfile();
+  const loc = useLocation();
+  if (loading || (session && isLoading)) return <div className="p-6"><Loading /></div>;
+  if (!session) return <Navigate to="/entrar" replace state={{ from: loc.pathname }} />;
+  if (recovering) return <Navigate to="/redefinir-senha" replace />;
+  if (error) return <div className="p-6"><ErrorBox>Não foi possível carregar seu perfil. Recarregue a página.</ErrorBox></div>;
+  if (profile && (!profile.onboarded_at || !profile.crp)) return <OnboardingPage />;
+  return <>{children}</>;
 }
 
-export default App
+function PublicOnly({ children }: { children: ReactNode }) {
+  const { session, loading } = useAuth();
+  if (loading) return null;
+  return session ? <Navigate to="/" replace /> : <>{children}</>;
+}
+
+export default function App() {
+  if (!supabaseConfigured) {
+    return (
+      <div className="mx-auto max-w-lg p-8">
+        <ErrorBox>Configuração ausente: defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY (veja .env.example).</ErrorBox>
+      </div>
+    );
+  }
+  return (
+    <Routes>
+      <Route path="/c/:token" element={<PublicConfirmPage />} />
+      <Route path="/termos" element={<TermsPage />} />
+      <Route path="/entrar" element={<PublicOnly><LoginPage /></PublicOnly>} />
+      <Route path="/cadastro" element={<PublicOnly><SignupPage /></PublicOnly>} />
+      <Route path="/esqueci-senha" element={<PublicOnly><ForgotPasswordPage /></PublicOnly>} />
+      <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
+      <Route element={<RequireAuth><AppShell /></RequireAuth>}>
+        <Route index element={<TodayPage />} />
+        <Route path="agenda" element={<AgendaPage />} />
+        <Route path="pacientes" element={<PatientsPage />} />
+        <Route path="pacientes/:id" element={<PatientDetailPage />} />
+        <Route path="financeiro" element={<FinancePage />} />
+        <Route path="notas-fiscais" element={<InvoicesPage />} />
+        <Route path="configuracoes" element={<SettingsPage />} />
+        <Route path="mais" element={<MorePage />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}

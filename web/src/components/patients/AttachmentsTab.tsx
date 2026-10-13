@@ -1,0 +1,92 @@
+import { useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import * as api from '../../lib/api';
+import type { Attachment, AttachmentCategory } from '../../lib/types';
+import { errorMessage } from '../../lib/errors';
+import { formatBytes, formatDateTime } from '../../lib/format';
+import { useAuth, useProfile } from '../../auth/AuthProvider';
+import { Badge, Button, Empty, Field, Loading, Select, useConfirm, useToast } from '../ui';
+import { saveBlob } from './DocumentsTab';
+
+export const CATEGORY_LABEL: Record<AttachmentCategory, string> = {
+  avaliacao: 'Material de avaliação',
+  documento_emitido: 'Documento emitido',
+  autorizacao_responsavel: 'Autorização do responsável',
+  nota_fiscal: 'Nota fiscal',
+  outro: 'Outro',
+};
+const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,text/xml,application/xml,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const PROTECTED: AttachmentCategory[] = ['avaliacao', 'documento_emitido'];
+
+export function AttachmentsTab({ patientId }: { patientId: string }) {
+  const { session } = useAuth();
+  const { tz } = useProfile();
+  const q = useQuery({ queryKey: ['attachments', patientId], queryFn: () => api.listAttachments(patientId) });
+  const qc = useQueryClient();
+  const toast = useToast();
+  const confirm = useConfirm();
+  const [category, setCategory] = useState<AttachmentCategory>('outro');
+  const [busy, setBusy] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) return toast('Arquivo acima do limite de 10 MB.', 'erro');
+    if (PROTECTED.includes(category) && !(await confirm({ title: 'Anexo permanente', body: 'Material de avaliação faz parte do prontuário e não poderá ser excluído depois. Continuar?', confirmLabel: 'Anexar' }))) return;
+    setBusy(true);
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      await api.uploadAttachment({ ownerId: session!.user.id, patientId, bytes, fileName: file.name, mime: file.type || 'application/octet-stream', category });
+      await qc.invalidateQueries({ queryKey: ['attachments', patientId] });
+      toast('Arquivo anexado');
+    } catch (e) { toast(errorMessage(e), 'erro'); } finally {
+      setBusy(false);
+      if (input.current) input.current.value = '';
+    }
+  }
+
+  async function remove(a: Attachment) {
+    if (!(await confirm({ title: 'Excluir anexo?', body: `"${a.file_name}" será apagado definitivamente.`, confirmLabel: 'Excluir', danger: true }))) return;
+    try {
+      await api.deleteAttachment(a);
+      await qc.invalidateQueries({ queryKey: ['attachments', patientId] });
+      toast('Anexo excluído');
+    } catch (e) { toast(errorMessage(e), 'erro'); }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-linha bg-papel p-4">
+        <Field label="Tipo do arquivo" className="min-w-56 flex-1">{(id) => (
+          <Select id={id} value={category} onChange={(e) => setCategory(e.target.value as AttachmentCategory)}>
+            {(['outro', 'avaliacao', 'autorizacao_responsavel', 'nota_fiscal'] as AttachmentCategory[]).map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
+          </Select>
+        )}</Field>
+        <input ref={input} type="file" accept={ACCEPT} className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+        <Button busy={busy} onClick={() => input.current?.click()}>Escolher arquivo</Button>
+        <p className="w-full text-sm text-tinta-3">PDF, imagem, XML, TXT ou DOCX, até 10 MB. Os arquivos ficam em armazenamento privado, acessível só pela sua conta.</p>
+      </div>
+      {q.isLoading && <Loading />}
+      {q.data?.length === 0 && <Empty title="Nenhum anexo." />}
+      <ul className="divide-y divide-linha rounded-lg border border-linha bg-papel empty:hidden">
+        {q.data?.map((a) => (
+          <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+            <div className="min-w-0">
+              <p className="truncate font-bold">{a.file_name}</p>
+              <p className="flex flex-wrap items-center gap-2 text-sm text-tinta-2">
+                <Badge tone={PROTECTED.includes(a.category) ? 'anil' : 'neutro'}>{CATEGORY_LABEL[a.category]}</Badge>
+                <span className="num">{formatBytes(a.size_bytes)}, {formatDateTime(a.created_at, tz)}</span>
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="secondary" onClick={async () => {
+                try { saveBlob(await api.downloadAttachment(a), a.file_name); } catch (e) { toast(errorMessage(e), 'erro'); }
+              }}>Baixar</Button>
+              {!PROTECTED.includes(a.category) && <Button size="sm" variant="ghost" onClick={() => remove(a)}>Excluir</Button>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

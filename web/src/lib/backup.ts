@@ -42,16 +42,31 @@ export async function restoreBackup(file: File, ownerId: string, onProgress?: (p
     data = JSON.parse(strFromU8(z['dados.json']));
     blobs = z;
   }
-  onProgress?.({ step: 'Restaurando dados', done: 0, total: 1 });
-  const counts = await api.importAll(data);
+  // Gera novos identificadores para todos os registros (permite restaurar mesmo
+  // que a conta de origem ainda exista no mesmo servidor). Relações são mantidas
+  // porque cada id antigo é trocado pelo mesmo id novo em todo o arquivo.
+  const TABLES = ['patients', 'appointment_series', 'appointments', 'record_entries', 'record_entry_versions',
+    'attachments', 'documents', 'charges', 'payments', 'expenses', 'invoices'];
+  const map = new Map<string, string>();
+  for (const t of TABLES) {
+    for (const row of (data[t] as Array<{ id: string }> | undefined) ?? []) map.set(row.id, crypto.randomUUID());
+  }
+  const remapped = JSON.parse(JSON.stringify(data).replace(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, (m) => map.get(m) ?? m,
+  )) as Record<string, unknown>;
 
-  // Envia os arquivos para os novos caminhos (o banco já remapeou owner_id)
-  const atts = (data.attachments as Array<{ id: string; storage_path: string; mime_type: string }>) ?? [];
+  onProgress?.({ step: 'Restaurando dados', done: 0, total: 1 });
+  const counts = await api.importAll(remapped);
+
+  // Envia os arquivos para os novos caminhos (o banco já ajustou o prefixo da conta)
+  const oldAtts = (data.attachments as Array<{ id: string }>) ?? [];
+  const newAtts = new Map(((remapped.attachments as Array<{ id: string; storage_path: string; mime_type: string }>) ?? []).map((a) => [a.id, a]));
   let i = 0;
-  for (const a of atts) {
-    onProgress?.({ step: 'Restaurando arquivos', done: i++, total: atts.length });
-    const bytes = blobs[`arquivos/${a.id}`];
-    if (!bytes) continue;
+  for (const old of oldAtts) {
+    onProgress?.({ step: 'Restaurando arquivos', done: i++, total: oldAtts.length });
+    const bytes = blobs[`arquivos/${old.id}`];
+    const a = newAtts.get(map.get(old.id)!);
+    if (!bytes || !a) continue;
     const path = `${ownerId}${a.storage_path.slice(a.storage_path.indexOf('/'))}`;
     const up = await supabase.storage.from(STORAGE_BUCKET).upload(path, bytes, { contentType: a.mime_type, upsert: false });
     if (up.error && !/exists/i.test(up.error.message)) throw up.error;

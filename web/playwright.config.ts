@@ -20,7 +20,7 @@ export default defineConfig({
     launchOptions: { executablePath },
   },
   projects: [
-    { name: 'celular', use: { ...devices['Pixel 7'], launchOptions: { executablePath } } },
+    { name: 'celular', use: { ...devices['Pixel 7'], launchOptions: { executablePath } }, testIgnore: /desktop\.spec\.ts/ },
     { name: 'desktop', use: { viewport: { width: 1366, height: 860 } }, testMatch: /desktop\.spec\.ts/ },
   ],
 });

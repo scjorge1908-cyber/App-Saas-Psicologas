@@ -33,6 +33,7 @@ test.describe.configure({ mode: 'serial' });
 
 let page: Page;
 let patientUrl = '';
+let backupPath = '';
 
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
@@ -199,7 +200,9 @@ test('backup completo em ZIP', async () => {
   await page.getByRole('link', { name: 'Configurações' }).click();
   const dl = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Baixar backup completo' }).click();
-  const zip = unzipSync(new Uint8Array(readFileSync(await (await dl).path())));
+  backupPath = `test-results/backup-${RUN}.zip`;
+  await (await dl).saveAs(backupPath);
+  const zip = unzipSync(new Uint8Array(readFileSync(backupPath)));
   const data = JSON.parse(strFromU8(zip['dados.json']));
   expect(data.patients).toHaveLength(1);
   expect(data.record_entry_versions).toHaveLength(1);
@@ -217,6 +220,25 @@ test('outra profissional não acessa os dados', async ({ browser }) => {
   await expect(p2.getByText('Nenhum paciente cadastrado.')).toBeVisible();
   await p2.goto('http://127.0.0.1:5173/financeiro');
   await expect(p2.getByText('Nada a receber.')).toBeVisible();
+  await ctx.close();
+});
+
+test('restauração do backup em conta nova (dados + arquivos)', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 800 }, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo', acceptDownloads: true });
+  const p3 = await ctx.newPage();
+  await signup(p3, 'Clara Fictícia Restauração', `clara.e2e.${RUN}@exemplo.invalid`, '06/222222');
+  await p3.goto('http://127.0.0.1:5173/configuracoes');
+  await p3.locator('input[type=file][accept=".zip,.json"]').setInputFiles(backupPath);
+  await p3.getByRole('dialog').getByRole('button', { name: 'Restaurar' }).click();
+  await expect(p3.getByText(/Backup restaurado: 1 pacientes/)).toBeVisible({ timeout: 20000 });
+  await p3.goto('http://127.0.0.1:5173/pacientes');
+  await p3.getByText('Carlos Fictício da Silva').click();
+  await p3.getByRole('tab', { name: 'Prontuário' }).click();
+  await expect(p3.getByText('versão corrigida')).toBeVisible();
+  await p3.getByRole('tab', { name: 'Documentos' }).click();
+  const dl = p3.waitForEvent('download');
+  await p3.getByRole('button', { name: 'Baixar PDF' }).click();
+  expect(readFileSync(await (await dl).path()).subarray(0, 5).toString()).toBe('%PDF-');
   await ctx.close();
 });
 

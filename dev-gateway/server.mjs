@@ -18,11 +18,12 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import pg from 'pg';
+import { fileURLToPath } from 'node:url';
 
 const PORT = Number(process.env.PORT || 54321);
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-me-0123456789abcdef';
 const ANON_KEY = process.env.ANON_KEY || 'dev-anon-key';
-const STORAGE_DIR = process.env.STORAGE_DIR || path.resolve('.storage');
+const STORAGE_DIR = process.env.STORAGE_DIR || path.join(path.dirname(fileURLToPath(import.meta.url)), '.storage');
 const DATABASE_URL = process.env.DATABASE_URL || 'postgres://gateway:gateway@127.0.0.1:5432/psi_e2e';
 const ACCESS_TTL = 3600;
 

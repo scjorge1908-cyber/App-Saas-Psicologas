@@ -1,11 +1,11 @@
                  put                  
 --------------------------------------
- 06b29320-b0d8-44ac-886a-778bbf2d56cd
+ 0842a9ba-846a-4659-a6e5-0baa627a969c
 (1 row)
 
                  put                  
 --------------------------------------
- 6b0f4b19-423b-495d-9211-6abfea758a4c
+ c1bb802b-9ef7-4fdf-b158-430bb611e314
 (1 row)
 
  login 
@@ -15,27 +15,27 @@
 
                  put                  
 --------------------------------------
- 4310c5fb-b9e5-4039-ae5c-5da867208e56
+ fe50bf92-c441-4663-ab2b-8b05f89b340b
 (1 row)
 
                  put                  
 --------------------------------------
- 6bddaacd-934a-4253-a662-5befac9ded7a
+ 6ded2016-cf6b-4e10-831c-b8748d2c90b0
 (1 row)
 
                  put                  
 --------------------------------------
- fd9c3be6-aad7-4292-b4e4-6caa56f2f1c6
+ f564e490-c3d6-45a5-958f-02cfb4258ee5
 (1 row)
 
                  put                  
 --------------------------------------
- c47b7027-1fb6-4e4b-9271-2688811fd0cb
+ 3c5b0efb-7636-49d6-88e4-3019f2bef173
 (1 row)
 
                  put                  
 --------------------------------------
- ce761590-5661-4a96-a88c-551d2d3ddce2
+ 61cb3203-6a2d-4751-8ce9-967971fe5e69
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:24: NOTICE:  ok - A: cobrança automática criada para sessão atendida
@@ -260,12 +260,12 @@ psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:88: NOTICE:  o
 
                  put                  
 --------------------------------------
- 83a723de-2715-4f9d-b1c6-3a2839215e25
+ 85bfd44a-1aa9-4598-b9ae-eaaf5b2f2f42
 (1 row)
 
                  put                  
 --------------------------------------
- f980854f-a8bc-463e-8ecf-14c77e9de508
+ a5160350-6616-4234-bb62-c31b9279eb9e
 (1 row)
 
  login 
@@ -275,17 +275,17 @@ psql:/home/claude/psi-consultorio/supabase/tests/01_isolation.sql:88: NOTICE:  o
 
                  put                  
 --------------------------------------
- b47eb1fd-7abe-401d-9151-55707f97e683
+ a933664b-9ad0-4f4a-a733-baeacc0c8a90
 (1 row)
 
                  put                  
 --------------------------------------
- a5f5898a-d49d-4ccc-b5d9-207bd4d38024
+ f5813679-074e-4007-a0f4-ca2629553e6f
 (1 row)
 
                  put                  
 --------------------------------------
- 4c848aa5-3ca4-4d76-a6ba-4ec931506da0
+ 32406880-1ccc-40a1-9fb3-241d77499411
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:19: NOTICE:  ok - Sobreposição parcial é bloqueada pelo banco
@@ -337,7 +337,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:36: NOTICE:  ok -
 
                  put                  
 --------------------------------------
- ac36243b-238a-44a3-b85b-c149afef5b50
+ 4a8fd788-bd58-47f9-b127-629721e766c9
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:44: NOTICE:  ok - Mesmo horário em agendas de profissionais diferentes não conflita
@@ -371,7 +371,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:58: NOTICE:  ok -
 
                  put                  
 --------------------------------------
- a81c41cc-9ff0-4b33-ac75-eb54287d2d5f
+ ce16b2d0-2a1d-4671-8d10-681213b263ea
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:63: NOTICE:  ok - Ocorrências semanais no horário local correto, pulando o conflito
@@ -448,7 +448,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:108: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- 93a6697b-9264-4f80-954a-9d89771fca99
+ 416d9417-c9a9-40bb-8a05-a562bec1f832
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:114: NOTICE:  ok - Sessão passada pode ser marcada como falta
@@ -465,7 +465,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:116: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- f2abc5ee-9415-49b6-a613-24a87cbf07e8
+ 0242d66f-ae14-4919-ae4f-28ce8924513e
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:124: NOTICE:  ok - Remarcação de sessão confirmada exige nova confirmação
@@ -476,7 +476,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:124: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- 11586ae8-72f0-4038-8fb4-5a282b5f39a0
+ 120c87c6-bf7c-4462-a85f-fbe06aa89f17
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:129: NOTICE:  ok - Paciente sem histórico pode ser excluído
@@ -493,7 +493,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:130: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- 4cf9187a-6868-4ca1-9baf-46e0b6254814
+ 3ee16e86-8fc8-4bca-a131-6854cfee2274
 (1 row)
 
  login 
@@ -503,22 +503,22 @@ psql:/home/claude/psi-consultorio/supabase/tests/02_agenda.sql:130: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- 81d4a15e-252a-438c-b6da-b0d7e0964905
+ 1ec3ee39-bc30-40cd-a566-f5701c1b702b
 (1 row)
 
                  put                  
 --------------------------------------
- 6e1e1f86-38f8-4926-bfc9-719dfeeb3786
+ 27b57f5c-ce1c-4d5a-8cc0-fbf252b4a3e5
 (1 row)
 
                  put                  
 --------------------------------------
- c7d36199-b723-4f28-9a7c-37c5521c1682
+ 3e82fa97-7d12-4023-97cf-11218bbc7889
 (1 row)
 
                  put                  
 --------------------------------------
- 76012458-87f8-4ceb-aa30-cb18b3bbb1fe
+ 185f8883-8102-42c8-bea3-85d404369928
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:25: NOTICE:  ok - Token com 32 caracteres (192 bits)
@@ -701,7 +701,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:80: NOTICE:
 
                  put                  
 --------------------------------------
- 756dc3b7-c083-48e8-9eff-14a1ec35d857
+ 4e3acaf2-895d-4079-9421-609c4f0ada7a
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:86: NOTICE:  ok - Sem link para sessão que já passou
@@ -712,7 +712,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:86: NOTICE:
 
                  put                  
 --------------------------------------
- 114c2abc-c4fb-4546-8d23-7a2ef4e0738c
+ b86b3b07-1630-4cd6-94a0-94f2c59306f4
 (1 row)
 
  login 
@@ -722,12 +722,12 @@ psql:/home/claude/psi-consultorio/supabase/tests/03_confirmation.sql:86: NOTICE:
 
                  put                  
 --------------------------------------
- 8c801d29-675c-4cd8-b6f1-473b890ae415
+ 1d12defb-809c-40f0-bd5e-74dabcab5e34
 (1 row)
 
                  put                  
 --------------------------------------
- 4b07ddcd-39ae-493d-8284-ea101d1527f6
+ f18d5874-40e9-4557-9ec6-538ee10e6818
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:16: NOTICE:  ok - Versão incrementa a cada retificação
@@ -773,12 +773,12 @@ psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:25: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- a6b41abb-5304-4b62-94eb-3e5d2e6c238a
+ c2dea148-3157-44e5-ac78-140ec2b496b6
 (1 row)
 
                  put                  
 --------------------------------------
- 2d69ceb5-3e70-4eea-828c-f7324b10103d
+ 88a1512e-a0ca-4d48-90e1-9e3d3300a79d
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:38: NOTICE:  ok - Anexo de avaliação não pode ser excluído
@@ -825,12 +825,12 @@ psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:48: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- 836db7f3-7d23-40e4-9a91-e9e2edc1db06
+ 0cde74c1-7a13-4bf6-9c36-cb006c412de3
 (1 row)
 
                  put                  
 --------------------------------------
- ceb5a2d1-b0e7-4dc0-b971-f6f1726e66d8
+ 47d31cd2-dfa4-4d60-afbe-b05a18466f63
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:57: NOTICE:  ok - Documento emitido não pode ser editado
@@ -865,7 +865,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:64: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- aa2ab404-d25b-4436-b7bf-54e684357b20
+ aa7e3817-274a-44de-8706-59d3e9c1c2fe
 (1 row)
 
  login 
@@ -887,7 +887,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:73: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- 89429a79-75ec-41c2-a0dd-85be2cfe7938
+ ec23e1ad-f98d-4974-a4d0-28f354677eea
 (1 row)
 
  login 
@@ -897,32 +897,32 @@ psql:/home/claude/psi-consultorio/supabase/tests/04_records.sql:73: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- d8a1812b-6d6b-4fe5-b87f-d501f57b0624
+ 59a2a24a-43a7-4c52-82e6-c1ceca5f613c
 (1 row)
 
                  put                  
 --------------------------------------
- 6cdcae3e-e579-4194-9ef3-9e3daff9c8c4
+ 78134d2e-2697-4cc4-98f3-5fa5887f550a
 (1 row)
 
                  put                  
 --------------------------------------
- edf3713c-abab-404b-8088-527779ce7d25
+ 2ace2c14-d8be-4559-8257-67f987921950
 (1 row)
 
                  put                  
 --------------------------------------
- 49e1362e-919d-46d1-ade4-659560ac021c
+ 96ba48f8-caab-426f-a130-3f72c30ebd0f
 (1 row)
 
                  put                  
 --------------------------------------
- 1760525d-030d-4254-89ab-ab6130a5032b
+ 741db4b4-c721-4077-9ee5-eb2c66a3e69b
 (1 row)
 
                  put                  
 --------------------------------------
- d55454fd-8ffc-421f-bd49-c8e740efcac2
+ dd959ac4-dc48-4901-afaa-357876e05e7b
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:26: NOTICE:  ok - Cobranças automáticas: 2 sessões atendidas por sessão
@@ -969,7 +969,7 @@ psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:38: NOTICE:  ok 
 
                  put                  
 --------------------------------------
- a2ddb2f5-0d52-4ff6-8fb5-f51af26e91da
+ 616032b2-2fa2-40cc-83b2-368a165b4b14
 (1 row)
 
 psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:53: NOTICE:  ok - Pagamento acima do saldo é rejeitado
@@ -1095,6 +1095,235 @@ psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:97: NOTICE:  ok 
 psql:/home/claude/psi-consultorio/supabase/tests/05_finance.sql:99: NOTICE:  ok - Chave de acesso inválida rejeitada
  throws 
 --------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ e4a38ce3-9b53-48d4-af5f-6dccc9f21fe0
+(1 row)
+
+                 put                  
+--------------------------------------
+ fd5ec8b7-4997-4a14-a40a-b3c0eed3aef9
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:14: NOTICE:  ok - H1: usuário não executa TRUNCATE
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:15: NOTICE:  ok - H1: TRUNCATE em cascata bloqueado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:20: NOTICE:  ok - H1: nenhum TRUNCATE concedido a clientes
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:27: NOTICE:  ok - L2: anon só executa get_confirmation e respond_confirmation
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ d28c0581-d2d6-468c-8e19-2eee15e1da0e
+(1 row)
+
+                 put                  
+--------------------------------------
+ 568ddd93-9dfe-421d-9297-572af34601b9
+(1 row)
+
+                 put                  
+--------------------------------------
+ 3ac8e07f-6ffb-4953-8714-dba5f103fc79
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:35: NOTICE:  ok - H2: sessão atendida não pode ser excluída
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:37: NOTICE:  ok - H2: sessão passada não pode ser excluída nem após desfazer o status
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:38: NOTICE:  ok - H2: paciente com sessão passada não pode ser excluído
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:41: NOTICE:  ok - H2: status não pode ser desfeito com prontuário vinculado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:42: NOTICE:  ok - H2: sessão registrada não troca de paciente
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ cfa49171-2fdc-4999-b6ac-91dcfae288ae
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:46: NOTICE:  ok - H2: anexo de avaliação não é desvinculado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:47: NOTICE:  ok - H2: anexo de avaliação não muda de paciente
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 53217b19-324a-4110-a9ec-c195525b28cf
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:53: NOTICE:  ok - M1: versão e data de criação forçadas no INSERT
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:55: NOTICE:  ok - M1: data de criação imutável
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:56: NOTICE:  ok - M1: sessão vinculada imutável
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ f4e4acb4-6b2b-4213-8136-5eccd21e6a18
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:61: NOTICE:  ok - L1: PDF de documento precisa ser anexo do tipo documento emitido
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ b93ba70c-39a9-46df-a26f-f1c30b965830
+(1 row)
+
+                 put                  
+--------------------------------------
+ 33d0c492-e742-4ea1-b006-217ba622fe61
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:66: NOTICE:  ok - M1: documento nasce com data real e sem entrega
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:67: NOTICE:  ok - M1: data do documento imutável
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:69: NOTICE:  ok - M1: entrega registrada com horário do servidor
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:70: NOTICE:  ok - M1: entrega não pode ser apagada
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ f9b227c9-bc62-45bc-b4b7-ad547a04f203
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:79: NOTICE:  ok - Profissional não forja resposta do paciente
+ ok 
+----
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:82: NOTICE:  ok - M2: link antigo invalidado ao trocar o paciente
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:88: NOTICE:  ok - Encerrar série com ocorrências passadas não falha
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:91: NOTICE:  ok - Ocorrências passadas da série são preservadas
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/psi-consultorio/supabase/tests/06_hardening.sql:96: NOTICE:  ok - Isolamento preservado após endurecimento
+ eq 
+----
  
 (1 row)
 

@@ -67,8 +67,8 @@ jobs:
             echo "::warning::Variáveis do Supabase não cadastradas: o app abre com aviso de configuração ausente."
           fi
           npm run build
-          # nenhuma chave privilegiada pode entrar no app
-          if grep -rqE 'service_role|sb_secret_' dist; then echo "::error::Chave privilegiada encontrada no build."; exit 1; fi
+          # nenhuma chave privilegiada pode entrar no app (decodifica os tokens; a palavra da biblioteca não conta)
+          node ../scripts/verificar-chaves.mjs dist || { echo "::error::Chave privilegiada encontrada no build."; exit 1; }
           npx cap sync android
       - name: Chave de upload
         env:

@@ -34,8 +34,8 @@ jobs:
       - run: npm ci
       - name: Build web
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://configure-o-supabase.invalid' }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'nao-configurado' }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://sstuqkxatcbusxkqpfvx.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_MF5KewjJOqVbtz2BXnBeuQ_INzARJll' }}
           VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
         run: npm run build
       - run: npx cap sync android
@@ -65,8 +65,8 @@ jobs:
       - run: npm ci
       - name: Build web
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://configure-o-supabase.invalid' }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'nao-configurado' }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://sstuqkxatcbusxkqpfvx.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_MF5KewjJOqVbtz2BXnBeuQ_INzARJll' }}
           VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
         run: npm run build
       - run: npx cap sync ios

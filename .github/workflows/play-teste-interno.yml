@@ -7,7 +7,8 @@
 #   PSI_UPLOAD_KEY_ALIAS          alias da chave
 #   PSI_UPLOAD_KEY_PASSWORD       senha da chave
 #   PLAY_SERVICE_ACCOUNT_JSON     conta de serviço com acesso de envio ao app br.com.clinicahope.psi no Play Console
-# Variáveis (não secretas): VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_PUBLIC_APP_URL.
+# Banco: projeto Supabase psiconsultorio (sstuqkxatcbusxkqpfvx, sa-east-1). URL e chave PUBLICÁVEL ficam aqui como padrão
+# (são públicas por definição; quem protege os dados é a RLS). Variáveis do repositório, se existirem, têm prioridade.
 #
 # A Google Play exige que a PRIMEIRA versão de um app novo seja enviada à mão pelo Play Console:
 # rode com enviar=nao, baixe o AAB em Artifacts e envie no teste interno. Daí em diante, enviar=teste-interno.
@@ -56,8 +57,8 @@ jobs:
         run: npx vitest run
       - name: Build web
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://sstuqkxatcbusxkqpfvx.supabase.co' }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || 'sb_publishable_MF5KewjJOqVbtz2BXnBeuQ_INzARJll' }}
           VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
         run: |
           if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then

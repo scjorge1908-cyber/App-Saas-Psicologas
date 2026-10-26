@@ -47,12 +47,14 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
           cache: gradle
       - run: npm ci --no-audit --no-fund
+      - name: Utilitário de PDF usado nos testes (pdftotext)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
       - name: Testes unitários
         run: npx vitest run
       - name: Build web

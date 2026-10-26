@@ -89,6 +89,28 @@ export interface AgendaItem {
   patient_meeting_url: string | null;
   patient_billing_mode: BillingMode;
   series_frequency: SeriesFrequency | null;
+  location_id: string | null;
+  location_name: string | null;
+  location_color: string | null;
+}
+
+/** Local de atendimento (sala, consultório ou on-line). */
+export interface Location {
+  id: string;
+  name: string;
+  modality: Modality;
+  address: string | null;
+  color: string | null;
+  active: boolean;
+}
+
+/** Faixa semanal de atendimento: dia da semana (0 = domingo) e horário, em um local. */
+export interface WorkingHour {
+  id: string;
+  location_id: string;
+  weekday: number;
+  start_time: string; // HH:MM ou HH:MM:SS
+  end_time: string;
 }
 
 export interface RecordEntry {

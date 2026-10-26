@@ -51,3 +51,9 @@ export const listInvoices: typeof real.listInvoices = (...a) => (fonte().listInv
 export const saveInvoice: typeof real.saveInvoice = (...a) => (fonte().saveInvoice as typeof real.saveInvoice)(...a);
 export const exportAll: typeof real.exportAll = (...a) => (fonte().exportAll as typeof real.exportAll)(...a);
 export const importAll: typeof real.importAll = (...a) => (fonte().importAll as typeof real.importAll)(...a);
+export const listLocations: typeof real.listLocations = (...a) => (fonte().listLocations as typeof real.listLocations)(...a);
+export const saveLocation: typeof real.saveLocation = (...a) => (fonte().saveLocation as typeof real.saveLocation)(...a);
+export const deleteLocation: typeof real.deleteLocation = (...a) => (fonte().deleteLocation as typeof real.deleteLocation)(...a);
+export const listWorkingHours: typeof real.listWorkingHours = (...a) => (fonte().listWorkingHours as typeof real.listWorkingHours)(...a);
+export const saveWorkingHour: typeof real.saveWorkingHour = (...a) => (fonte().saveWorkingHour as typeof real.saveWorkingHour)(...a);
+export const deleteWorkingHour: typeof real.deleteWorkingHour = (...a) => (fonte().deleteWorkingHour as typeof real.deleteWorkingHour)(...a);

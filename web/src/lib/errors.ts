@@ -28,8 +28,10 @@ export function errorMessage(err: unknown, fallback = 'Não foi possível conclu
 
   switch (e.code) {
     case '23P01':
+      if (/working_hours/i.test(msg)) return 'Esse horário de atendimento se sobrepõe a outro no mesmo dia. Ajuste o início ou o fim.';
       return 'Este horário já está ocupado por outra sessão. Escolha outro horário ou cancele a sessão existente.';
     case '23505':
+      if (/locations/i.test(msg)) return 'Já existe um local com esse nome.';
       return 'Já existe um registro com estes dados.';
     case '23503':
       return 'Registro relacionado não encontrado ou sem permissão.';
@@ -41,6 +43,7 @@ export function errorMessage(err: unknown, fallback = 'Não foi possível conclu
       if (/emitted_has_number/i.test(msg)) return 'Para marcar como emitida, informe o número e a data da nota.';
       if (/access_key/i.test(msg)) return 'Chave de acesso inválida (44 a 50 números).';
       if (/size_bytes/i.test(msg)) return 'Arquivo acima do limite de 10 MB.';
+      if (/working_hours_order/i.test(msg)) return 'O horário de fim precisa ser depois do início.';
       return 'Algum campo está com valor inválido. Revise e tente de novo.';
     case '42501':
       return 'Você não tem permissão para esta ação.';

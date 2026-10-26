@@ -3,8 +3,8 @@
 // Nada sai do aparelho; ao sair da demonstração (ou fechar o app) tudo é descartado.
 import type {
   AgendaItem, AppointmentStatus, Attachment, AttachmentCategory, ChargeBalance, DashboardSummary, DocumentRow,
-  Expense, FinancialReportRow, InvoiceItem, Modality, Patient, PaymentItem, Profile, RecordEntry, RecordEntryVersion,
-  SeriesFrequency,
+  Expense, FinancialReportRow, InvoiceItem, Location, Modality, Patient, PaymentItem, Profile, RecordEntry, RecordEntryVersion,
+  SeriesFrequency, WorkingHour,
 } from '../types';
 import { DEFAULT_TZ, addDays, todayIn, zonedParts, zonedToUtc } from '../format';
 import { sha256Hex } from '../hash';
@@ -12,8 +12,8 @@ import { DEMO_USER_ID } from './modo';
 import type { SeriesResult } from '../api-real';
 
 // ----------------------------------------------------------------- tipos ---
-type Appointment = Omit<AgendaItem, 'patient_name' | 'patient_social_name' | 'patient_phone' | 'patient_meeting_url' | 'patient_billing_mode' | 'series_frequency'>;
-type Series = { id: string; patient_id: string; frequency: SeriesFrequency; time: string; duration: number; price: number | null; modality: Modality };
+type Appointment = Omit<AgendaItem, 'patient_name' | 'patient_social_name' | 'patient_phone' | 'patient_meeting_url' | 'patient_billing_mode' | 'series_frequency' | 'location_name' | 'location_color'>;
+type Series = { id: string; patient_id: string; frequency: SeriesFrequency; time: string; duration: number; price: number | null; modality: Modality; location_id: string | null };
 type Charge = { id: string; patient_id: string; appointment_id: string | null; description: string; amount: number; due_date: string; canceled_at: string | null; created_at: string };
 type Payment = Omit<PaymentItem, 'patient_name' | 'patient_cpf' | 'charge_description'>;
 type Invoice = Omit<InvoiceItem, 'patient_name'>;
@@ -32,6 +32,8 @@ interface Store {
   payments: Payment[];
   expenses: Expense[];
   invoices: Invoice[];
+  locations: Location[];
+  hours: WorkingHour[];
 }
 
 const uid = () => crypto.randomUUID();
@@ -71,7 +73,17 @@ function montarStore(): Store {
   const [mariana, rafael, beatriz, lucas, juliana, pedro] = patients;
 
   const s: Store = { profile: perfil, patients, series: [], appointments: [], records: [], versions: [], attachments: [],
-    blobs: new Map(), documents: [], charges: [], payments: [], expenses: [], invoices: [] };
+    blobs: new Map(), documents: [], charges: [], payments: [], expenses: [], invoices: [], locations: [], hours: [] };
+
+  // locais e horários de atendimento: sala de seg a sex (manhã e tarde) e on-line à noite
+  const sala: Location = { id: uid(), name: 'Sala 1 · Centro', modality: 'presencial', address: 'Rua Fictícia, 100, sala 1', color: '#6750A4', active: true };
+  const online: Location = { id: uid(), name: 'On-line', modality: 'online', address: null, color: '#0B6E8A', active: true };
+  s.locations.push(sala, online);
+  for (let d = 1; d <= 5; d++) {
+    s.hours.push({ id: uid(), location_id: sala.id, weekday: d, start_time: '08:00:00', end_time: '12:00:00' });
+    s.hours.push({ id: uid(), location_id: sala.id, weekday: d, start_time: '13:00:00', end_time: '17:00:00' });
+  }
+  for (const d of [1, 3]) s.hours.push({ id: uid(), location_id: online.id, weekday: d, start_time: '18:00:00', end_time: '21:00:00' });
 
   // séries semanais: cada paciente ativo no mesmo dia/horário, de 4 semanas atrás até 8 à frente
   const plano: Array<[Patient, number, string]> = [
@@ -80,7 +92,8 @@ function montarStore(): Store {
   const diaSemanaHoje = new Date(`${hoje}T12:00:00Z`).getUTCDay();
   for (const [p, desloc, hora] of plano) {
     const serie: Series = { id: uid(), patient_id: p.id, frequency: 'semanal', time: hora, duration: p.session_minutes ?? 50,
-      price: p.billing_mode === 'mensal' ? null : p.session_price, modality: p.modality };
+      price: p.billing_mode === 'mensal' ? null : p.session_price, modality: p.modality,
+      location_id: p.modality === 'online' ? online.id : sala.id };
     s.series.push(serie);
     const primeiro = addDays(hoje, desloc - 28);
     for (let i = 0; i < 12; i++) {
@@ -91,11 +104,11 @@ function montarStore(): Store {
       const semanaPassada = dia >= addDays(hoje, -7);
       const status: AppointmentStatus = !passou ? (dia <= addDays(hoje, 2) ? 'confirmado' : 'agendado')
         : semanaPassada ? 'confirmado' : (i === 1 && p === rafael ? 'faltou' : 'atendido');
-      s.appointments.push(novaSessao(p, ini, serie.duration, serie.price, p.modality, serie.id, status));
+      s.appointments.push({ ...novaSessao(p, ini, serie.duration, serie.price, p.modality, serie.id, status), location_id: serie.location_id });
     }
   }
   // uma sessão avulsa hoje, ainda não confirmada
-  s.appointments.push(novaSessao(pedro, zonedToUtc(hoje, '18:00', tz), 50, 180, 'presencial', null, 'agendado'));
+  s.appointments.push({ ...novaSessao(pedro, zonedToUtc(hoje, '16:00', tz), 50, 180, 'presencial', null, 'agendado'), location_id: sala.id });
   void diaSemanaHoje;
 
   // cobranças das sessões já atendidas e alguns pagamentos (um paciente em atraso)
@@ -156,7 +169,7 @@ function novaSessao(p: Patient, ini: string, dur: number, price: number | null, 
     id: uid(), patient_id: p.id, series_id: seriesId, starts_at: ini, ends_at: somaMin(ini, dur), status,
     canceled_by: null, cancel_reason: null, late_cancellation: false, charge_no_show: status === 'faltou', price, modality,
     admin_notes: null, confirmed_at: confirmado ? agora() : null, patient_response: confirmado ? 'confirmou' : null,
-    responded_at: confirmado ? agora() : null,
+    responded_at: confirmado ? agora() : null, location_id: null,
   };
 }
 
@@ -181,8 +194,10 @@ const pacienteDe = (id: string) => db().patients.find((p) => p.id === id)!;
 function agendaItem(a: Appointment): AgendaItem {
   const p = pacienteDe(a.patient_id);
   const s = a.series_id ? db().series.find((x) => x.id === a.series_id) : null;
+  const l = a.location_id ? db().locations.find((x) => x.id === a.location_id) : null;
   return { ...a, patient_name: p.full_name, patient_social_name: p.social_name, patient_phone: p.phone,
-    patient_meeting_url: p.meeting_url, patient_billing_mode: p.billing_mode, series_frequency: s?.frequency ?? null };
+    patient_meeting_url: p.meeting_url, patient_billing_mode: p.billing_mode, series_frequency: s?.frequency ?? null,
+    location_name: l?.name ?? null, location_color: l?.color ?? null };
 }
 function saldo(c: Charge): ChargeBalance {
   const p = pacienteDe(c.patient_id);
@@ -264,11 +279,11 @@ export async function listToRegister(beforeIso: string): Promise<AgendaItem[]> {
   return db().appointments.filter((a) => ['agendado', 'confirmado'].includes(a.status) && a.ends_at < beforeIso)
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at)).slice(0, 50).map(agendaItem);
 }
-export async function createAppointment(a: { patient_id: string; starts_at: string; ends_at: string; price: number | null; modality: Modality; admin_notes?: string | null }) {
+export async function createAppointment(a: { patient_id: string; starts_at: string; ends_at: string; price: number | null; modality: Modality; admin_notes?: string | null; location_id?: string | null }) {
   await atraso();
   if (conflito(a.starts_at, a.ends_at)) throw new Error('Já existe uma sessão nesse horário.');
   const nova: Appointment = { ...novaSessao(pacienteDe(a.patient_id), a.starts_at, 0, a.price, a.modality, null, 'agendado'),
-    ends_at: a.ends_at, admin_notes: a.admin_notes ?? null };
+    ends_at: a.ends_at, admin_notes: a.admin_notes ?? null, location_id: a.location_id ?? null };
   db().appointments.push(nova);
   return nova;
 }
@@ -300,7 +315,7 @@ function gerarOcorrencias(serie: Series, inicio: string, ate: string | null, qua
     const ini = zonedToUtc(dia, serie.time, tz);
     const fim = somaMin(ini, serie.duration);
     if (conflito(ini, fim)) { conflicts.push({ starts_at: ini }); continue; }
-    const a = novaSessao(pacienteDe(serie.patient_id), ini, serie.duration, serie.price, serie.modality, serie.id, 'agendado');
+    const a = { ...novaSessao(pacienteDe(serie.patient_id), ini, serie.duration, serie.price, serie.modality, serie.id, 'agendado'), location_id: serie.location_id };
     db().appointments.push(a);
     created.push({ id: a.id, starts_at: a.starts_at });
   }
@@ -308,11 +323,11 @@ function gerarOcorrencias(serie: Series, inicio: string, ate: string | null, qua
 }
 export async function createSeries(args: {
   patientId: string; frequency: SeriesFrequency; startDate: string; startTime: string; duration: number;
-  untilDate?: string | null; occurrences?: number | null; price?: number | null; modality: Modality;
+  untilDate?: string | null; occurrences?: number | null; price?: number | null; modality: Modality; locationId?: string | null;
 }): Promise<SeriesResult> {
   await atraso();
   const serie: Series = { id: uid(), patient_id: args.patientId, frequency: args.frequency, time: args.startTime,
-    duration: args.duration, price: args.price ?? null, modality: args.modality };
+    duration: args.duration, price: args.price ?? null, modality: args.modality, location_id: args.locationId ?? null };
   db().series.push(serie);
   return gerarOcorrencias(serie, args.startDate, args.untilDate ?? null, args.occurrences ?? null);
 }
@@ -550,4 +565,58 @@ export async function exportAll(): Promise<Record<string, unknown>> {
 export async function importAll(data: unknown): Promise<Record<string, number>> {
   void data;
   throw new Error('Na demonstração não é possível importar dados. Crie sua conta para usar a restauração.');
+}
+
+// ------------------------------------------------------ locais e horários ---
+const minutosDe = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+export async function listLocations(): Promise<Location[]> {
+  await atraso();
+  return [...db().locations].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+}
+export async function saveLocation(l: Partial<Location> & { name: string }): Promise<Location> {
+  await atraso();
+  const nome = l.name.trim();
+  if (!nome) throw new Error('Informe o nome do local.');
+  if (db().locations.some((x) => x.id !== l.id && x.name.toLowerCase() === nome.toLowerCase())) throw new Error('Já existe um local com esse nome.');
+  if (l.id) {
+    const atual = db().locations.find((x) => x.id === l.id);
+    if (!atual) throw new Error('Local não encontrado.');
+    Object.assign(atual, l, { name: nome });
+    return atual;
+  }
+  const novo: Location = { modality: 'presencial', address: null, color: null, active: true, ...l, name: nome, id: uid() };
+  db().locations.push(novo);
+  return novo;
+}
+export async function deleteLocation(id: string) {
+  await atraso();
+  db().locations = db().locations.filter((x) => x.id !== id);
+  db().hours = db().hours.filter((h) => h.location_id !== id);
+  for (const a of db().appointments) if (a.location_id === id) a.location_id = null;
+}
+export async function listWorkingHours(): Promise<WorkingHour[]> {
+  await atraso();
+  return [...db().hours].sort((a, b) => a.weekday - b.weekday || a.start_time.localeCompare(b.start_time));
+}
+export async function saveWorkingHour(h: Partial<WorkingHour> & Omit<WorkingHour, 'id'>): Promise<WorkingHour> {
+  await atraso();
+  const ini = minutosDe(h.start_time);
+  const fim = minutosDe(h.end_time);
+  if (fim <= ini) throw new Error('O horário de fim precisa ser depois do início.');
+  if (db().hours.some((x) => x.id !== h.id && x.weekday === h.weekday && minutosDe(x.start_time) < fim && minutosDe(x.end_time) > ini)) {
+    throw new Error('Esse horário de atendimento se sobrepõe a outro no mesmo dia. Ajuste o início ou o fim.');
+  }
+  if (h.id) {
+    const atual = db().hours.find((x) => x.id === h.id);
+    if (!atual) throw new Error('Horário não encontrado.');
+    Object.assign(atual, h);
+    return atual;
+  }
+  const novo: WorkingHour = { ...h, id: uid() };
+  db().hours.push(novo);
+  return novo;
+}
+export async function deleteWorkingHour(id: string) {
+  await atraso();
+  db().hours = db().hours.filter((x) => x.id !== id);
 }

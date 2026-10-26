@@ -15,6 +15,8 @@ import { SettingsPage } from './pages/SettingsPage';
 import { PublicConfirmPage } from './pages/PublicConfirmPage';
 import { TermsPage } from './pages/TermsPage';
 import { WelcomePage } from './pages/WelcomePage';
+import { HorariosPage } from './pages/HorariosPage';
+import { ProntuarioPage } from './pages/ProntuarioPage';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading, recovering } = useAuth();
@@ -55,6 +57,8 @@ export default function App() {
       <Route element={<RequireAuth><AppShell /></RequireAuth>}>
         <Route index element={<TodayPage />} />
         <Route path="agenda" element={<AgendaPage />} />
+        <Route path="agenda/horarios" element={<HorariosPage />} />
+        <Route path="prontuario" element={<ProntuarioPage />} />
         <Route path="pacientes" element={<PatientsPage />} />
         <Route path="pacientes/:id" element={<PatientDetailPage />} />
         <Route path="financeiro" element={<FinancePage />} />

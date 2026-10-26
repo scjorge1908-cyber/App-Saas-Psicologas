@@ -12,8 +12,8 @@ type Repeat = 'nao' | SeriesFrequency;
 type Ending = 'quantidade' | 'data' | 'sem_fim';
 const STEP: Record<SeriesFrequency, number> = { semanal: 7, quinzenal: 14, mensal: 28 };
 
-export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, patientId }: {
-  open: boolean; onClose: () => void; initialDate?: string; initialTime?: string; patientId?: string;
+export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, patientId, initialLocationId }: {
+  open: boolean; onClose: () => void; initialDate?: string; initialTime?: string; patientId?: string; initialLocationId?: string | null;
 }) {
   const { profile, tz } = useProfile();
   const invalidate = useInvalidateAgenda();
@@ -24,6 +24,8 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
   const [duration, setDuration] = useState(String(profile?.session_minutes ?? 50));
   const [price, setPrice] = useState('');
   const [modality, setModality] = useState<Modality>('presencial');
+  const locais = useQuery({ queryKey: ['locations'], queryFn: api.listLocations, enabled: open });
+  const [locationId, setLocationId] = useState<string>(initialLocationId ?? '');
   const [repeat, setRepeat] = useState<Repeat>('nao');
   const [ending, setEnding] = useState<Ending>('quantidade');
   const [count, setCount] = useState('12');
@@ -37,7 +39,8 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
     if (!open) return;
     setPid(patientId ?? ''); setDate(initialDate ?? todayIn(tz)); setTime(initialTime ?? '');
     setRepeat('nao'); setResult(null); setError(null); setEnding('quantidade'); setCount('12'); setUntil('');
-  }, [open, patientId, initialDate, initialTime, tz]);
+    setLocationId(initialLocationId ?? '');
+  }, [open, patientId, initialDate, initialTime, tz, initialLocationId]);
 
   // Preenche padrões do paciente escolhido
   const patient = useMemo(() => patients.data?.find((p) => p.id === pid), [patients.data, pid]);
@@ -73,13 +76,14 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
     try {
       if (repeat === 'nao') {
         const s = zonedToUtc(date, time, tz);
-        await api.createAppointment({ patient_id: pid, starts_at: s, ends_at: new Date(new Date(s).getTime() + dur * 60000).toISOString(), price: pr, modality });
+        await api.createAppointment({ patient_id: pid, starts_at: s, ends_at: new Date(new Date(s).getTime() + dur * 60000).toISOString(), price: pr, modality, location_id: locationId || null });
         await invalidate();
         onClose();
       } else {
         const r = await api.createSeries({
           patientId: pid, frequency: repeat, startDate: date, startTime: time, duration: dur,
           untilDate: ending === 'data' ? until : null, occurrences: ending === 'quantidade' ? Number(count) : null, price: pr, modality,
+          locationId: locationId || null,
         });
         await invalidate();
         if (r.conflicts.length === 0) onClose();
@@ -127,6 +131,20 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
             <TextField label="Duração (min)" type="number" inputMode="numeric" min={10} max={300} value={duration} onChange={(e) => setDuration(e.target.value)} />
             <TextField label="Valor (R$)" inputMode="decimal" placeholder="150,00" value={price} onChange={(e) => setPrice(e.target.value)} />
           </div>
+          {(locais.data?.filter((l) => l.active).length ?? 0) > 0 && (
+            <Field label="Local">
+              {(id) => (
+                <Select id={id} value={locationId} onChange={(e) => {
+                  setLocationId(e.target.value);
+                  const l = locais.data?.find((x) => x.id === e.target.value);
+                  if (l) setModality(l.modality);
+                }}>
+                  <option value="">Sem local</option>
+                  {locais.data!.filter((l) => l.active || l.id === locationId).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </Select>
+              )}
+            </Field>
+          )}
           <Field label="Modalidade">
             {(id) => (
               <Select id={id} value={modality} onChange={(e) => setModality(e.target.value as Modality)}>

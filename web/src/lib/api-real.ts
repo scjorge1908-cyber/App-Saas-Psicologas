@@ -2,7 +2,7 @@
 import { supabase, STORAGE_BUCKET } from './supabase';
 import type {
   AgendaItem, AppointmentStatus, Attachment, AttachmentCategory, ChargeBalance, DashboardSummary, DocumentRow,
-  Expense, FinancialReportRow, InvoiceItem, Patient, PaymentItem, RecordEntry, RecordEntryVersion, SeriesFrequency, Modality,
+  Expense, FinancialReportRow, InvoiceItem, Location, Patient, PaymentItem, RecordEntry, RecordEntryVersion, SeriesFrequency, Modality, WorkingHour,
 } from './types';
 import { sha256Hex } from './hash';
 
@@ -37,7 +37,7 @@ export async function listPatientAgenda(patientId: string): Promise<AgendaItem[]
 export async function listToRegister(beforeIso: string): Promise<AgendaItem[]> {
   return check(await supabase.from('agenda_items').select('*').in('status', ['agendado', 'confirmado']).lt('ends_at', beforeIso).order('starts_at').limit(50));
 }
-export async function createAppointment(a: { patient_id: string; starts_at: string; ends_at: string; price: number | null; modality: Modality; admin_notes?: string | null }) {
+export async function createAppointment(a: { patient_id: string; starts_at: string; ends_at: string; price: number | null; modality: Modality; admin_notes?: string | null; location_id?: string | null }) {
   return check(await supabase.from('appointments').insert(a).select().single());
 }
 export async function updateAppointment(id: string, patch: Record<string, unknown>) {
@@ -52,13 +52,19 @@ export async function deleteAppointment(id: string) {
 export interface SeriesResult { series_id: string; created: Array<{ id: string; starts_at: string }>; conflicts: Array<{ starts_at: string }> }
 export async function createSeries(args: {
   patientId: string; frequency: SeriesFrequency; startDate: string; startTime: string; duration: number;
-  untilDate?: string | null; occurrences?: number | null; price?: number | null; modality: Modality;
+  untilDate?: string | null; occurrences?: number | null; price?: number | null; modality: Modality; locationId?: string | null;
 }): Promise<SeriesResult> {
-  return check(await supabase.rpc('create_appointment_series', {
+  const r: SeriesResult = check(await supabase.rpc('create_appointment_series', {
     p_patient_id: args.patientId, p_frequency: args.frequency, p_start_date: args.startDate, p_start_time: args.startTime,
     p_duration_minutes: args.duration, p_until_date: args.untilDate ?? null, p_occurrences: args.occurrences ?? null,
     p_price: args.price ?? null, p_modality: args.modality,
   }));
+  if (args.locationId) {
+    // o local vale para a série e para todas as sessões geradas por ela
+    check(await supabase.from('appointment_series').update({ location_id: args.locationId }).eq('id', r.series_id));
+    check(await supabase.from('appointments').update({ location_id: args.locationId }).eq('series_id', r.series_id));
+  }
+  return r;
 }
 export async function endSeries(seriesId: string, fromDate: string): Promise<number> {
   return check(await supabase.rpc('end_appointment_series', { p_series_id: seriesId, p_from_date: fromDate }));
@@ -195,4 +201,28 @@ export async function exportAll(): Promise<Record<string, unknown>> {
 }
 export async function importAll(data: unknown): Promise<Record<string, number>> {
   return check(await supabase.rpc('import_my_data', { p_data: data }));
+}
+
+// ------------------------------------------------------ locais e horários ---
+export async function listLocations(): Promise<Location[]> {
+  return check(await supabase.from('locations').select('id, name, modality, address, color, active').order('name'));
+}
+export async function saveLocation(l: Partial<Location> & { name: string }): Promise<Location> {
+  const { id, ...rest } = l;
+  if (id) return check(await supabase.from('locations').update(rest).eq('id', id).select('id, name, modality, address, color, active').single());
+  return check(await supabase.from('locations').insert(rest).select('id, name, modality, address, color, active').single());
+}
+export async function deleteLocation(id: string) {
+  check(await supabase.from('locations').delete().eq('id', id));
+}
+export async function listWorkingHours(): Promise<WorkingHour[]> {
+  return check(await supabase.from('working_hours').select('id, location_id, weekday, start_time, end_time').order('weekday').order('start_time'));
+}
+export async function saveWorkingHour(h: Partial<WorkingHour> & Omit<WorkingHour, 'id'>): Promise<WorkingHour> {
+  const { id, ...rest } = h;
+  if (id) return check(await supabase.from('working_hours').update(rest).eq('id', id).select('id, location_id, weekday, start_time, end_time').single());
+  return check(await supabase.from('working_hours').insert(rest).select('id, location_id, weekday, start_time, end_time').single());
+}
+export async function deleteWorkingHour(id: string) {
+  check(await supabase.from('working_hours').delete().eq('id', id));
 }

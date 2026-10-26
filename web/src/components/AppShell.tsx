@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
 import { cx } from './ui';
-import { IconCalendar, IconMoney, IconMore, IconPeople, IconReceipt, IconSettings, IconToday } from './icons';
+import { IconCalendar, IconDoc, IconMoney, IconMore, IconPeople, IconReceipt, IconSettings, IconToday } from './icons';
 import { signOut, useProfile } from '../auth/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../lib/demo/modo';
@@ -14,6 +14,8 @@ const MAIN: NavItem[] = [
   { to: '/financeiro', label: 'Financeiro', icon: IconMoney },
 ];
 const EXTRA: NavItem[] = [
+  { to: '/prontuario', label: 'Prontuário', icon: IconDoc },
+  { to: '/agenda/horarios', label: 'Horários', icon: IconToday },
   { to: '/notas-fiscais', label: 'Notas fiscais', icon: IconReceipt },
   { to: '/configuracoes', label: 'Configurações', icon: IconSettings },
 ];

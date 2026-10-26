@@ -22,7 +22,7 @@ O produto final será **app na Google Play e na App Store**. A versão web e a P
 |-------|-----------|----------|
 | Build Android (APK/AAB) | Android Studio/SDK (download bloqueado neste ambiente) | Projeto pronto em `web/android`. `npm run build && npx cap sync && npx cap open android` |
 | Teste em aparelho Android | APK de debug instalado direto | Gratuito |
-| Google Play | Conta de desenvolvedor | US$ 25 único; contas pessoais novas: teste fechado com 12 testadores por 14 dias |
+| Google Play | Conta de desenvolvedor da Hope (já paga) | **Teste interno ativo desde 26/10/2026**: app `br.com.clinicahope.psi`, versão 0.1.0 (7). Próximos envios pelo workflow `play-teste-interno` (enviar=teste-interno) |
 | Build iOS | Mac com Xcode 26+ | Projeto pronto em `web/ios` |
 | Teste em iPhone | Xcode "Personal Team" (gratuito, perfis de 7 dias) ou TestFlight | TestFlight exige Apple Developer Program (US$ 99/ano) |
 | App Store | Apple Developer Program | US$ 99/ano |

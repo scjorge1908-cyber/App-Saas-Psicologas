@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="lavanda">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PsiConsultório · Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,500&family=Work+Sans:wght@400;500;600;700;800&family=Young+Serif&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="theme.js"></script>
+<style>
+/* Moldura do guia (layout apenas; componentes e tokens vivem em styles.css) */
+body{display:flex}
+nav.side{position:sticky;top:0;align-self:flex-start;height:100vh;width:232px;flex:0 0 232px;background:var(--surface);border-right:1px solid var(--border);padding:20px 14px 40px;overflow:auto}
+nav.side .brandline{font:var(--display-weight) 22px/1.1 var(--font-display);font-variation-settings:var(--display-opsz);color:var(--primary-ink);margin:4px 8px 16px}
+nav.side .brandline small{display:block;font:600 11px var(--font-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+nav.side a{display:block;padding:7px 10px;border-radius:8px;font-size:14px;color:var(--muted);text-decoration:none}
+nav.side a:hover{background:var(--surface-sunken);color:var(--primary-ink)}
+nav.side a.concept-link{margin:0 0 8px;padding:12px;font-weight:700;color:var(--on-primary);background:var(--primary);background-image:var(--grad-btn);border-radius:var(--r-btn);display:flex;align-items:center;gap:8px}
+nav.side a.concept-link:hover{color:var(--on-primary);filter:brightness(1.06)}
+nav.side .grp{font:700 11px var(--font-body);letter-spacing:.09em;text-transform:uppercase;color:var(--subtle);margin:18px 0 6px 10px}
+main{flex:1;min-width:0;padding:84px 44px 120px;max-width:1100px}
+main section{margin-bottom:64px;scroll-margin-top:84px}
+h2.sec{font:var(--display-weight) 28px/1.2 var(--font-display);font-variation-settings:var(--display-opsz);color:var(--on-surface);margin-bottom:6px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+h3.sub{font:700 13px var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:24px 0 10px}
+.sec-desc{color:var(--muted);font-size:15px;margin-bottom:18px;max-width:720px;line-height:1.6}
+.sec-desc code,.lead code{font:12px var(--font-mono);background:var(--muted-surface);color:var(--on-muted-surface);padding:1px 5px;border-radius:4px}
+.stage{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px;display:flex;flex-wrap:wrap;gap:24px;align-items:center}
+.stage--bg{background:var(--bg)}
+.stage--col{flex-direction:column;align-items:stretch}
+.stage--rel{position:relative;min-height:260px;overflow:hidden}
+.cell{display:flex;flex-direction:column;align-items:center;gap:8px}
+.cell--l{align-items:flex-start}
+.spec{font:11px var(--font-mono);color:var(--subtle)}
+.colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.sw{border:1px solid var(--border);border-radius:var(--r-md);overflow:hidden;background:var(--surface)}
+.sw .c{height:64px;display:flex;align-items:flex-end;padding:8px 10px;font:700 13px var(--font-body)}
+.sw .m{padding:8px 10px}.sw .n{font:600 12px var(--font-mono);color:var(--on-surface)}.sw .v{font:11px var(--font-mono);color:var(--subtle);margin-top:2px}
+.typerow{display:flex;align-items:baseline;gap:18px;padding:12px 0;border-bottom:1px solid var(--border-faint)}
+.typerow .tk{width:150px;flex:0 0 150px;font:11px/1.5 var(--font-mono);color:var(--subtle)}
+.sprow{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.sprow .bar{background:var(--primary);height:12px;border-radius:3px}.sprow .lbl{width:190px;font:12px var(--font-mono);color:var(--muted)}
+.radrow{display:flex;gap:16px;flex-wrap:wrap}
+.radrow .rb{width:88px;height:88px;background:var(--primary-container);border:1.5px solid var(--primary);display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font:11px var(--font-mono);color:var(--on-primary-container)}
+.elevrow{display:flex;gap:24px;flex-wrap:wrap}
+.elevrow .eb{width:150px;height:96px;background:var(--surface);border-radius:var(--r-lg);display:flex;align-items:center;justify-content:center;font:12px var(--font-mono);color:var(--muted)}
+.iconGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.iconGrid .it{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--on-surface)}
+.iconGrid .it .nm{font:10.5px var(--font-mono);color:var(--subtle)}
+.mini-table{width:100%;border-collapse:collapse;font:13px var(--font-body)}
+.mini-table td,.mini-table th{padding:8px 10px;border-bottom:1px solid var(--border-faint);text-align:left}
+.mini-table th{font:700 11px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mini-table code{font:12px var(--font-mono)}
+.themecards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.tc{border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;background:var(--surface);cursor:pointer}
+.tc.is-cur{outline:2px solid var(--primary);outline-offset:2px}
+.tc .tn{font:700 16px var(--font-body);margin-bottom:4px}
+.tc .td{font-size:13px;line-height:1.55;color:var(--muted)}
+.tc .dots{display:flex;gap:6px;margin:12px 0 10px}
+.tc .dots i{width:26px;height:26px;border-radius:50%;display:block;border:1px solid var(--border)}
+.phone{width:340px;background:var(--bg);border:1px solid var(--border);overflow:hidden;position:relative}
+
+/* controles do topo + Dev Mode + Inspetor + Copiar como prompt */
+#topctl{position:fixed;top:0;left:232px;right:0;z-index:50;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 24px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+#topctl .sp{flex:1}
+#topctl label{font:700 11px var(--font-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);display:flex;gap:6px;align-items:center}
+#topctl select{font:600 13px var(--font-body);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;min-height:40px;background:var(--surface);color:var(--on-surface)}
+.ds-btn{font:600 13px var(--font-body);background:var(--surface);border:1px solid var(--primary-ink);color:var(--primary-ink);border-radius:var(--r-sm);padding:0 12px;min-height:40px;cursor:pointer}
+.ds-btn:hover{background:color-mix(in srgb,var(--primary) 8%,transparent)}
+#devToggle{font:600 13px var(--font-body);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 14px;min-height:40px;cursor:pointer;color:var(--muted)}
+#devToggle.on{background:var(--primary);border-color:var(--primary-dark);color:var(--on-primary)}
+.sec-prompt{font:600 12px var(--font-body);border:1px solid var(--primary-ink);background:var(--surface);color:var(--primary-ink);border-radius:var(--r-sm);padding:4px 10px;margin-left:8px;cursor:pointer}
+body.dev [data-insp]:hover{outline:2px dashed var(--secondary);outline-offset:3px;cursor:pointer}
+.insp-sel{outline:2px solid var(--primary)!important;outline-offset:3px}
+#inspector{position:fixed;top:0;right:0;width:360px;height:100vh;background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--elev-3);transform:translateX(100%);transition:transform .28s var(--ease);z-index:60;overflow:auto;padding:24px 20px 40px}
+body.inspecting #inspector{transform:translateX(0)}
+body.inspecting main{margin-right:360px}
+#inspector .iclose{position:absolute;top:12px;right:10px}
+#inspector .nm{font:var(--display-weight) 22px var(--font-display);color:var(--on-surface);padding-right:40px}
+#inspector .file{font:12px var(--font-mono);color:var(--subtle);margin-top:2px}
+#inspector .desc{font-size:14px;color:var(--muted);line-height:1.6;margin-top:10px}
+#inspector h4{font:700 11px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--subtle);margin:20px 0 8px}
+.prop{padding:8px 0;border-bottom:1px solid var(--border-faint)}.prop .pn{font:600 13px var(--font-mono)}.prop .pt{font:11px var(--font-mono);color:var(--secondary-ink)}.prop .pdef{font:11px var(--font-mono);color:var(--subtle)}
+.tok{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:8px;cursor:pointer}.tok:hover{background:var(--surface-sunken)}
+.tok .tsw{width:22px;height:22px;border-radius:6px;border:1px solid var(--border);flex:0 0 22px}.tok .tn{font:600 12px var(--font-mono)}.tok .tr{font-size:11px;color:var(--muted)}.tok .tv{margin-left:auto;font:11px var(--font-mono);color:var(--subtle);max-width:120px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.metric{display:flex;justify-content:space-between;gap:12px;font:12px var(--font-mono);padding:5px 0;border-bottom:1px dashed var(--border-faint)}.metric .mk{color:var(--muted)}
+.copied{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--inverse);color:var(--on-inverse);font-size:13px;padding:10px 16px;border-radius:8px;opacity:0;transition:.2s;z-index:70;pointer-events:none}.copied.show{opacity:1}
+@media (max-width:900px){nav.side{display:none}#topctl{left:0}main{padding:120px 16px 80px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 12H4"/><path d="M10 18l-6-6 6-6"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a7 7 0 0 1 16 0v1"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21v-1a7 7 0 0 1 14 0v1"/><path d="M16 3.1a4 4 0 0 1 0 7.8M22 21v-1a7 7 0 0 0-4-6.3"/></symbol>
+  <symbol id="i-more-h" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-more-v" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/></symbol>
+  <symbol id="i-calendar-check" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/><path d="M9 15.5l2 2 4-4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="18" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 11h6M9 15h6M9 19h3"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
+  <symbol id="i-file-sign" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 17c1-2 2-2 3 0s2 2 3 0 2-1 2-1"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M20 7V5a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2V6"/><path d="M17 14h.01" stroke-width="3"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24"><path d="M5 2v20l3-2 2 2 2-2 2 2 2-2 3 2V2l-3 2-2-2-2 2-2-2-2 2z"/><path d="M9 9h6M9 13h6"/></symbol>
+  <symbol id="i-pix" viewBox="0 0 24 24"><path d="M12 2.8l3.6 3.6-3.6 3.6-3.6-3.6zM12 14l3.6 3.6-3.6 3.6-3.6-3.6zM6.4 8.4L10 12l-3.6 3.6L2.8 12zM17.6 8.4l3.6 3.6-3.6 3.6L14 12z"/></symbol>
+  <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01" stroke-width="3"/></symbol>
+  <symbol id="i-trend-up" viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-2.9 3.8M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.7 9.7 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="M22 7l-10 6L2 7"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.4-5.4A8.5 8.5 0 1 1 21 12z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 21h16"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M4 3h16"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 5h18M6 12h12M10 19h4"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></symbol>
+  <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13c0-6 6-10 16-10 0 10-4 17-9 17z"/><path d="M4 21c3-5 6-8 11-11"/></symbol>
+</svg>
+
+<div id="topctl">
+  <label>Direção <select id="themeSel" aria-label="Direção visual"></select></label>
+  <label>Modo <select id="modeSel" aria-label="Modo claro ou escuro"></select></label>
+  <div class="sp"></div>
+  <label>Prompt para <select id="langSel" aria-label="Linguagem do prompt"></select></label>
+  <button class="ds-btn" onclick="copyFullSystem()" title="Copia um prompt para instalar ou atualizar o design system inteiro">⤓ Instalar design system</button>
+  <button id="devToggle" onclick="toggleDev()">◧ Dev Mode</button>
+</div>
+<aside id="inspector"><button class="icon-btn iclose" onclick="closeInspector()" aria-label="Fechar"><svg class="ico"><use href="#i-close"/></svg></button><div id="inspectorBody"></div></aside>
+<div class="copied" id="copied">Copiado</div>
+
+<nav class="side">
+  <div class="brandline">PsiConsultório<small>Design system · v1</small></div>
+  <a class="concept-link" href="concept.html"><svg class="ico ico--sm"><use href="#i-grid"/></svg>Prévia do conceito →</a>
+  <div class="grp">Fundamentos</div>
+  <a href="#temas">Direções de tema</a><a href="#palette">Paleta</a><a href="#typography">Tipografia</a><a href="#spacing">Espaçamento</a><a href="#shape">Forma (raios)</a><a href="#shadows">Sombras</a><a href="#system">Breakpoints · z-index · transições</a><a href="#icons">Ícones</a>
+  <div class="grp">Inputs</div>
+  <a href="#button">Button</a><a href="#buttongroup">Button group</a><a href="#iconbutton">Icon button</a><a href="#fab">Floating action button</a><a href="#checkbox">Checkbox</a><a href="#radio">Radio group</a><a href="#switch">Switch</a><a href="#select">Select</a><a href="#autocomplete">Autocomplete</a><a href="#slider">Slider</a><a href="#textfield">Text field</a><a href="#togglebutton">Toggle button</a><a href="#rating">Rating</a>
+  <div class="grp">Data display</div>
+  <a href="#avatar">Avatar</a><a href="#badge">Badge</a><a href="#chip">Chip</a><a href="#divider">Divider</a><a href="#list">List</a><a href="#table">Table</a><a href="#tooltip">Tooltip</a><a href="#typographyc">Typography</a><a href="#icon">Icon</a>
+  <div class="grp">Feedback</div>
+  <a href="#alert">Alert</a><a href="#dialog">Dialog</a><a href="#snackbar">Snackbar</a><a href="#progress">Progress</a><a href="#skeleton">Skeleton</a><a href="#backdrop">Backdrop</a>
+  <div class="grp">Surfaces</div>
+  <a href="#appbar">App bar</a><a href="#card">Card</a><a href="#paper">Paper</a><a href="#accordion">Accordion</a>
+  <div class="grp">Navigation</div>
+  <a href="#bottomnav">Bottom navigation</a><a href="#drawer">Drawer</a><a href="#tabs">Tabs</a><a href="#menu">Menu</a><a href="#link">Link</a><a href="#stepper">Stepper</a><a href="#speeddial">Speed dial</a>
+  <div class="grp">Layout</div>
+  <a href="#layout">Box · Container · Grid · Stack</a>
+  <div class="grp">Extensões do app</div>
+  <a href="#banner">Banner de alerta</a><a href="#session">Item de sessão</a><a href="#shortcut">Grade de atalhos</a><a href="#wallet">Carteira</a><a href="#kpi">Mini-KPIs</a><a href="#timeline">Linha do tempo</a><a href="#entity">Cabeçalho do paciente</a><a href="#sheet">Bottom sheet</a>
+</nav>
+
+<main>
+  <header style="margin-bottom:48px">
+    <div class="t-overline">Material 3 (tokens) + MUI (componentes) · React + Tailwind 4 · Capacitor</div>
+    <h1 class="t-h1" style="margin-top:8px">PsiConsultório — Design System</h1>
+    <p class="sec-desc" style="margin-top:12px">Tokens e componentes do app de gestão de consultório para psicólogas. Fonte única em <code>styles.css</code>.
+      Troque a <b>direção</b> e o <b>modo</b> no topo: só os tokens mudam, os componentes ficam iguais. Ative o <b>Dev Mode</b> para inspecionar qualquer
+      componente e use <b>Copiar como prompt</b> para implementá-lo em qualquer linguagem.</p>
+  </header>
+
+  <!-- =================== FUNDAMENTOS =================== -->
+  <section id="temas"><h2 class="sec">Direções de tema</h2>
+    <p class="sec-desc">Três hipóteses visuais para o mesmo app, mesmo formato (cabeçalho em degradê, banner com número grande, atalhos, carteira escura). Cada par difere em paleta, forma, elevação e tipografia. Clique para aplicar.</p>
+    <div class="themecards" id="themeCards"></div>
+  </section>
+
+  <section id="palette"><h2 class="sec">Paleta</h2>
+    <p class="sec-desc">Papéis semânticos (Material 3 / MUI <code>palette</code>). Toda cor de fundo tem seu par <code>--on-*</code>; contraste WCAG calculado (texto ≥ 4,5:1, bordas e ícones ≥ 3:1). Valores lidos ao vivo do tema atual.</p>
+    <h3 class="sub">Marca e superfícies</h3><div class="colors" id="colorGrid1"></div>
+    <h3 class="sub">Texto, divisores e ação</h3><div class="colors" id="colorGrid2"></div>
+    <h3 class="sub">Status de sessão e feedback (MUI success/info/warning/error)</h3><div class="colors" id="colorGrid3"></div>
+    <h3 class="sub">Assinatura (cabeçalho e carteira)</h3><div class="colors" id="colorGrid4"></div>
+    <h3 class="sub">Mapa MUI → tokens</h3>
+    <table class="mini-table"><tr><th>MUI</th><th>main</th><th>light</th><th>dark</th><th>contrastText</th></tr>
+      <tr><td><code>primary</code></td><td><code>--primary</code></td><td><code>--primary-light</code></td><td><code>--primary-dark</code></td><td><code>--on-primary</code></td></tr>
+      <tr><td><code>secondary</code></td><td><code>--secondary</code></td><td><code>--secondary-container</code></td><td><code>--secondary-ink</code></td><td><code>--on-secondary</code></td></tr>
+      <tr><td><code>success</code></td><td><code>--success</code></td><td><code>--atendida-bg</code></td><td><code>--atendida-ink</code></td><td><code>--on-status</code></td></tr>
+      <tr><td><code>info</code></td><td><code>--info</code></td><td><code>--confirmada-bg</code></td><td><code>--confirmada-ink</code></td><td><code>--on-status</code></td></tr>
+      <tr><td><code>warning</code></td><td><code>--warning</code></td><td><code>--falta-bg</code></td><td><code>--falta-ink</code></td><td><code>--on-warning</code></td></tr>
+      <tr><td><code>error</code></td><td><code>--error</code></td><td><code>--erro-bg</code></td><td><code>--erro-ink</code></td><td><code>--on-status</code></td></tr>
+      <tr><td><code>text</code></td><td colspan="4">primary <code>--on-surface</code> · secondary <code>--muted</code> · disabled <code>--disabled</code></td></tr>
+      <tr><td><code>background</code></td><td colspan="4">default <code>--bg</code> · paper <code>--surface</code> · <code>divider</code> = <code>--border</code></td></tr>
+      <tr><td><code>action</code></td><td colspan="4">hover <code>--state-hover</code> · selected <code>--state-selected</code> · focus <code>--state-focus</code> · disabled <code>--state-disabled</code></td></tr>
+    </table>
+  </section>
+
+  <section id="typography"><h2 class="sec">Tipografia</h2>
+    <p class="sec-desc">Fonte de leitura sans em tudo que é funcional (corpo, rótulos, botões, valores com algarismos tabulares). A display serifada tem um papel só: marca, saudação, nome do paciente e títulos de tela (h1–h4). Base 16px.</p>
+    <div id="typeList"></div></section>
+
+  <section id="spacing"><h2 class="sec">Espaçamento</h2>
+    <p class="sec-desc">Escala de 4/8px (<code>spacing(1)</code> = 8px) e papéis semânticos: relacionado &lt; seção &lt; maior. Alvo de toque mínimo de 48px.</p>
+    <div id="spacingList"></div></section>
+
+  <section id="shape"><h2 class="sec">Forma (raios)</h2>
+    <p class="sec-desc">Escala <code>borderRadius</code>. Cada direção tem sua linguagem de forma: Lavanda 12–16, Índigo 8–10 (mais precisa), Sálvia 16–20 com botões em pílula.</p>
+    <div class="radrow" id="radiusList"></div></section>
+
+  <section id="shadows"><h2 class="sec">Sombras (elevação)</h2>
+    <p class="sec-desc">Subconjunto documentado de <code>shadows[0–24]</code>: 0, 1 (cartões), 2 (carteira, hover), 3 (menus, diálogos, FAB). Lavanda usa sombra suave; Índigo usa filete (borda) e sombra só em sobreposições; Sálvia é tonal, sem sombra em superfícies em repouso.</p>
+    <div class="stage stage--bg elevrow"><div class="eb" style="box-shadow:none;border:1px solid var(--border)">elev 0</div><div class="eb" style="box-shadow:var(--elev-1);border:1px solid var(--card-border)">--elev-1</div><div class="eb" style="box-shadow:var(--elev-2)">--elev-2</div><div class="eb" style="box-shadow:var(--elev-3)">--elev-3</div></div></section>
+
+  <section id="system"><h2 class="sec">Breakpoints · z-index · transições</h2>
+    <table class="mini-table">
+      <tr><th>Breakpoints</th><td><code>xs 0</code> · <code>sm 600</code> · <code>md 900</code> · <code>lg 1200</code> · <code>xl 1536</code> — app é mobile-first; ≥ md mostra Drawer permanente.</td></tr>
+      <tr><th>z-index</th><td><code>appBar 1100</code> · <code>drawer 1200</code> · <code>modal 1300</code> · <code>snackbar 1400</code> · <code>tooltip 1500</code></td></tr>
+      <tr><th>Duração</th><td><code>--dur-shortest 120ms</code> (toque) · <code>--dur-short 200ms</code> · <code>--dur-base 250ms</code> · <code>--dur-complex 375ms</code></td></tr>
+      <tr><th>Curvas</th><td><code>--ease</code> · <code>--ease-standard</code> · <code>--ease-spring</code> (switch) · microinteração <code>scale(var(--press-scale))</code> = .98 ao tocar</td></tr>
+      <tr><th>Estados</th><td>hover .08 · focus .12 · pressed .14 · selected .12 · disabled .38 — anel de foco 2px com folga</td></tr>
+    </table></section>
+
+  <section id="icons"><h2 class="sec">Ícones</h2>
+    <p class="sec-desc">Sprite SVG inline por tokens (<code>stroke:currentColor; stroke-width:var(--icon-stroke)</code>), contorno arredondado no estilo Material Symbols / Lucide. Glifo 24px; área de toque ≥ 48px. Veja também <a class="link" href="icons.html">icons.html</a>.</p>
+    <div class="iconGrid" id="iconGrid"></div></section>
+
+  <!-- =================== INPUTS =================== -->
+  <section id="button"><h2 class="sec">Button</h2>
+    <p class="sec-desc">Ação. <code>variant</code> contained (leve degradê) | outlined | text | tonal · <code>size</code> small | medium | large · <code>color</code> primary | secondary | error. Ao tocar: scale .98.</p>
+    <div class="stage">
+      <div class="cell"><button class="btn btn--contained" data-insp="button">Registrar sessão</button><div class="spec">contained</div></div>
+      <div class="cell"><button class="btn btn--outlined" data-insp="button">Emitir recibo</button><div class="spec">outlined</div></div>
+      <div class="cell"><button class="btn btn--text" data-insp="button">Cancelar</button><div class="spec">text</div></div>
+      <div class="cell"><button class="btn btn--tonal" data-insp="button"><svg class="ico ico--sm"><use href="#i-send"/></svg>Enviar link</button><div class="spec">tonal + ícone</div></div>
+      <div class="cell"><button class="btn btn--contained btn--secondary" data-insp="button">Cobrar via Pix</button><div class="spec">secondary</div></div>
+      <div class="cell"><button class="btn btn--outlined btn--error" data-insp="button">Excluir horário</button><div class="spec">outlined · error</div></div>
+    </div>
+    <h3 class="sub">Estados</h3>
+    <div class="stage">
+      <div class="cell"><button class="btn btn--contained" data-insp="button">Salvar</button><div class="spec">enabled</div></div>
+      <div class="cell"><button class="btn btn--contained is-hover" data-insp="button">Salvar</button><div class="spec">hover</div></div>
+      <div class="cell"><button class="btn btn--contained is-focus" data-insp="button">Salvar</button><div class="spec">focus</div></div>
+      <div class="cell"><button class="btn btn--contained is-pressed" data-insp="button">Salvar</button><div class="spec">pressed</div></div>
+      <div class="cell"><button class="btn btn--contained is-disabled" data-insp="button">Salvar</button><div class="spec">disabled</div></div>
+      <div class="cell"><button class="btn btn--contained" data-insp="button"><span class="spinner"></span>Salvando…</button><div class="spec">loading</div></div>
+    </div>
+    <h3 class="sub">Tamanhos</h3>
+    <div class="stage">
+      <div class="cell"><button class="btn btn--contained btn--sm" data-insp="button">Confirmar</button><div class="spec">small · 36 (toque 48)</div></div>
+      <div class="cell"><button class="btn btn--contained" data-insp="button">Confirmar</button><div class="spec">medium · 48</div></div>
+      <div class="cell"><button class="btn btn--contained btn--lg" data-insp="button">Confirmar</button><div class="spec">large · 56</div></div>
+    </div></section>
+
+  <section id="buttongroup"><h2 class="sec">Button group</h2><p class="sec-desc">Ações relacionadas lado a lado.</p>
+    <div class="stage"><div class="btn-group" data-insp="buttongroup"><button class="btn is-active">PDF</button><button class="btn">Imprimir</button><button class="btn">Compartilhar</button></div></div></section>
+
+  <section id="iconbutton"><h2 class="sec">Icon button</h2><p class="sec-desc">standard | filled | tonal | outlined; toggle selecionado. Glifo 24 em alvo 48.</p>
+    <div class="stage">
+      <div class="cell"><button class="icon-btn" data-insp="iconbutton" aria-label="Mais"><svg class="ico"><use href="#i-more-v"/></svg></button><div class="spec">standard</div></div>
+      <div class="cell"><button class="icon-btn icon-btn--filled" data-insp="iconbutton" aria-label="Adicionar"><svg class="ico"><use href="#i-plus"/></svg></button><div class="spec">filled</div></div>
+      <div class="cell"><button class="icon-btn icon-btn--tonal" data-insp="iconbutton" aria-label="Ligar"><svg class="ico"><use href="#i-phone"/></svg></button><div class="spec">tonal</div></div>
+      <div class="cell"><button class="icon-btn icon-btn--outlined" data-insp="iconbutton" aria-label="Copiar"><svg class="ico"><use href="#i-copy"/></svg></button><div class="spec">outlined</div></div>
+      <div class="cell"><button class="icon-btn is-selected" data-insp="iconbutton" aria-label="Ocultar valores"><svg class="ico"><use href="#i-eye-off"/></svg></button><div class="spec">toggle · selected</div></div>
+      <div class="cell"><button class="icon-btn is-disabled" data-insp="iconbutton" aria-label="Excluir"><svg class="ico"><use href="#i-trash"/></svg></button><div class="spec">disabled</div></div>
+    </div></section>
+
+  <section id="fab"><h2 class="sec">Floating action button</h2><p class="sec-desc">regular | small | large | extended. Uma ação principal por tela (ex.: novo agendamento na Agenda).</p>
+    <div class="stage stage--bg">
+      <div class="cell"><button class="fab" data-insp="fab" aria-label="Novo"><svg class="ico"><use href="#i-plus"/></svg></button><div class="spec">regular · 56</div></div>
+      <div class="cell"><button class="fab fab--sm" data-insp="fab" aria-label="Novo"><svg class="ico"><use href="#i-plus"/></svg></button><div class="spec">small · 48</div></div>
+      <div class="cell"><button class="fab fab--lg fab--primary" data-insp="fab" aria-label="Novo"><svg class="ico"><use href="#i-plus"/></svg></button><div class="spec">large · 96 · primary</div></div>
+      <div class="cell"><button class="fab fab--extended fab--primary" data-insp="fab"><svg class="ico"><use href="#i-calendar"/></svg>Novo agendamento</button><div class="spec">extended</div></div>
+    </div></section>
+
+  <section id="checkbox"><h2 class="sec">Checkbox</h2><p class="sec-desc">desmarcado | marcado | indeterminado | desabilitado.</p>
+    <div class="stage">
+      <label class="check" data-insp="checkbox"><span class="box"><svg class="ico on"><use href="#i-check"/></svg><svg class="ico mixed"><use href="#i-minus"/></svg></span>Enviar lembrete</label>
+      <label class="check is-on" data-insp="checkbox"><span class="box"><svg class="ico on"><use href="#i-check"/></svg><svg class="ico mixed"><use href="#i-minus"/></svg></span>Repetir semanalmente</label>
+      <label class="check is-mixed" data-insp="checkbox"><span class="box"><svg class="ico on"><use href="#i-check"/></svg><svg class="ico mixed"><use href="#i-minus"/></svg></span>Selecionar todas (3 de 8)</label>
+      <label class="check is-disabled" data-insp="checkbox"><span class="box"><svg class="ico on"><use href="#i-check"/></svg><svg class="ico mixed"><use href="#i-minus"/></svg></span>Indisponível</label>
+    </div></section>
+
+  <section id="radio"><h2 class="sec">Radio group</h2><p class="sec-desc">Escolha única.</p>
+    <div class="stage"><div class="radio-group" data-insp="radio">
+      <label class="radio is-on"><span class="box"></span>Presencial</label>
+      <label class="radio"><span class="box"></span>On-line</label>
+      <label class="radio is-disabled"><span class="box"></span>Domiciliar (desabilitado)</label>
+    </div></div></section>
+
+  <section id="switch"><h2 class="sec">Switch</h2><p class="sec-desc">Liga/desliga imediato.</p>
+    <div class="stage">
+      <label class="switch" data-insp="switch"><span class="track"></span>Confirmação automática</label>
+      <label class="switch is-on" data-insp="switch"><span class="track"></span>Ocultar valores por padrão</label>
+      <label class="switch is-on is-disabled" data-insp="switch"><span class="track"></span>Desabilitado</label>
+    </div></section>
+
+  <section id="select"><h2 class="sec">Select</h2><p class="sec-desc">Campo de seleção, mesmo visual do Text field (rótulo em caixa alta acima).</p>
+    <div class="stage" style="align-items:flex-start">
+      <div class="field" style="width:260px" data-insp="select"><span class="lbl">Tipo de documento</span><div class="ctl"><span class="val">Declaração de comparecimento</span><svg class="ico chev"><use href="#i-chevron-down"/></svg></div></div>
+      <div class="field is-focus" style="width:260px" data-insp="select"><span class="lbl">Frequência</span><div class="ctl"><span class="val">Quinzenal</span><svg class="ico chev"><use href="#i-chevron-down"/></svg></div>
+        <div class="ac-list"><div class="opt">Semanal</div><div class="opt is-active">Quinzenal</div><div class="opt">Mensal</div><div class="opt">Sessão avulsa</div></div></div>
+    </div></section>
+
+  <section id="autocomplete"><h2 class="sec">Autocomplete</h2><p class="sec-desc">Busca de paciente com destaque do trecho digitado.</p>
+    <div class="stage" style="align-items:flex-start">
+      <div class="field is-focus" style="width:320px" data-insp="autocomplete"><span class="lbl">Paciente</span><div class="ctl"><svg class="ico"><use href="#i-search"/></svg><span class="val">Mar</span><svg class="ico chev"><use href="#i-close"/></svg></div>
+        <div class="ac-list">
+          <div class="opt is-active"><span class="avatar avatar--sm">MT</span><span><mark>Mar</mark>iana Teixeira</span></div>
+          <div class="opt"><span class="avatar avatar--sm avatar--secondary">MC</span><span><mark>Mar</mark>cos Cardoso</span></div>
+          <div class="opt"><span class="avatar avatar--sm">AM</span><span>Ana <mark>Mar</mark>ques Ribeiro</span></div>
+        </div></div>
+    </div></section>
+
+  <section id="slider"><h2 class="sec">Slider</h2><p class="sec-desc">contínuo | discreto | intervalo. Ex.: duração da sessão, faixa de horário.</p>
+    <div class="stage" style="gap:48px;padding-top:56px">
+      <div class="cell cell--l"><div class="slider" data-insp="slider" style="width:240px"><div class="rail"></div><div class="fill" style="left:0;width:55%"></div><div class="thumb" style="left:55%"></div><div class="vlabel" style="left:55%">50 min</div></div><div class="spec">contínuo · 50 min</div></div>
+      <div class="cell cell--l"><div class="slider" data-insp="slider" style="width:240px"><div class="rail"></div><div class="fill" style="left:0;width:50%"></div><span class="mark" style="left:0"></span><span class="mark" style="left:25%"></span><span class="mark off" style="left:75%"></span><span class="mark off" style="left:100%"></span><div class="thumb" style="left:50%"></div></div><div class="spec">discreto · 5 passos</div></div>
+      <div class="cell cell--l"><div class="slider" data-insp="slider" style="width:240px"><div class="rail"></div><div class="fill" style="left:20%;width:50%"></div><div class="thumb" style="left:20%"></div><div class="thumb" style="left:70%"></div></div><div class="spec">intervalo · 08:00–18:00</div></div>
+    </div></section>
+
+  <section id="textfield"><h2 class="sec">Text field</h2><p class="sec-desc">outlined (padrão) | filled | standard. Rótulo pequeno em caixa alta acima, cantos do tema, foco com halo suave. Estados: vazio, foco, preenchido, erro, desabilitado; com ajuda, ícone inicial/final e multilinha.</p>
+    <div class="stage" style="align-items:flex-start;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+      <div class="field" data-insp="textfield"><span class="lbl">Nome completo <span class="req">*</span></span><div class="ctl"><span class="ph">Ex.: Mariana Teixeira</span></div><span class="help">Como aparece nos documentos</span></div>
+      <div class="field is-focus" data-insp="textfield"><span class="lbl">Valor da sessão</span><div class="ctl"><span class="val num">R$ 180,00</span></div><span class="help">Usado no recibo e no Pix</span></div>
+      <div class="field" data-insp="textfield"><span class="lbl">Telefone</span><div class="ctl"><svg class="ico"><use href="#i-phone"/></svg><span class="val num">(48) 99123-4567</span></div></div>
+      <div class="field is-error" data-insp="textfield"><span class="lbl">CPF</span><div class="ctl"><span class="val num">123.456.789-0</span><svg class="ico"><use href="#i-alert"/></svg></div><span class="help">CPF incompleto — confira os 11 dígitos</span></div>
+      <div class="field is-disabled" data-insp="textfield"><span class="lbl">CRP</span><div class="ctl"><span class="val">06/123456</span><svg class="ico"><use href="#i-lock"/></svg></div><span class="help">Alterável em Perfil</span></div>
+      <div class="field field--filled" data-insp="textfield"><span class="lbl">E-mail</span><div class="ctl"><span class="val">mariana.t@email.com</span></div></div>
+      <div class="field field--standard" data-insp="textfield"><span class="lbl">Observação</span><div class="ctl"><span class="ph">Opcional</span></div></div>
+      <div class="field field--multiline" data-insp="textfield"><span class="lbl">Evolução da sessão</span><div class="ctl"><span class="val" style="color:var(--muted)">Relata melhora na rotina de sono…</span></div></div>
+    </div></section>
+
+  <section id="togglebutton"><h2 class="sec">Toggle button</h2><p class="sec-desc">Grupo exclusivo; ex.: visão da Agenda.</p>
+    <div class="stage">
+      <div class="toggle-group" data-insp="togglebutton"><button class="toggle">Dia</button><button class="toggle is-selected">Semana</button><button class="toggle">Mês</button></div>
+      <div class="toggle-group" data-insp="togglebutton"><button class="toggle is-selected"><svg class="ico ico--sm"><use href="#i-calendar"/></svg>Lista</button><button class="toggle"><svg class="ico ico--sm"><use href="#i-grid"/></svg>Grade</button><button class="toggle is-disabled">Mapa</button></div>
+    </div></section>
+
+  <section id="rating"><h2 class="sec">Rating</h2><p class="sec-desc">Escala de 1 a 5 de uso interno (ex.: escala subjetiva registrada pela psicóloga). Não é avaliação pública.</p>
+    <div class="stage"><div class="cell"><div class="rating" data-insp="rating"><svg class="ico on"><use href="#i-star"/></svg><svg class="ico on"><use href="#i-star"/></svg><svg class="ico on"><use href="#i-star"/></svg><svg class="ico"><use href="#i-star"/></svg><svg class="ico"><use href="#i-star"/></svg></div><div class="spec">3 de 5</div></div></div></section>
+
+  <!-- =================== DATA DISPLAY =================== -->
+  <section id="avatar"><h2 class="sec">Avatar</h2><p class="sec-desc">Iniciais (nunca foto de paciente por padrão). 32 | 40 | 56 | 72; circular ou quadrado; anel; grupo.</p>
+    <div class="stage">
+      <div class="cell"><span class="avatar avatar--sm" data-insp="avatar">RN</span><div class="spec">32</div></div>
+      <div class="cell"><span class="avatar" data-insp="avatar">MT</span><div class="spec">40</div></div>
+      <div class="cell"><span class="avatar avatar--lg avatar--secondary" data-insp="avatar">PR</span><div class="spec">56 · secondary</div></div>
+      <div class="cell"><span class="avatar avatar--xl avatar--ring" data-insp="avatar">AL</span><div class="spec">72 · anel</div></div>
+      <div class="cell"><span class="avatar avatar--square" data-insp="avatar"><svg class="ico"><use href="#i-user"/></svg></span><div class="spec">quadrado · ícone</div></div>
+      <div class="cell"><span class="avatar-group" data-insp="avatar"><span class="avatar avatar--sm">MT</span><span class="avatar avatar--sm avatar--secondary">RL</span><span class="avatar avatar--sm">PR</span></span><div class="spec">grupo</div></div>
+    </div></section>
+
+  <section id="badge"><h2 class="sec">Badge</h2><p class="sec-desc">Ponto | número.</p>
+    <div class="stage">
+      <div class="cell"><span class="badge-host" data-insp="badge"><button class="icon-btn" aria-label="Notificações"><svg class="ico"><use href="#i-bell"/></svg></button><span class="badge badge--dot"></span></span><div class="spec">ponto</div></div>
+      <div class="cell"><span class="badge-host" data-insp="badge"><button class="icon-btn" aria-label="Mensagens"><svg class="ico"><use href="#i-message"/></svg></button><span class="badge">3</span></span><div class="spec">número · error</div></div>
+      <div class="cell"><span class="badge-host" data-insp="badge"><button class="icon-btn" aria-label="Agenda"><svg class="ico"><use href="#i-calendar"/></svg></button><span class="badge badge--primary">12</span></span><div class="spec">número · primary</div></div>
+    </div></section>
+
+  <section id="chip"><h2 class="sec">Chip</h2><p class="sec-desc">Filtro, entrada e ação (alvo 48). Pills de status são o formato compacto, não clicável, para listas.</p>
+    <div class="stage">
+      <span class="chip" data-insp="chip">Todos</span>
+      <span class="chip is-selected" data-insp="chip"><svg class="ico"><use href="#i-check"/></svg>Hoje</span>
+      <span class="chip chip--filled" data-insp="chip">On-line</span>
+      <span class="chip" data-insp="chip"><svg class="ico"><use href="#i-repeat"/></svg>Recorrentes</span>
+      <span class="chip chip--filled" data-insp="chip">Mariana T.<svg class="ico del"><use href="#i-close"/></svg></span>
+      <span class="chip is-disabled" data-insp="chip">Arquivados</span>
+    </div>
+    <h3 class="sub">Pills de status</h3>
+    <div class="stage">
+      <span class="pill pill--agendada" data-insp="chip">Agendada</span><span class="pill pill--confirmada" data-insp="chip">Confirmada</span><span class="pill pill--atendida" data-insp="chip">Atendida</span><span class="pill pill--falta" data-insp="chip">Falta</span><span class="pill pill--cancelada" data-insp="chip">Cancelada</span><span class="pill pill--erro" data-insp="chip">Em atraso</span>
+    </div></section>
+
+  <section id="divider"><h2 class="sec">Divider</h2><p class="sec-desc">Inteiro | recuado | com texto.</p>
+    <div class="stage stage--col" style="gap:20px">
+      <hr class="divider" data-insp="divider"><hr class="divider divider--inset" data-insp="divider"><div class="divider divider--text" data-insp="divider">Semana anterior</div>
+    </div></section>
+
+  <section id="list"><h2 class="sec">List</h2><p class="sec-desc">1, 2 e 3 linhas; ícone/avatar inicial; texto/ícone final; subcabeçalho; selecionado.</p>
+    <div class="stage stage--bg"><div class="list" style="width:380px;border:1px solid var(--border)" data-insp="list">
+      <div class="list-sub">Pacientes</div>
+      <div class="li"><span class="avatar">MT</span><div class="txt"><div class="pri">Mariana Teixeira</div></div><svg class="ico trail"><use href="#i-chevron-right"/></svg></div>
+      <div class="li li--2 is-selected"><span class="avatar avatar--secondary">RL</span><div class="txt"><div class="pri">Ricardo Lemos de Albuquerque</div><div class="sec">Quinzenal · próxima 26/10 15:00</div></div><span class="trail">R$ 200</span></div>
+      <div class="li li--3"><span class="lead-ico"><svg class="ico"><use href="#i-file-text"/></svg></span><div class="txt"><div class="pri">Relatório psicológico</div><div class="sec">Paula Rezende · solicitado pela escola. Rascunho salvo em 22/10, falta revisar a conclusão.</div></div><span class="trail">22/10</span></div>
+    </div></div></section>
+
+  <section id="table"><h2 class="sec">Table</h2><p class="sec-desc">Valores alinhados à direita com algarismos tabulares. Em telas pequenas vira List.</p>
+    <div class="stage stage--bg"><table class="table" data-insp="table" style="max-width:560px">
+      <tr><th>Paciente</th><th>Competência</th><th>Situação</th><th class="r">Valor</th></tr>
+      <tr><td>Mariana Teixeira</td><td>10/2026</td><td><span class="pill pill--erro">Em atraso</span></td><td class="r">R$ 280,00</td></tr>
+      <tr><td>Rafael Nogueira</td><td>10/2026</td><td><span class="pill pill--atendida">Pago · Pix</span></td><td class="r">R$ 720,00</td></tr>
+      <tr><td>Paula Rezende</td><td>10/2026</td><td><span class="pill pill--agendada">A receber</span></td><td class="r">R$ 360,00</td></tr>
+    </table></div></section>
+
+  <section id="tooltip"><h2 class="sec">Tooltip</h2><p class="sec-desc">Simples | rico.</p>
+    <div class="stage">
+      <span class="tooltip" data-insp="tooltip">Copiar chave Pix</span>
+      <div class="tooltip tooltip--rich" data-insp="tooltip"><b>Recibo Receita Saúde</b>Registre o recibo no app da Receita até o fim do mês do pagamento.</div>
+    </div></section>
+
+  <section id="typographyc"><h2 class="sec">Typography</h2><p class="sec-desc">Componente de texto (variantes MUI). Ver escala em Fundamentos → Tipografia.</p>
+    <div class="stage stage--col" style="gap:8px">
+      <div class="t-h4" data-insp="typographyc">Olá, Ana</div>
+      <div class="t-subtitle1" data-insp="typographyc">6 sessões hoje</div>
+      <div class="t-body1" data-insp="typographyc">Próxima às 14:00 com Mariana Teixeira, on-line.</div>
+      <div class="t-overline" data-insp="typographyc">Recebido no mês</div>
+    </div></section>
+
+  <section id="icon"><h2 class="sec">Icon</h2><p class="sec-desc">18 (inline) | 24 (padrão) | 28 (grande). Herda a cor do texto.</p>
+    <div class="stage">
+      <svg class="ico ico--sm" data-insp="icon"><use href="#i-calendar"/></svg>
+      <svg class="ico" data-insp="icon"><use href="#i-calendar"/></svg>
+      <svg class="ico ico--lg" data-insp="icon"><use href="#i-calendar"/></svg>
+      <svg class="ico ico--lg" data-insp="icon" style="color:var(--primary-ink)"><use href="#i-shield"/></svg>
+      <svg class="ico ico--lg" data-insp="icon" style="color:var(--secondary-ink)"><use href="#i-pix"/></svg>
+    </div></section>
+
+  <!-- =================== FEEDBACK =================== -->
+  <section id="alert"><h2 class="sec">Alert</h2><p class="sec-desc">severity success | info | warning | error; standard e filled.</p>
+    <div class="stage stage--col" style="gap:12px;max-width:560px">
+      <div class="alert alert--success" data-insp="alert"><svg class="ico"><use href="#i-check-circle"/></svg><div><b>Sessão registrada</b>A evolução de Rafael Nogueira foi salva (versão 1).</div></div>
+      <div class="alert alert--info" data-insp="alert"><svg class="ico"><use href="#i-lock"/></svg><div><b>Prontuário sigiloso</b>Cada alteração gera nova versão; nada é apagado.</div></div>
+      <div class="alert alert--warning" data-insp="alert"><svg class="ico"><use href="#i-alert"/></svg><div><b>Recibo pendente</b>2 pagamentos de outubro sem recibo Receita Saúde.</div></div>
+      <div class="alert alert--error" data-insp="alert"><svg class="ico"><use href="#i-x-circle"/></svg><div><b>Falha ao enviar link</b>Sem conexão. Tentaremos de novo ao reconectar.</div></div>
+      <div class="alert alert--filled alert--error" data-insp="alert"><svg class="ico"><use href="#i-x-circle"/></svg><div><b>Sessão expirada</b>Entre novamente para continuar.</div></div>
+    </div></section>
+
+  <section id="dialog"><h2 class="sec">Dialog</h2><p class="sec-desc">Básico (confirmação) | tela cheia (formulário).</p>
+    <div class="stage stage--bg" style="align-items:flex-start">
+      <div class="dialog" data-insp="dialog"><div class="t-h5">Marcar falta?</div><div class="t-body2 t-muted">A sessão de 12/10 de Mariana Teixeira será registrada como falta e cobrada conforme contrato.</div><div class="actions"><button class="btn btn--text">Cancelar</button><button class="btn btn--contained">Marcar falta</button></div></div>
+      <div class="dialog dialog--full" data-insp="dialog"><div class="bar"><button class="icon-btn" aria-label="Fechar"><svg class="ico"><use href="#i-close"/></svg></button><div class="t-h6">Novo agendamento</div><button class="btn btn--text btn--sm">Salvar</button></div>
+        <div class="body"><div class="field"><span class="lbl">Paciente</span><div class="ctl"><span class="val">Paula Rezende</span></div></div><div class="field"><span class="lbl">Data e hora</span><div class="ctl"><svg class="ico"><use href="#i-calendar"/></svg><span class="val num">29/10 · 09:00</span></div></div><label class="check is-on"><span class="box"><svg class="ico on"><use href="#i-check"/></svg></span>Repetir semanalmente</label></div></div>
+    </div></section>
+
+  <section id="snackbar"><h2 class="sec">Snackbar</h2><p class="sec-desc">Com | sem ação.</p>
+    <div class="stage stage--col" style="gap:12px">
+      <div class="snackbar" data-insp="snackbar"><span class="msg">Link de confirmação enviado</span></div>
+      <div class="snackbar" data-insp="snackbar"><span class="msg">Agendamento excluído</span><button class="act">Desfazer</button></div>
+    </div></section>
+
+  <section id="progress"><h2 class="sec">Progress</h2><p class="sec-desc">Linear e circular; determinado e indeterminado.</p>
+    <div class="stage">
+      <div class="cell" style="width:220px"><div class="progress" data-insp="progress"><div class="bar" style="width:62%"></div></div><div class="spec">linear · 62%</div></div>
+      <div class="cell" style="width:220px"><div class="progress progress--indet" data-insp="progress"><div class="bar"></div></div><div class="spec">linear · indeterminado</div></div>
+      <div class="cell"><div class="ring" style="--v:75" data-insp="progress"><span>75%</span></div><div class="spec">circular · determinado</div></div>
+      <div class="cell"><div class="spinner" data-insp="progress"></div><div class="spec">circular · indeterminado</div></div>
+    </div></section>
+
+  <section id="skeleton"><h2 class="sec">Skeleton</h2><p class="sec-desc">Carregamento de lista de sessões.</p>
+    <div class="stage"><div style="display:flex;gap:12px;align-items:center;width:340px" data-insp="skeleton"><div class="skel skel--circle" style="width:40px;height:40px"></div><div style="flex:1;display:flex;flex-direction:column;gap:8px"><div class="skel skel--text" style="width:70%"></div><div class="skel skel--text" style="width:45%"></div></div><div class="skel" style="width:72px;height:24px;border-radius:var(--r-full)"></div></div></div></section>
+
+  <section id="backdrop"><h2 class="sec">Backdrop</h2><p class="sec-desc">Véu (<code>--scrim</code>) atrás de diálogos e sheets; também esconde valores ao bloquear o app.</p>
+    <div class="stage stage--rel" style="padding:0">
+      <div style="padding:24px"><div class="t-h6">Agenda</div><div class="t-body2 t-muted">Conteúdo atrás do véu.</div></div>
+      <div class="backdrop" data-insp="backdrop"><div class="spinner"></div></div>
+    </div></section>
+
+  <!-- =================== SURFACES =================== -->
+  <section id="appbar"><h2 class="sec">App bar</h2><p class="sec-desc">gradient — cabeçalho fixo com degradê da primária e marca em branco (tela inicial) | surface — telas internas, com voltar e título.</p>
+    <div class="stage stage--bg stage--col" style="gap:16px;max-width:420px">
+      <div class="appbar appbar--gradient" data-insp="appbar" style="position:relative"><div class="brand"><span class="mark"><svg class="ico ico--sm"><use href="#i-leaf"/></svg></span>PsiConsultório</div><button class="icon-btn icon-btn--on-header" aria-label="Notificações"><svg class="ico"><use href="#i-bell"/></svg></button><button class="icon-btn icon-btn--on-header" aria-label="Buscar"><svg class="ico"><use href="#i-search"/></svg></button></div>
+      <div class="appbar appbar--surface" data-insp="appbar" style="position:relative"><button class="icon-btn" aria-label="Voltar"><svg class="ico"><use href="#i-back"/></svg></button><div class="ttl">Documentos de Mariana</div><button class="icon-btn" aria-label="Mais"><svg class="ico"><use href="#i-more-v"/></svg></button></div>
+    </div></section>
+
+  <section id="card"><h2 class="sec">Card</h2><p class="sec-desc">elevated | outlined | filled | welcome (faixa fina em degradê no topo) | action (toque scale .98).</p>
+    <div class="stage stage--bg" style="align-items:stretch">
+      <div class="card card--welcome" style="width:280px" data-insp="card"><div class="t-overline">Segunda-feira, 26/10</div><div class="t-h3" style="margin-top:4px">Olá, Ana</div><div class="t-body2 t-muted" style="margin-top:4px">6 sessões hoje · próxima às 14:00</div></div>
+      <div class="card" style="width:240px" data-insp="card"><div class="card-head"><div class="t-subtitle1">Declaração</div><span class="pill pill--atendida">Emitida</span></div><div class="t-body2 t-muted">Comparecimento de Mariana Teixeira em 05/10.</div><div class="card-actions"><button class="btn btn--text btn--sm"><svg class="ico ico--sm"><use href="#i-download"/></svg>PDF</button></div></div>
+      <div class="card card--outlined" style="width:220px" data-insp="card"><div class="t-subtitle1">Outlined</div><div class="t-body2 t-muted" style="margin-top:4px">Borda, sem sombra.</div></div>
+      <div class="card card--filled card--action" style="width:220px" data-insp="card"><div class="t-subtitle1">Filled · action</div><div class="t-body2 t-muted" style="margin-top:4px">Fundo rebaixado, tocável.</div></div>
+    </div></section>
+
+  <section id="paper"><h2 class="sec">Paper</h2><p class="sec-desc">Superfície crua por nível de elevação.</p>
+    <div class="stage stage--bg"><div class="paper paper--0" data-insp="paper">0</div><div class="paper paper--1" data-insp="paper">1</div><div class="paper paper--2" data-insp="paper">2</div><div class="paper paper--3" data-insp="paper">3</div></div></section>
+
+  <section id="accordion"><h2 class="sec">Accordion</h2><p class="sec-desc">Ex.: dados cadastrais do paciente.</p>
+    <div class="stage stage--bg"><div class="accordion" style="width:420px" data-insp="accordion">
+      <div class="acc-item is-open"><div class="acc-sum"><svg class="ico" style="transform:none"><use href="#i-user"/></svg><span>Dados pessoais</span><svg class="ico"><use href="#i-chevron-down"/></svg></div><div class="acc-det">Nascimento 14/03/1992 · Telefone (48) 99123-4567 · Responsável financeiro: a própria paciente.</div></div>
+      <div class="acc-item"><div class="acc-sum"><svg class="ico" style="transform:none"><use href="#i-wallet"/></svg><span>Contrato e valores</span><svg class="ico"><use href="#i-chevron-down"/></svg></div></div>
+      <div class="acc-item"><div class="acc-sum"><svg class="ico" style="transform:none"><use href="#i-phone"/></svg><span>Contato de emergência</span><svg class="ico"><use href="#i-chevron-down"/></svg></div></div>
+    </div></div></section>
+
+  <!-- =================== NAVIGATION =================== -->
+  <section id="bottomnav"><h2 class="sec">Bottom navigation</h2><p class="sec-desc">5 destinos com rótulo; indicador em pílula no ativo.</p>
+    <div class="stage stage--bg"><nav class="bottomnav" style="width:380px" data-insp="bottomnav">
+      <div class="ni is-active"><span class="pi"><svg class="ico"><use href="#i-home"/></svg></span>Hoje</div>
+      <div class="ni"><span class="pi"><svg class="ico"><use href="#i-calendar"/></svg></span>Agenda</div>
+      <div class="ni"><span class="pi"><svg class="ico"><use href="#i-users"/></svg></span>Pacientes</div>
+      <div class="ni"><span class="pi"><svg class="ico"><use href="#i-wallet"/></svg></span>Financeiro</div>
+      <div class="ni"><span class="pi"><svg class="ico"><use href="#i-grid"/></svg></span>Mais</div>
+    </nav></div></section>
+
+  <section id="drawer"><h2 class="sec">Drawer</h2><p class="sec-desc">Modal no celular (menu "Mais"); permanente em ≥ 900px (web).</p>
+    <div class="stage stage--bg"><div class="drawer" data-insp="drawer">
+      <div class="d-head"><div class="t-h5">Ana Lúcia Prado</div><div class="t-caption">CRP 12/34567</div></div>
+      <div class="d-item is-active"><svg class="ico"><use href="#i-home"/></svg>Hoje</div>
+      <div class="d-item"><svg class="ico"><use href="#i-file-sign"/></svg>Documentos</div>
+      <div class="d-item"><svg class="ico"><use href="#i-receipt"/></svg>Notas fiscais<span class="cnt">2</span></div>
+      <div class="t-overline d-sub">Conta</div>
+      <div class="d-item"><svg class="ico"><use href="#i-settings"/></svg>Configurações</div>
+      <div class="d-item"><svg class="ico"><use href="#i-logout"/></svg>Sair</div>
+    </div></div></section>
+
+  <section id="tabs"><h2 class="sec">Tabs</h2><p class="sec-desc">Fixas (detalhe do paciente) | roláveis; com contador; desabilitada.</p>
+    <div class="stage stage--col" style="gap:20px;max-width:420px">
+      <div class="tabs" data-insp="tabs"><button class="tab">Sessões <span class="cnt">32</span></button><button class="tab is-active">Prontuário</button><button class="tab">Documentos</button><button class="tab">Financeiro</button></div>
+      <div class="tabs tabs--scroll" data-insp="tabs"><button class="tab is-active">Outubro</button><button class="tab">Setembro</button><button class="tab">Agosto</button><button class="tab">Julho</button><button class="tab is-disabled">Junho</button></div>
+    </div></section>
+
+  <section id="menu"><h2 class="sec">Menu</h2><p class="sec-desc">Ações da sessão; ação destrutiva separada.</p>
+    <div class="stage stage--bg"><div class="menu" data-insp="menu">
+      <div class="mi"><svg class="ico"><use href="#i-check-circle"/></svg>Marcar como atendida</div>
+      <div class="mi"><svg class="ico"><use href="#i-send"/></svg>Reenviar link</div>
+      <div class="mi"><svg class="ico"><use href="#i-repeat"/></svg>Remarcar</div>
+      <hr>
+      <div class="mi mi--danger"><svg class="ico"><use href="#i-x-circle"/></svg>Cancelar sessão</div>
+    </div></div></section>
+
+  <section id="link"><h2 class="sec">Link</h2><p class="sec-desc">Sublinhado (texto corrido) | sem sublinhado (ações de seção).</p>
+    <div class="stage"><span class="t-body1">Leia a <a class="link" data-insp="link">Resolução CFP 06/2019</a> antes de emitir.</span><a class="link link--none" data-insp="link">Ver agenda</a></div></section>
+
+  <section id="stepper"><h2 class="sec">Stepper</h2><p class="sec-desc">Fluxo de emissão de documento.</p>
+    <div class="stage"><div class="stepper" style="width:420px" data-insp="stepper">
+      <div class="step is-done"><span class="dot"><svg class="ico ico--sm" style="stroke-width:3"><use href="#i-check"/></svg></span>Tipo</div>
+      <div class="step is-done"><span class="dot"><svg class="ico ico--sm" style="stroke-width:3"><use href="#i-check"/></svg></span>Paciente</div>
+      <div class="step is-active"><span class="dot">3</span>Conteúdo</div>
+      <div class="step"><span class="dot">4</span>Revisar e assinar</div>
+    </div></div></section>
+
+  <section id="speeddial"><h2 class="sec">Speed dial</h2><p class="sec-desc">Ações rápidas a partir do FAB.</p>
+    <div class="stage stage--bg"><div class="speeddial" data-insp="speeddial">
+      <div class="sd-act"><span class="sd-lbl">Novo paciente</span><button class="fab fab--sm" aria-label="Novo paciente"><svg class="ico"><use href="#i-user"/></svg></button></div>
+      <div class="sd-act"><span class="sd-lbl">Emitir documento</span><button class="fab fab--sm" aria-label="Emitir documento"><svg class="ico"><use href="#i-file-text"/></svg></button></div>
+      <div class="sd-act"><span class="sd-lbl">Registrar pagamento</span><button class="fab fab--sm" aria-label="Registrar pagamento"><svg class="ico"><use href="#i-cash"/></svg></button></div>
+      <button class="fab fab--primary" aria-label="Fechar"><svg class="ico"><use href="#i-close"/></svg></button>
+    </div></div></section>
+
+  <!-- =================== LAYOUT =================== -->
+  <section id="layout"><h2 class="sec">Box · Container · Grid · Stack</h2><p class="sec-desc">Utilitários de layout (não são componentes): <code>.container</code> (máx. 600, margem <code>--layout-gutter</code>), <code>.grid</code> (<code>--cols</code>, <code>--gap</code>), <code>.hstack</code>/<code>.vstack</code>, <code>.bleed</code> + <code>.inset</code>. No Tailwind 4 mapeiam para <code>grid</code>, <code>flex</code>, <code>gap-*</code> com o tema.</p>
+    <div class="stage stage--col" data-insp="layout">
+      <div class="grid" style="--cols:3"><div class="paper paper--0">grid 1</div><div class="paper paper--0">grid 2</div><div class="paper paper--0">grid 3</div></div>
+      <div class="hstack"><span class="chip">hstack</span><span class="chip">gap 8</span></div>
+    </div></section>
+
+  <!-- =================== EXTENSÕES =================== -->
+  <section id="banner"><h2 class="sec">Banner de alerta</h2><p class="sec-desc">Extensão do Alert no formato HopeCore: faixa clicável com NÚMERO GRANDE à esquerda e título + subtítulo. Variações alerta (padrão) | ok | info | erro.</p>
+    <div class="stage stage--bg stage--col" style="gap:10px;max-width:420px">
+      <div class="banner" data-insp="banner"><div class="big">3</div><div class="txt"><div class="ttl">sessões aguardando registro</div><div class="sub">Evoluções de sexta e de hoje cedo</div></div><svg class="ico"><use href="#i-chevron-right"/></svg></div>
+      <div class="banner banner--ok" data-insp="banner"><div class="big">0</div><div class="txt"><div class="ttl">pendências no prontuário</div><div class="sub">Tudo registrado esta semana</div></div><svg class="ico"><use href="#i-chevron-right"/></svg></div>
+      <div class="banner banner--info" data-insp="banner"><div class="big">4</div><div class="txt"><div class="ttl">de 5 confirmaram por link</div><div class="sub">Falta resposta de Ricardo Lemos</div></div><svg class="ico"><use href="#i-chevron-right"/></svg></div>
+      <div class="banner banner--erro" data-insp="banner"><div class="big">2</div><div class="txt"><div class="ttl">pacientes com valores em atraso</div><div class="sub">Total de R$ 560,00 · ver quem está devendo</div></div><svg class="ico"><use href="#i-chevron-right"/></svg></div>
+    </div></section>
+
+  <section id="session"><h2 class="sec">Item de sessão</h2><p class="sec-desc">Extensão do List: borda esquerda colorida por status + pill. agendada | confirmada | atendida | falta | cancelada.</p>
+    <div class="stage stage--bg stage--col" style="max-width:420px"><div class="stack">
+      <div class="session session--agendada" data-insp="session"><div class="hora num">08:00<small>50 min</small></div><div class="txt"><div class="nome">Paula Rezende</div><div class="meta"><svg class="ico ico--sm"><use href="#i-map-pin"/></svg>Presencial</div></div><span class="pill pill--agendada">Agendada</span></div>
+      <div class="session session--confirmada" data-insp="session"><div class="hora num">09:00<small>50 min</small></div><div class="txt"><div class="nome">Mariana Teixeira</div><div class="meta"><svg class="ico ico--sm"><use href="#i-video"/></svg>On-line · semanal</div></div><span class="pill pill--confirmada">Confirmada</span></div>
+      <div class="session session--atendida" data-insp="session"><div class="hora num">10:00<small>50 min</small></div><div class="txt"><div class="nome">Rafael Nogueira</div><div class="meta">Evolução registrada</div></div><span class="pill pill--atendida">Atendida</span></div>
+      <div class="session session--falta" data-insp="session"><div class="hora num">11:00<small>50 min</small></div><div class="txt"><div class="nome">Ricardo Lemos de Albuquerque</div><div class="meta">Não compareceu</div></div><span class="pill pill--falta">Falta</span></div>
+      <div class="session session--cancelada" data-insp="session"><div class="hora num">17:00<small>50 min</small></div><div class="txt"><div class="nome">Beatriz Campos</div><div class="meta">Cancelada pela paciente</div></div><span class="pill pill--cancelada">Cancelada</span></div>
+    </div></div></section>
+
+  <section id="shortcut"><h2 class="sec">Grade de atalhos</h2><p class="sec-desc">Cartões quadrados com ícone em quadrado arredondado de cor suave + rótulo. 3 colunas no celular.</p>
+    <div class="stage stage--bg"><div class="tiles" style="width:360px" data-insp="shortcut">
+      <div class="tile"><span class="ti"><svg class="ico"><use href="#i-calendar"/></svg></span>Agenda</div>
+      <div class="tile"><span class="ti"><svg class="ico"><use href="#i-users"/></svg></span>Pacientes</div>
+      <div class="tile"><span class="ti"><svg class="ico"><use href="#i-clipboard"/></svg></span>Prontuário</div>
+      <div class="tile"><span class="ti ti--2"><svg class="ico"><use href="#i-file-sign"/></svg></span>Documentos</div>
+      <div class="tile"><span class="ti ti--2"><svg class="ico"><use href="#i-wallet"/></svg></span>Financeiro</div>
+      <div class="tile"><span class="ti ti--2"><svg class="ico"><use href="#i-receipt"/></svg></span>Notas fiscais</div>
+    </div></div></section>
+
+  <section id="wallet"><h2 class="sec">Carteira</h2><p class="sec-desc">Cartão escuro com valor grande, rótulos pequenos em caixa alta e sub-blocos translúcidos. <b>Valores ocultos por padrão</b>; o botão de olho alterna (toque para testar).</p>
+    <div class="stage stage--bg" style="align-items:flex-start">
+      <div class="wallet" style="width:340px" data-insp="wallet"><div class="w-top"><div class="w-lbl">Recebido no mês</div><button class="icon-btn eye" aria-label="Mostrar valores" onclick="event.stopPropagation();this.closest('.wallet').classList.toggle('is-shown')"><svg class="ico hide"><use href="#i-eye"/></svg><svg class="ico show"><use href="#i-eye-off"/></svg></button></div>
+        <div class="w-val num"><span class="hide">R$ ••••••</span><span class="show">R$ 7.480,00</span></div>
+        <div class="w-row"><div class="w-blk"><div class="w-lbl">A receber</div><div class="w-val num"><span class="hide">••••</span><span class="show">R$ 1.920,00</span></div></div><div class="w-blk"><div class="w-lbl">Em atraso · 2</div><div class="w-val num"><span class="hide">••••</span><span class="show">R$ 560,00</span></div></div></div></div>
+      <div class="wallet is-shown" style="width:340px" data-insp="wallet"><div class="w-top"><div class="w-lbl">Recebido no mês</div><button class="icon-btn eye" aria-label="Ocultar valores" onclick="event.stopPropagation();this.closest('.wallet').classList.toggle('is-shown')"><svg class="ico hide"><use href="#i-eye"/></svg><svg class="ico show"><use href="#i-eye-off"/></svg></button></div>
+        <div class="w-val num"><span class="hide">R$ ••••••</span><span class="show">R$ 7.480,00</span></div>
+        <div class="w-row"><div class="w-blk"><div class="w-lbl">A receber</div><div class="w-val num"><span class="hide">••••</span><span class="show">R$ 1.920,00</span></div></div><div class="w-blk"><div class="w-lbl">Em atraso · 2</div><div class="w-val num"><span class="hide">••••</span><span class="show">R$ 560,00</span></div></div></div></div>
+    </div></section>
+
+  <section id="kpi"><h2 class="sec">Mini-KPIs</h2><p class="sec-desc">Número grande + rótulo pequeno em caixa alta, em grade de 3. Variações neutro | alerta | ok.</p>
+    <div class="stage stage--bg"><div class="kpis" style="width:360px" data-insp="kpi">
+      <div class="kpi"><div class="k-val num">32</div><div class="k-lbl">Sessões</div></div>
+      <div class="kpi kpi--ok"><div class="k-val num">94%</div><div class="k-lbl">Presença</div></div>
+      <div class="kpi kpi--alert"><div class="k-val num">R$ 280</div><div class="k-lbl">A receber</div></div>
+    </div></div></section>
+
+  <section id="timeline"><h2 class="sec">Linha do tempo</h2><p class="sec-desc">Extensão (MUI Lab Timeline) para o prontuário: data em caixa alta, título, resumo e rodapé com versão.</p>
+    <div class="stage" style="max-width:460px"><div class="timeline" data-insp="timeline">
+      <div class="tl-item"><div class="tl-date">19/10 · Sessão 31</div><div class="tl-title">Retomada do tema trabalho</div><div class="tl-body">Relata melhora na rotina de sono. Combinado registro de situações ao longo da semana.</div><div class="tl-foot"><svg class="ico ico--sm"><use href="#i-history"/></svg>Versão 2 · editada em 20/10 às 09:12</div></div>
+      <div class="tl-item tl-item--falta"><div class="tl-date">12/10 · Falta</div><div class="tl-title">Não compareceu <span class="pill pill--falta">Falta</span></div></div>
+      <div class="tl-item tl-item--muted"><div class="tl-date">05/10 · Documento</div><div class="tl-title">Declaração de comparecimento emitida</div></div>
+    </div></div></section>
+
+  <section id="entity"><h2 class="sec">Cabeçalho do paciente</h2><p class="sec-desc">Avatar com iniciais, nome em display, idade e situação em pills.</p>
+    <div class="stage"><div class="entity" style="width:380px" data-insp="entity"><div class="avatar avatar--xl avatar--ring">MT</div><div class="e-txt"><div class="t-h3">Mariana Teixeira</div><div class="e-meta"><span>34 anos</span><span>·</span><span>desde 03/2025</span></div><div class="hstack" style="margin-top:8px;--gap:4px"><span class="pill pill--atendida">Em acompanhamento</span></div></div></div></div></section>
+
+  <section id="sheet"><h2 class="sec">Bottom sheet</h2><p class="sec-desc">Drawer ancorado embaixo; ações rápidas de uma sessão.</p>
+    <div class="stage stage--bg" style="justify-content:center"><div class="sheet" style="width:360px" data-insp="sheet"><div class="handle"></div><div class="t-h6">Sessão de 14:00</div><div class="t-body2 t-muted" style="margin-bottom:12px">Mariana Teixeira · on-line</div>
+      <div class="list"><div class="li"><span class="lead-ico"><svg class="ico"><use href="#i-check-circle"/></svg></span><div class="txt"><div class="pri">Marcar como atendida</div></div></div><div class="li"><span class="lead-ico"><svg class="ico"><use href="#i-link"/></svg></span><div class="txt"><div class="pri">Copiar link da videochamada</div></div></div></div></div></div></section>
+</main>
+
+<script>
+/* ===== Dados dos fundamentos ===== */
+const TINFO={
+ lavanda:{n:'Lavanda serena',d:'Violeta profundo com malva; sombras suaves, cantos 12–16, Figtree + Fraunces. Acolhedora e íntima.',k:['--primary','--primary-2','--secondary','--wallet','--bg']},
+ indigo:{n:'Índigo noturno com coral',d:'Índigo azulado com acento coral; filetes no lugar de sombra, cantos 8–10, Manrope + Newsreader. Precisa e editorial.',k:['--primary','--primary-2','--secondary','--wallet','--bg']},
+ salvia:{n:'Sálvia terrosa com terracota',d:'Sálvia/oliva com terracota; tonal sem sombra, cantos 16–20 e botões em pílula, Work Sans + Young Serif. Natural e calma.',k:['--primary','--primary-2','--secondary','--wallet','--bg']}};
+/* amostras estáticas (primária, degradê, acento, carteira, fundo) — geradas do mesmo cálculo OKLCH */
+const SWATCH={"lavanda": {"light": ["#674698", "#5B286E", "#8D5375", "#251C34", "#F6F5FB"], "dark": ["#C7B0F4", "#BE90D1", "#DAA5C2", "#06020E", "#110E16"]}, "indigo": {"light": ["#44549D", "#3B377C", "#A64831", "#1B2036", "#F2F6FD"], "dark": ["#A9BBF8", "#9B9DE0", "#F29F8A", "#02040F", "#0B0F19"]}, "salvia": {"light": ["#4F6236", "#424619", "#9C522E", "#1E2417", "#EFF0E7"], "dark": ["#B4C5A1", "#A4A981", "#E7A689", "#030501", "#101008"]}};
+const C1=['primary','on-primary','primary-light','primary-dark','primary-container','on-primary-container','primary-ink','secondary','on-secondary','secondary-container','on-secondary-container','secondary-ink','bg','surface','surface-sunken','muted-surface','inverse','inverse-primary'];
+const C2=['on-surface','muted','subtle','disabled','outline','border','border-faint','on-muted-surface','on-inverse','link'];
+const C3=['agendada-bg','agendada-ink','confirmada','confirmada-bg','confirmada-ink','atendida','atendida-bg','atendida-ink','falta','falta-bg','falta-ink','cancelada','cancelada-bg','cancelada-ink','erro','erro-bg','erro-ink','success','info','warning','on-warning','error','on-status'];
+const C4=['header-from','header-to','on-header','wallet','wallet-2','on-wallet','wallet-muted'];
+const TYPE=[['t-h1','display · 40/1.1','Olá, Ana'],['t-h2','display · 32/1.15','Mariana Teixeira'],['t-h3','display · 28/1.2','Prontuário'],['t-h4','display · 24/1.25','Documentos do mês'],['t-h5','sans 700 · 20/1.3','Novo agendamento'],['t-h6','sans 700 · 18/1.35','Próximas sessões'],['t-subtitle1','sans 600 · 16','6 sessões hoje'],['t-subtitle2','sans 600 · 14','Quinzenal · seg 14:00'],['t-body1','sans 400 · 16/1.55','Relata melhora na rotina de sono; combinado registro de situações.'],['t-body2','sans 400 · 14/1.5','Recibo Receita Saúde pendente para 2 pagamentos.'],['t-button','sans 600 · 15','Registrar sessão'],['t-caption','sans 400 · 12','Versão 2 · editada em 20/10 às 09:12'],['t-overline','sans 700 · 11 · caixa alta','Recebido no mês']];
+const SPACING=[['sp-2',2],['sp-4',4],['sp-8',8],['sp-12',12],['sp-16',16],['sp-20',20],['sp-24',24],['sp-32',32],['sp-40',40],['sp-48',48],['sp-64',64]];
+const ROLES=[['gap-related','relacionado'],['gap-section','seção'],['gap-major','maior'],['layout-gutter','margem da tela'],['target-min','alvo de toque']];
+const RADII=['r-xs','r-sm','r-md','r-lg','r-xl','r-btn','r-field','r-full'];
+const cs=()=>getComputedStyle(document.documentElement);
+const v=n=>cs().getPropertyValue(n.startsWith('--')?n:'--'+n).trim();
+function lum(h){h=h.replace('#','');if(h.length!==6)return null;const c=[0,2,4].map(i=>parseInt(h.substr(i,2),16)/255).map(x=>x<=.03928?x/12.92:Math.pow((x+.055)/1.055,2.4));return .2126*c[0]+.7152*c[1]+.0722*c[2];}
+function ratio(a,b){const A=lum(a),B=lum(b);if(A==null||B==null)return null;return (Math.max(A,B)+.05)/(Math.min(A,B)+.05);}
+function onFor(n){const pairs={'primary':'on-primary','primary-container':'on-primary-container','secondary':'on-secondary','secondary-container':'on-secondary-container','bg':'on-surface','surface':'on-surface','surface-sunken':'on-surface','muted-surface':'on-muted-surface','inverse':'on-inverse','header-from':'on-header','header-to':'on-header','wallet':'on-wallet','wallet-2':'on-wallet','agendada-bg':'agendada-ink','confirmada-bg':'confirmada-ink','atendida-bg':'atendida-ink','falta-bg':'falta-ink','cancelada-bg':'cancelada-ink','erro-bg':'erro-ink','success':'on-status','info':'on-status','error':'on-status','warning':'on-warning','primary-dark':'on-primary'};return pairs[n];}
+function renderFoundations(){
+  const sw=list=>list.map(n=>{const h=v(n);const on=onFor(n);const r=on?ratio(h,v(on)):ratio(h,v('surface'));
+    const label=on?`<span style="color:var(--${on})">Aa ${r?r.toFixed(1):''}</span>`:`<span style="color:var(--on-surface);font-weight:500;font-size:11px;background:var(--surface);padding:1px 5px;border-radius:4px">${r?r.toFixed(1)+':1 s/ surface':''}</span>`;
+    return `<div class="sw"><div class="c" style="background:var(--${n})">${label}</div><div class="m"><div class="n">--${n}</div><div class="v">${h}${on?' · par --'+on:''}</div></div></div>`;}).join('');
+  colorGrid1.innerHTML=sw(C1);colorGrid2.innerHTML=sw(C2);colorGrid3.innerHTML=sw(C3);colorGrid4.innerHTML=sw(C4);
+  const fb=v('font-body').split(',')[0].replace(/'/g,''),fd=v('font-display').split(',')[0].replace(/'/g,'');
+  typeList.innerHTML=TYPE.map(([n,m,s])=>`<div class="typerow"><div class="tk">.${n}<br>${m.replace('display',fd).replace('sans',fb)}</div><div class="${n}">${s}</div></div>`).join('');
+  spacingList.innerHTML=SPACING.map(([n,x])=>`<div class="sprow"><div class="lbl">--${n} · ${x}px</div><div class="bar" style="width:${x*4}px"></div></div>`).join('')+'<h3 class="sub">Papéis semânticos</h3>'+ROLES.map(([n,d])=>`<div class="sprow"><div class="lbl">--${n} · ${v(n)}</div><div class="bar" style="width:calc(var(--${n}) * 4);background:var(--secondary)"></div><span class="spec">${d}</span></div>`).join('');
+  radiusList.innerHTML=RADII.map(n=>`<div class="rb" style="border-radius:var(--${n})">--${n}<br>${v(n)}</div>`).join('');
+  const cur=document.documentElement.getAttribute('data-theme');
+  const md=document.documentElement.getAttribute('data-mode')==='dark'?'dark':'light';
+  themeCards.innerHTML=Object.entries(TINFO).map(([k,t])=>`<div class="tc${k===cur?' is-cur':''}" data-k="${k}"><div class="tn">${t.n}</div><div class="spec">data-theme="${k}"</div><div class="dots">${SWATCH[k][md].map(x=>`<i style="background:${x}" title="${x}"></i>`).join('')}</div><div class="td">${t.d}</div></div>`).join('');
+  themeCards.querySelectorAll('.tc').forEach(el=>el.onclick=()=>{const s=document.getElementById('themeSel');s.value=el.dataset.k;s.dispatchEvent(new Event('change'));});
+}
+const ICONS=[...document.querySelectorAll('svg symbol')].map(s=>s.id.replace(/^i-/,''));
+iconGrid.innerHTML=ICONS.map(n=>`<div class="it"><svg class="ico ico--lg"><use href="#i-${n}"/></svg><div class="nm">i-${n}</div></div>`).join('');
+document.addEventListener('DOMContentLoaded',renderFoundations);
+document.addEventListener('psi-theme',()=>{renderFoundations();const s=document.querySelector('.insp-sel');if(s&&s.dataset.insp)selectComp(s,s.dataset.insp);});
+
+/* ===== SPECS: uma entrada por componente (Inspetor + Copiar como prompt).
+   tokens: [papel, nomeDoToken] — o valor é lido AO VIVO do tema atual. ===== */
+const P=(n,t,def)=>({n,t,def});
+const SPECS={
+ button:{name:'Button',file:'src/ui/Button.tsx',desc:'Ação principal/secundária. contained com leve degradê (primary→primary-2), outlined, text e tonal; cores primary/secondary/error; tamanhos small(36, toque estendido a 48)/medium(48)/large(56). Estados enabled/hover/focus/pressed (scale .98)/disabled/loading.',
+  props:[P('children','ReactNode'),P('variant',"'contained'|'outlined'|'text'|'tonal'","'contained'"),P('color',"'primary'|'secondary'|'error'","'primary'"),P('size',"'small'|'medium'|'large'","'medium'"),P('startIcon','IconName?'),P('loading','boolean','false'),P('disabled','boolean','false'),P('fullWidth','boolean','false'),P('onClick','() => void')],
+  tokens:[['preenchimento','primary'],['degradê','grad-btn'],['texto contained','on-primary'],['texto outlined/text','primary-ink'],['tonal','primary-container'],['raio','r-btn'],['sombra','elev-1'],['foco','focus-ring'],['microinteração','press-scale'],['desabilitado','disabled']],
+  metrics:[['minHeight','48 (sm 36 · lg 56)'],['padding','h 20 (sm 12 · lg 24)'],['gap ícone','8'],['fonte','body 600 / 15']]},
+ buttongroup:{name:'Button group',file:'src/ui/ButtonGroup.tsx',desc:'Agrupa ações relacionadas com borda única; item ativo em primary-container.',props:[P('children','Button[]'),P('value','string?'),P('onChange','(v) => void')],tokens:[['borda','outline'],['texto','primary-ink'],['ativo','primary-container'],['raio','r-btn']],metrics:[['altura','48'],['divisor','1px outline']]},
+ iconbutton:{name:'Icon button',file:'src/ui/IconButton.tsx',desc:'Botão só de ícone; standard/filled/tonal/outlined; toggle selecionado. Sempre com aria-label.',props:[P('icon','IconName'),P('label','string (aria-label)'),P('variant',"'standard'|'filled'|'tonal'|'outlined'","'standard'"),P('selected','boolean?'),P('disabled','boolean','false')],tokens:[['ícone','muted'],['filled','primary'],['tonal','primary-container'],['borda outlined','outline'],['hover','state-hover']],metrics:[['alvo','48×48'],['glifo','24'],['raio','r-full']]},
+ fab:{name:'Floating action button',file:'src/ui/Fab.tsx',desc:'Ação principal flutuante; regular 56, small 48, large 96, extended com rótulo. Uma por tela.',props:[P('icon','IconName'),P('label','string?'),P('size',"'small'|'medium'|'large'","'medium'"),P('color',"'primary'|'tonal'","'tonal'")],tokens:[['tonal','primary-container'],['texto','on-primary-container'],['primary','grad-btn'],['sombra','elev-3'],['raio','r-lg']],metrics:[['tamanho','56 (48 · 96)'],['extended padding','h 16/20']]},
+ checkbox:{name:'Checkbox',file:'src/ui/Checkbox.tsx',desc:'Caixa 20 dentro de alvo 48; marcado, indeterminado, desabilitado.',props:[P('checked','boolean'),P('indeterminate','boolean','false'),P('label','string'),P('disabled','boolean','false'),P('onChange','(v) => void')],tokens:[['marcado','primary'],['check','on-primary'],['borda','outline'],['raio','r-xs']],metrics:[['caixa','20'],['alvo','48'],['borda','2']]},
+ radio:{name:'Radio group',file:'src/ui/RadioGroup.tsx',desc:'Escolha única vertical; círculo 20, ponto interno 9.',props:[P('value','string'),P('options','{value,label,disabled?}[]'),P('onChange','(v) => void')],tokens:[['selecionado','primary'],['borda','outline'],['desabilitado','disabled']],metrics:[['círculo','20'],['alvo','48']]},
+ switch:{name:'Switch',file:'src/ui/Switch.tsx',desc:'Liga/desliga com polegar que cresce (16→24) em mola.',props:[P('checked','boolean'),P('label','string'),P('disabled','boolean','false'),P('onChange','(v) => void')],tokens:[['trilho ligado','primary'],['polegar ligado','on-primary'],['trilho desligado','muted-surface'],['borda','outline'],['curva','ease-spring']],metrics:[['trilho','52×32'],['polegar','16 → 24']]},
+ select:{name:'Select',file:'src/ui/Select.tsx',desc:'Seleção com lista; visual igual ao Text field (rótulo em caixa alta acima).',props:[P('label','string'),P('value','string'),P('options','{value,label}[]'),P('required','boolean','false'),P('error','string?')],tokens:[['rótulo','muted'],['borda','border'],['foco','primary'],['lista','surface'],['sombra lista','elev-3'],['ativo','state-selected'],['raio','r-field']],metrics:[['altura','52'],['opção','48']]},
+ autocomplete:{name:'Autocomplete',file:'src/ui/Autocomplete.tsx',desc:'Busca com sugestões (pacientes), avatar e destaque do trecho digitado.',props:[P('label','string'),P('query','string'),P('options','T[]'),P('getLabel','(o:T) => string'),P('onSelect','(o:T) => void')],tokens:[['destaque','primary-ink'],['lista','surface'],['sombra','elev-3'],['ativo','state-selected']],metrics:[['opção','48'],['raio lista','r-md']]},
+ slider:{name:'Slider',file:'src/ui/Slider.tsx',desc:'Contínuo, discreto (marcas) e intervalo (dois polegares); rótulo de valor ao arrastar.',props:[P('value','number|[number,number]'),P('min','number'),P('max','number'),P('step','number?'),P('marks','boolean','false')],tokens:[['preenchido','primary'],['trilho','muted-surface'],['rótulo','inverse']],metrics:[['trilho','6'],['polegar','22'],['alvo','48']]},
+ textfield:{name:'Text field',file:'src/ui/TextField.tsx',desc:'Campo com rótulo pequeno em caixa alta ACIMA; outlined (padrão) | filled | standard; foco com halo; erro, ajuda, ícones e multilinha.',props:[P('label','string'),P('value','string'),P('variant',"'outlined'|'filled'|'standard'","'outlined'"),P('required','boolean','false'),P('helperText','string?'),P('error','string?'),P('startIcon','IconName?'),P('endIcon','IconName?'),P('multiline','boolean','false'),P('disabled','boolean','false')],
+  tokens:[['rótulo','muted'],['texto','on-surface'],['placeholder','subtle'],['borda','border'],['foco','primary'],['erro','error'],['texto erro','erro-ink'],['filled','surface-sunken'],['raio','r-field']],metrics:[['altura','52 (multi 112)'],['padding','l 16 · r 12'],['borda','1.5'],['halo foco','3px primary 18%']]},
+ togglebutton:{name:'Toggle button',file:'src/ui/ToggleButtonGroup.tsx',desc:'Grupo exclusivo segmentado (Dia | Semana | Mês).',props:[P('value','string'),P('options','{value,label,icon?}[]'),P('onChange','(v) => void')],tokens:[['trilho','surface-sunken'],['selecionado','surface'],['texto selecionado','primary-ink'],['sombra','elev-1'],['raio','r-md']],metrics:[['altura','40 (toque 48)'],['padding trilho','4']]},
+ rating:{name:'Rating',file:'src/ui/Rating.tsx',desc:'Escala 1–5 de uso interno (não é avaliação pública).',props:[P('value','number'),P('max','number','5'),P('readOnly','boolean','false')],tokens:[['ativo','secondary'],['inativo','outline']],metrics:[['ícone','28'],['gap','2']]},
+ avatar:{name:'Avatar',file:'src/ui/Avatar.tsx',desc:'Iniciais em primary/secondary-container; 32/40/56/72; circular ou quadrado; anel; grupo.',props:[P('name','string (gera iniciais)'),P('size',"'sm'|'md'|'lg'|'xl'","'md'"),P('color',"'primary'|'secondary'","'primary'"),P('shape',"'circle'|'square'","'circle'"),P('ring','boolean','false')],tokens:[['fundo','primary-container'],['texto','on-primary-container'],['anel','primary']],metrics:[['tamanhos','32 · 40 · 56 · 72'],['fonte','700 / 40%']]},
+ badge:{name:'Badge',file:'src/ui/Badge.tsx',desc:'Ponto ou número sobre ícone.',props:[P('content','number?'),P('variant',"'dot'|'standard'","'standard'"),P('color',"'error'|'primary'","'error'")],tokens:[['fundo','error'],['texto','on-status'],['contorno','surface']],metrics:[['altura','18 (ponto 10)']]},
+ chip:{name:'Chip / Pill de status',file:'src/ui/Chip.tsx',desc:'Chip de filtro/entrada (alvo 48, selecionado em primary-container) e Pill de status compacta (agendada, confirmada, atendida, falta, cancelada, em atraso).',props:[P('label','string'),P('variant',"'outlined'|'filled'","'outlined'"),P('selected','boolean','false'),P('onDelete','() => void ?'),P('status',"'agendada'|'confirmada'|'atendida'|'falta'|'cancelada'|'erro' (Pill)")],
+  tokens:[['selecionado','primary-container'],['borda','border'],['agendada','agendada-bg'],['confirmada','confirmada-bg'],['atendida','atendida-bg'],['falta','falta-bg'],['cancelada','cancelada-bg'],['em atraso','erro-bg'],['raio','r-full']],metrics:[['chip','32 (toque 48)'],['pill','24'],['ponto pill','6']]},
+ divider:{name:'Divider',file:'src/ui/Divider.tsx',desc:'Inteiro, recuado (72) ou com texto.',props:[P('variant',"'full'|'inset'|'text'","'full'"),P('children','string?')],tokens:[['linha','border'],['texto','subtle']],metrics:[['espessura','1'],['recuo','72']]},
+ list:{name:'List',file:'src/ui/List.tsx',desc:'Itens de 1/2/3 linhas com avatar/ícone inicial e texto/ícone final; subcabeçalho; selecionado.',props:[P('items','ListItem[]'),P('dense','boolean','false')],tokens:[['superfície','surface'],['primário','on-surface'],['secundário','muted'],['divisor','border-faint'],['selecionado','state-selected']],metrics:[['altura','56 · 72 · 88'],['padding','h 16'],['gap','16']]},
+ table:{name:'Table',file:'src/ui/Table.tsx',desc:'Tabela com cabeçalho em caixa alta e valores à direita (tabulares). No celular, vira List.',props:[P('columns','Column[]'),P('rows','Row[]')],tokens:[['cabeçalho','surface-sunken'],['texto cabeçalho','muted'],['divisor','border-faint']],metrics:[['linha','52'],['padding','12 / 16']]},
+ tooltip:{name:'Tooltip',file:'src/ui/Tooltip.tsx',desc:'Simples (inverse) e rico (surface com título).',props:[P('title','string'),P('rich','boolean','false')],tokens:[['simples','inverse'],['texto','on-inverse'],['rico','surface'],['sombra','elev-3']],metrics:[['padding','4/8 · rico 12/16']]},
+ typographyc:{name:'Typography',file:'src/ui/Typography.tsx',desc:'Variantes h1–h6, subtitle1/2, body1/2, button, caption, overline. h1–h4 usam a display; o resto, a sans de leitura.',props:[P('variant',"'h1'…'overline'","'body1'"),P('color',"'default'|'muted'","'default'")],tokens:[['display','font-display'],['leitura','font-body'],['texto','on-surface'],['secundário','muted']],metrics:[['base','16'],['escala','40/32/28/24/20/18/16/14/12/11']]},
+ icon:{name:'Icon',file:'src/ui/Icon.tsx',desc:'SVG do sprite, traço por token, herda currentColor.',props:[P('name','IconName'),P('size',"'sm'|'md'|'lg'","'md'")],tokens:[['tamanho','icon-size'],['traço','icon-stroke'],['ponta','icon-cap']],metrics:[['tamanhos','18 · 24 · 28']]},
+ alert:{name:'Alert',file:'src/ui/Alert.tsx',desc:'Mensagem em linha; severity success/info/warning/error; standard (fundo suave) ou filled.',props:[P('severity',"'success'|'info'|'warning'|'error'"),P('title','string?'),P('children','ReactNode'),P('variant',"'standard'|'filled'","'standard'")],tokens:[['success','atendida-bg'],['info','confirmada-bg'],['warning','falta-bg'],['error','erro-bg'],['filled','error'],['raio','r-md']],metrics:[['padding','12 / 16'],['gap','12']]},
+ dialog:{name:'Dialog',file:'src/ui/Dialog.tsx',desc:'Básico (confirmação, ações à direita) e tela cheia (formulário com barra).',props:[P('open','boolean'),P('title','string'),P('fullScreen','boolean','false'),P('actions','ReactNode'),P('onClose','() => void')],tokens:[['superfície','surface'],['véu','scrim'],['sombra','elev-3'],['raio','r-xl']],metrics:[['largura','312'],['padding','24']]},
+ snackbar:{name:'Snackbar',file:'src/ui/Snackbar.tsx',desc:'Aviso temporário, com ação opcional (Desfazer).',props:[P('message','string'),P('action','{label,onClick}?'),P('duration','number','4000')],tokens:[['fundo','inverse'],['texto','on-inverse'],['ação','inverse-primary'],['raio','r-sm']],metrics:[['altura','48+'],['máx.','360']]},
+ progress:{name:'Progress',file:'src/ui/Progress.tsx',desc:'Linear e circular, determinado e indeterminado.',props:[P('variant',"'linear'|'circular'"),P('value','number?')],tokens:[['indicador','primary'],['trilho','muted-surface']],metrics:[['linear','6'],['circular','40 · traço 4']]},
+ skeleton:{name:'Skeleton',file:'src/ui/Skeleton.tsx',desc:'Placeholder de carregamento com brilho.',props:[P('variant',"'text'|'circular'|'rect'"),P('width','number|string'),P('height','number?')],tokens:[['fundo','muted-surface'],['brilho','surface']],metrics:[['texto','12']]},
+ backdrop:{name:'Backdrop',file:'src/ui/Backdrop.tsx',desc:'Véu sobre o conteúdo (diálogos, sheets, carregamento, bloqueio do app).',props:[P('open','boolean'),P('children','ReactNode?')],tokens:[['véu','scrim']],metrics:[['z-index','modal 1300']]},
+ appbar:{name:'App bar',file:'src/ui/AppBar.tsx',desc:'gradient: cabeçalho fixo com degradê da primária e marca em branco (Hoje). surface: telas internas com voltar e título.',props:[P('variant',"'gradient'|'surface'","'surface'"),P('title','string?'),P('brand','boolean','false'),P('onBack','() => void ?'),P('actions','IconButton[]')],tokens:[['degradê','grad-header'],['de','header-from'],['até','header-to'],['texto','on-header'],['marca','font-display'],['surface','surface']],metrics:[['altura','64'],['marca','display 22']]},
+ card:{name:'Card',file:'src/ui/Card.tsx',desc:'elevated | outlined | filled | welcome (faixa de 4px em degradê primary→secondary no topo) | action (toque scale .98).',props:[P('variant',"'elevated'|'outlined'|'filled'|'welcome'","'elevated'"),P('onClick','() => void ?'),P('children','ReactNode')],tokens:[['superfície','surface'],['borda','card-border'],['sombra','elev-1'],['faixa','grad-strip'],['filled','surface-sunken'],['raio','r-lg']],metrics:[['padding','16'],['faixa','4']]},
+ paper:{name:'Paper',file:'src/ui/Paper.tsx',desc:'Superfície crua por elevação 0–3.',props:[P('elevation','0|1|2|3','1')],tokens:[['superfície','surface'],['1','elev-1'],['2','elev-2'],['3','elev-3']],metrics:[['raio','r-md']]},
+ accordion:{name:'Accordion',file:'src/ui/Accordion.tsx',desc:'Seções expansíveis (dados cadastrais).',props:[P('items','{title,icon?,content}[]'),P('defaultOpen','number?')],tokens:[['superfície','surface'],['borda','border'],['detalhe','muted']],metrics:[['resumo','56'],['raio','r-lg']]},
+ bottomnav:{name:'Bottom navigation',file:'src/ui/BottomNav.tsx',desc:'5 destinos com rótulo (Hoje, Agenda, Pacientes, Financeiro, Mais); ativo com pílula.',props:[P('items','{icon,label,href}[]'),P('active','string')],tokens:[['superfície','surface'],['inativo','muted'],['pílula','primary-container'],['ícone ativo','on-primary-container']],metrics:[['altura','72'],['pílula','56×30'],['alvo','48']]},
+ drawer:{name:'Drawer',file:'src/ui/Drawer.tsx',desc:'Modal no celular; permanente ≥ 900px. Itens em pílula.',props:[P('variant',"'modal'|'permanent'","'modal'"),P('open','boolean'),P('items','NavItem[]')],tokens:[['superfície','surface'],['ativo','primary-container'],['sombra','elev-3'],['raio','r-xl']],metrics:[['largura','280'],['item','52']]},
+ tabs:{name:'Tabs',file:'src/ui/Tabs.tsx',desc:'Fixas ou roláveis, indicador inferior de 3px, contador opcional.',props:[P('value','string'),P('tabs','{value,label,count?,disabled?}[]'),P('scrollable','boolean','false')],tokens:[['ativa','primary-ink'],['indicador','primary'],['inativa','muted'],['divisor','border']],metrics:[['altura','48'],['indicador','3']]},
+ menu:{name:'Menu',file:'src/ui/Menu.tsx',desc:'Lista de ações; destrutiva separada e em erro.',props:[P('items','{icon?,label,danger?}[]'),P('anchor','Element')],tokens:[['superfície','surface'],['sombra','elev-3'],['perigo','erro-ink']],metrics:[['item','48'],['min','200']]},
+ link:{name:'Link',file:'src/ui/Link.tsx',desc:'Sublinhado no texto corrido; sem sublinhado em ações de seção.',props:[P('href','string'),P('underline',"'always'|'none'","'always'")],tokens:[['cor','link']],metrics:[['offset','3']]},
+ stepper:{name:'Stepper',file:'src/ui/Stepper.tsx',desc:'Etapas horizontais (emissão de documento).',props:[P('steps','string[]'),P('active','number')],tokens:[['concluída','primary'],['ativa','primary-container'],['pendente','muted-surface'],['linha','border']],metrics:[['ponto','28']]},
+ speeddial:{name:'Speed dial',file:'src/ui/SpeedDial.tsx',desc:'FAB que abre ações rápidas com rótulos.',props:[P('actions','{icon,label,onClick}[]'),P('open','boolean')],tokens:[['FAB','grad-btn'],['ação','primary-container'],['rótulo','surface']],metrics:[['FAB','56'],['ação','48']]},
+ layout:{name:'Box · Container · Grid · Stack',file:'src/ui/layout.tsx',desc:'Utilitários de layout; no Tailwind 4 use utilitários do tema (@theme) mapeados aos tokens.',props:[P('cols','number','2'),P('gap','SpacingToken','sp-12')],tokens:[['margem','layout-gutter'],['relacionado','gap-related'],['seção','gap-section']],metrics:[['container','máx. 600']]},
+ banner:{name:'Banner de alerta',file:'src/ui/AlertBanner.tsx',desc:'Faixa clicável com NÚMERO GRANDE à esquerda e título + subtítulo; variantes alerta (padrão) | ok | info | erro. Toque scale .98.',props:[P('count','number'),P('title','string'),P('subtitle','string?'),P('tone',"'alerta'|'ok'|'info'|'erro'","'alerta'"),P('onClick','() => void')],tokens:[['alerta','falta-bg'],['texto alerta','falta-ink'],['ok','atendida-bg'],['info','confirmada-bg'],['erro','erro-bg'],['raio','r-lg']],metrics:[['número','800 / 40'],['altura','76+'],['gap','16']]},
+ session:{name:'Item de sessão',file:'src/ui/SessionItem.tsx',desc:'Linha da agenda: hora, paciente, modalidade/recorrência e pill; borda esquerda de 4px na cor do status.',props:[P('time','string'),P('duration','number'),P('patient','string'),P('meta','string'),P('status',"'agendada'|'confirmada'|'atendida'|'falta'|'cancelada'"),P('onClick','() => void')],tokens:[['agendada','primary'],['confirmada','confirmada'],['atendida','atendida'],['falta','falta'],['cancelada','cancelada'],['superfície','surface'],['raio','r-md']],metrics:[['altura','72'],['borda','4'],['hora','52']]},
+ shortcut:{name:'Grade de atalhos',file:'src/ui/ShortcutGrid.tsx',desc:'Cartões quadrados (3 colunas) com ícone em quadrado arredondado de cor suave e rótulo.',props:[P('items','{icon,label,tone?,href}[]')],tokens:[['cartão','surface'],['ícone 1','primary-container'],['ícone 2','secondary-container'],['raio','tile-radius'],['raio ícone','tile-icon-radius']],metrics:[['proporção','1:1'],['ícone','48'],['gap','12']]},
+ wallet:{name:'Carteira',file:'src/ui/WalletCard.tsx',desc:'Cartão escuro de resumo financeiro: rótulos em caixa alta, valor grande, dois sub-blocos translúcidos. Valores OCULTOS por padrão; botão de olho alterna (preferência salva).',props:[P('received','number'),P('receivable','number'),P('overdue','{count,total}'),P('defaultHidden','boolean','true')],tokens:[['fundo','grad-wallet'],['texto','on-wallet'],['rótulo','wallet-muted'],['sub-bloco','wallet-block'],['raio','r-xl'],['sombra','elev-2']],metrics:[['valor','800 / 32'],['padding','20'],['sub-bloco','12']]},
+ kpi:{name:'Mini-KPIs',file:'src/ui/KpiGrid.tsx',desc:'Grade de 3 indicadores: número grande + rótulo pequeno em caixa alta; tons neutro/alerta/ok.',props:[P('items','{value,label,tone?}[]')],tokens:[['cartão','surface'],['número','on-surface'],['alerta','erro-ink'],['ok','atendida-ink'],['rótulo','muted']],metrics:[['número','800 / 24'],['padding','12']]},
+ timeline:{name:'Linha do tempo',file:'src/ui/Timeline.tsx',desc:'Prontuário: marcador por tipo (sessão, falta, documento), data em caixa alta, título, resumo e versão.',props:[P('items','{date,title,body?,kind,version?}[]')],tokens:[['linha','border'],['sessão','primary'],['falta','falta'],['documento','outline']],metrics:[['marcador','14 · borda 3'],['entre itens','gap-section']]},
+ entity:{name:'Cabeçalho do paciente',file:'src/ui/PatientHeader.tsx',desc:'Avatar xl com anel, nome em display, idade/desde, pills de situação.',props:[P('name','string'),P('age','number'),P('since','string'),P('status','string[]')],tokens:[['nome','font-display'],['meta','muted']],metrics:[['avatar','72'],['gap','16']]},
+ sheet:{name:'Bottom sheet',file:'src/ui/BottomSheet.tsx',desc:'Painel inferior modal com alça; ações rápidas.',props:[P('open','boolean'),P('title','string'),P('children','ReactNode'),P('onClose','() => void')],tokens:[['superfície','surface'],['alça','outline'],['sombra','elev-3'],['raio','r-xl']],metrics:[['alça','36×4'],['padding','20']]},
+};
+
+/* ===== Copiar como prompt — por componente + "Instalar design system" =====
+   Framework informado: React + Tailwind 4 → primeiro na lista. */
+const LANGS=['React + Tailwind 4 (TypeScript)','React (TypeScript + CSS Modules)','React Native','Flutter (Dart)','SwiftUI','Jetpack Compose (Kotlin)','HTML + CSS'];
+let promptLang=LANGS[0];
+langSel.innerHTML=LANGS.map(l=>`<option${l===promptLang?' selected':''}>${l}</option>`).join('');
+langSel.onchange=()=>promptLang=langSel.value;
+const varGroups={
+ 'Cores (todo fundo com seu par --on-*)':[...C1,...C2,...C3,...C4].map(x=>'--'+x),
+ 'Espaçamento':['--gap-related','--gap-section','--gap-major','--layout-gutter','--target-min',...SPACING.map(s=>'--'+s[0]),'--opt-1','--opt-3'],
+ 'Raio':['--r-none','--r-xs','--r-sm','--r-md','--r-lg','--r-xl','--r-btn','--r-field','--r-full','--tile-radius','--tile-icon-radius'],
+ 'Elevação':['--card-border','--elev-1','--elev-2','--elev-3','--scrim'],
+ 'Assinatura':['--grad-header','--grad-strip','--grad-btn','--grad-wallet','--wallet-block','--wallet-line','--ring','--focus-ring'],
+ 'Tipografia':['--font-display','--font-body','--font-mono','--display-weight','--fs-h1','--fs-h2','--fs-h3','--fs-h4','--fs-h5','--fs-h6','--fs-subtitle1','--fs-subtitle2','--fs-body1','--fs-body2','--fs-button','--fs-caption','--fs-overline'],
+ 'Estados':['--state-hover','--state-focus','--state-pressed','--state-selected','--state-disabled','--press-scale'],
+ 'Movimento':['--dur-shortest','--dur-short','--dur-base','--dur-complex','--ease','--ease-standard','--ease-spring'],
+ 'Breakpoints e z-index':['--bp-sm','--bp-md','--bp-lg','--bp-xl','--z-appbar','--z-drawer','--z-modal','--z-snackbar','--z-tooltip'],
+ 'Ícones':['--icon-size','--icon-inline','--icon-large','--icon-stroke','--icon-cap','--icon-join','--icon-fill']};
+function tokenLines(){const s=cs();const out=[];for(const[g,names]of Object.entries(varGroups)){const rows=names.map(n=>{const x=s.getPropertyValue(n).trim();return x?`- ${n} = ${x}`:null;}).filter(Boolean);if(rows.length)out.push(`### ${g}`,...rows,'');}return out;}
+function curTheme(){const r=document.documentElement;return `${TINFO[r.dataset.theme].n} (data-theme="${r.dataset.theme}", modo ${r.dataset.mode==='dark'?'escuro':'claro'})`;}
+function foundationsBody(){const L=[`## Fundamentos — tokens (fonte única)`,`Tema lido: ${curTheme()}. Defina cada token abaixo como constante nomeada em UM arquivo de tema idiomático para ${promptLang}${promptLang.includes('Tailwind')?' — em Tailwind 4, declare as variáveis em :root/[data-theme] e exponha-as em @theme (ex.: --color-primary: var(--primary))':''}. As três direções (lavanda, indigo, salvia) e o modo escuro são blocos de sobrescrita dos MESMOS nomes; componentes nunca usam valores crus.`,'',...tokenLines(),`### Escala tipográfica`];
+ TYPE.forEach(([n,m])=>L.push(`- ${n}: ${m}`));
+ L.push('',`### Regras`,`- Todo fundo tem seu par --on-* (WCAG: texto ≥ 4,5:1, ícones/bordas ≥ 3:1). Não quebre um par.`,`- Primária conduz a interação; secundária é acento (faixa do cartão de boas-vindas, atalhos alternados).`,`- Degradê só no cabeçalho, na faixa do cartão de boas-vindas, no botão contained e na carteira. Fundos ficam planos.`,`- Rótulos de campo em caixa alta pequena acima; toque com scale(.98); alvo ≥ 48px; fonte base 16px.`,`- Valores financeiros ocultos por padrão. Todo texto em português do Brasil.`);
+ return L.join('\n');}
+function buildPrompt(key){const s=SPECS[key];const c=cs();const L=[`# Adicionar ou atualizar o componente \`${s.name}\` — ${promptLang}`,'',`Componente do design system do PsiConsultório (app de gestão de consultório para psicólogas). Se já existir um componente com este papel, MODIFIQUE-O NO LUGAR para seguir esta especificação (fonte da verdade) — não duplique; registre mudanças incompatíveis de props/tokens com nota de migração. Se não existir, crie-o reutilizando os tokens e átomos existentes e a estrutura de pastas do projeto.`,'',`## O que é`,s.desc,'',`## Props`];
+ s.props.forEach(p=>L.push(`- \`${p.n}\`: ${p.t}${p.def?` (padrão ${p.def})`:''}`));
+ L.push('',`## Tokens (defina/estenda na camada de fundamentos; nunca valores crus)`);
+ s.tokens.forEach(([r,n])=>L.push(`- --${n} = ${c.getPropertyValue('--'+n).trim()}   // ${r}`));
+ L.push('',`## Medidas`);s.metrics.forEach(([k,x])=>L.push(`- ${k}: ${x}`));
+ L.push('',`## Requisitos`,`- Implemente todas as variantes e estados listados.`,`- Referencie tokens pelo nome; funciona nas 3 direções (data-theme) e no modo escuro sem mudar o componente.`,`- Alvo de toque ≥ 48px, foco visível, aria-label em botões só de ícone. Textos em português do Brasil.`,`- Entregue código ${promptLang} completo e um exemplo de uso.`);
+ return L.join('\n');}
+function fullSystemPrompt(){const keys=Object.keys(SPECS);const L=[`# Instalar ou atualizar o design system INTEIRO do PsiConsultório — ${promptLang}`,'',`Monte este design system em ${promptLang} (app React + Capacitor para web, Android e iOS; referência Material 3 + MUI). Se não existir, crie do zero; se partes existirem, atualize-as NO LUGAR para seguir esta especificação — modifique, não duplique; registre mudanças incompatíveis.`,'',`## Ordem`,`1. Implemente a **camada de tokens** abaixo como fonte única, com as 3 direções (lavanda padrão, indigo, salvia) e o modo escuro como blocos de sobrescrita.`,`2. Depois os componentes. Podem ser divididos entre trabalhadores em paralelo, mas **todos importam a camada de tokens compartilhada** — nunca redefinam cores/medidas localmente. Nomes e estados consistentes.`,`3. Reconcilie: um índice de componentes + revisão confirmando que todos usam só tokens nomeados.`,'','---','',foundationsBody(),'','---','',`## Componentes (${keys.length})`];
+ keys.forEach(k=>{const s=SPECS[k];L.push('',`### ${s.name} — \`${s.file}\``,s.desc,`- props: ${s.props.map(p=>p.n+': '+p.t).join(', ')}`,`- tokens: ${s.tokens.map(t=>'--'+t[1]).join(', ')}`,`- medidas: ${s.metrics.map(m=>m[0]+' '+m[1]).join(', ')}`);});
+ L.push('','## Regras',`- Tokens em um só lugar; componentes por nome.`,`- Pares --on-* preservados (WCAG); decisão de elevação e raios vêm do tema.`,`- Saída: arquivo de tokens, depois cada componente com exemplo de uso.`);
+ return L.join('\n');}
+function copyText(t){try{navigator.clipboard&&navigator.clipboard.writeText(t);}catch(e){}}
+function copyPrompt(key){copyText(buildPrompt(key));toast(`Copiado: ${SPECS[key].name} → ${promptLang}`);}
+function copyFullSystem(){copyText(fullSystemPrompt());toast(`Copiado: design system (${Object.keys(SPECS).length} componentes) → ${promptLang}`);}
+document.querySelectorAll('main section[id]').forEach(sec=>{const key=sec.id;if(!SPECS[key])return;const h=sec.querySelector('h2.sec');if(!h||h.querySelector('.sec-prompt'))return;
+  const b=document.createElement('button');b.className='sec-prompt';b.type='button';b.textContent='Copiar como prompt';b.addEventListener('click',()=>copyPrompt(key));h.appendChild(b);});
+
+/* ===== Dev Mode + Inspetor ===== */
+function toggleDev(){const on=document.body.classList.toggle('dev');devToggle.classList.toggle('on',on);devToggle.textContent=on?'◧ Dev Mode · ligado':'◧ Dev Mode';if(!on)closeInspector();}
+function closeInspector(){document.body.classList.remove('inspecting');document.querySelectorAll('.insp-sel').forEach(e=>e.classList.remove('insp-sel'));}
+document.addEventListener('click',e=>{if(e.target.closest('#inspector')||e.target.closest('#topctl'))return;if(!document.body.classList.contains('dev'))return;
+  const el=e.target.closest('[data-insp]');if(el&&SPECS[el.dataset.insp]){e.preventDefault();selectComp(el,el.dataset.insp);}});
+function selectComp(el,key){document.querySelectorAll('.insp-sel').forEach(x=>x.classList.remove('insp-sel'));el.classList.add('insp-sel');document.body.classList.add('inspecting');const s=SPECS[key];const c=cs();
+  const props=s.props.map(p=>`<div class="prop"><span class="pn">${p.n}</span> <span class="pt">${p.t}</span>${p.def?` <span class="pdef">= ${p.def}</span>`:''}</div>`).join('');
+  const toks=s.tokens.map(([r,n])=>{const val=c.getPropertyValue('--'+n).trim();const isCol=/^#|^rgb|gradient/.test(val);return `<div class="tok" data-val="${val.replace(/"/g,'&quot;')}"><div class="tsw" style="background:${isCol?'var(--'+n+')':'var(--surface-sunken)'}"></div><div><div class="tn">--${n}</div><div class="tr">${r}</div></div><div class="tv" title="${val.replace(/"/g,'&quot;')}">${val}</div></div>`;}).join('');
+  const mets=s.metrics.map(([k,x])=>`<div class="metric"><span class="mk">${k}</span><span>${x}</span></div>`).join('');
+  inspectorBody.innerHTML=`<div class="nm">${s.name}</div><div class="file">${s.file}</div><div class="desc">${s.desc}</div><h4>Propriedades</h4>${props}<h4>Tokens · clique para copiar</h4>${toks}<h4>Medidas</h4>${mets}<button class="btn btn--contained btn--block" style="margin-top:20px" onclick="copyPrompt('${key}')"><svg class="ico ico--sm"><use href="#i-copy"/></svg>Copiar como prompt</button>`;
+  inspectorBody.querySelectorAll('.tok').forEach(t=>t.onclick=()=>{copyText(t.dataset.val);toast('Copiado '+t.dataset.val);});}
+function toast(m){const c=document.getElementById('copied');c.textContent=m;c.classList.add('show');setTimeout(()=>c.classList.remove('show'),1400);}
+</script>
+</body>
+</html>

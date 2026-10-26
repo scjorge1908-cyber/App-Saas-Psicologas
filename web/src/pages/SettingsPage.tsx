@@ -11,6 +11,7 @@ import { Button, ErrorBox, Field, Loading, Notice, PageHeader, Panel, Select, Te
 import { saveBlob } from '../components/patients/DocumentsTab';
 import { isDemo } from '../lib/demo/modo';
 import { atualizarPerfilDemo } from '../lib/demo/api-demo';
+import { TEMAS, definirAparencia, useAparencia, type Modo } from '../lib/tema';
 
 export function SettingsPage() {
   const { profile, isLoading } = useProfile();
@@ -18,6 +19,7 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title="Configurações" />
+      <AparenciaPanel />
       <ProfileForm profile={profile} />
       <AgendaForm profile={profile} />
       <BackupPanel />
@@ -237,6 +239,44 @@ function SecurityPanel() {
           <Button variant="ghost" onClick={() => signOut()}>Sair da conta</Button>
         </div>
       </div>
+    </Panel>
+  );
+}
+
+/** Tema e modo claro/escuro — vale só para este aparelho. */
+function AparenciaPanel() {
+  const { tema, modo } = useAparencia();
+  const MODOS: Array<[Modo, string]> = [['sistema', 'Automático'], ['claro', 'Claro'], ['escuro', 'Escuro']];
+  return (
+    <Panel title="Aparência">
+      <fieldset>
+        <legend className="rotulo mb-2">Tema</legend>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {TEMAS.map((t) => (
+            <label key={t.id} className={`pressionar flex min-h-16 cursor-pointer items-center gap-3 rounded-campo border-[1.5px] px-3 py-2 ${tema === t.id ? 'border-anil bg-anil-claro/50' : 'border-linha'}`}>
+              <input type="radio" name="tema" value={t.id} checked={tema === t.id} onChange={() => definirAparencia({ tema: t.id })} className="sr-only" />
+              <span aria-hidden className="flex -space-x-1.5">
+                {t.cores.map((c) => <span key={c} className="size-6 rounded-full ring-2 ring-papel" style={{ background: c }} />)}
+              </span>
+              <span className="min-w-0">
+                <span className="block font-bold">{t.nome}</span>
+                <span className="block text-sm text-tinta-2">{t.descricao}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="mt-4">
+        <legend className="rotulo mb-2">Modo</legend>
+        <div className="inline-flex gap-1 rounded-campo bg-afundado p-1">
+          {MODOS.map(([v, r]) => (
+            <label key={v} className={`flex min-h-10 cursor-pointer items-center rounded-[calc(var(--r-field)-4px)] px-4 text-sm font-bold ${modo === v ? 'bg-papel text-anil-escuro shadow-cartao' : 'text-tinta-2'}`}>
+              <input type="radio" name="modo" value={v} checked={modo === v} onChange={() => definirAparencia({ modo: v })} className="sr-only" />
+              {r}
+            </label>
+          ))}
+        </div>
+      </fieldset>
     </Panel>
   );
 }

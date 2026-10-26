@@ -1,44 +1,78 @@
 @import "tailwindcss";
-@import "@fontsource/atkinson-hyperlegible/400.css";
-@import "@fontsource/atkinson-hyperlegible/700.css";
-@import "@fontsource/atkinson-hyperlegible/400-italic.css";
+@import "./styles/temas.css";
+@import "@fontsource/figtree/latin-400.css";
+@import "@fontsource/figtree/latin-600.css";
+@import "@fontsource/figtree/latin-700.css";
+@import "@fontsource/figtree/latin-800.css";
+@import "@fontsource/fraunces/latin-600.css";
+@import "@fontsource/manrope/latin-400.css";
+@import "@fontsource/manrope/latin-600.css";
+@import "@fontsource/manrope/latin-700.css";
+@import "@fontsource/manrope/latin-800.css";
+@import "@fontsource/newsreader/latin-500.css";
+@import "@fontsource/work-sans/latin-400.css";
+@import "@fontsource/work-sans/latin-600.css";
+@import "@fontsource/work-sans/latin-700.css";
+@import "@fontsource/work-sans/latin-800.css";
+@import "@fontsource/young-serif/latin-400.css";
 
 /*
-  Tokens visuais
-  - anil: ação principal e identidade
-  - gesso: fundo
-  - ocre: precisa de atenção (a confirmar, vencido, pendente)
-  - verde / vermelho: SOMENTE status de sessão e saldo
+  Os nomes antigos (anil, gesso, papel, tinta…) continuam valendo nas telas,
+  mas agora apontam para os papéis do tema escolhido (data-theme / data-mode no <html>).
+  - anil: ação principal · gesso: fundo · papel: superfície
+  - ocre: atenção · verde / vermelho: status e saldo
 */
 @theme {
-  --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-body);
+  --font-titulo: var(--font-display);
 
-  --color-gesso: #F3F4EF;
-  --color-papel: #FFFFFF;
-  --color-linha: #D9DBD2;
-  --color-linha-forte: #B9BCB0;
-  --color-tinta: #1E2430;
-  --color-tinta-2: #4A5160;
-  --color-tinta-3: #6B7180;
+  --color-gesso: var(--bg);
+  --color-papel: var(--surface);
+  --color-afundado: var(--surface-sunken);
+  --color-linha: var(--border);
+  --color-linha-forte: color-mix(in oklab, var(--border) 55%, var(--outline));
+  --color-tinta: var(--on-surface);
+  --color-tinta-2: var(--muted);
+  --color-tinta-3: color-mix(in oklab, var(--muted) 70%, var(--subtle));
 
-  --color-anil: #3B3F8F;
-  --color-anil-escuro: #2C2F6E;
-  --color-anil-claro: #E7E8F5;
+  --color-anil: var(--primary);
+  --color-anil-escuro: var(--primary-ink);
+  --color-anil-claro: var(--primary-container);
+  --color-sobre-anil: var(--on-primary);
+  --color-sobre-anil-claro: var(--on-primary-container);
+  --color-acento: var(--secondary);
+  --color-acento-claro: var(--secondary-container);
+  --color-sobre-acento-claro: var(--on-secondary-container);
 
-  --color-ocre: #8A5A12;
-  --color-ocre-fundo: #FBF0D9;
-  --color-verde: #2F7D5B;
-  --color-verde-fundo: #E3F2EA;
-  --color-vermelho: #B4413C;
-  --color-vermelho-fundo: #FBE6E4;
-  --color-cinza-fundo: #ECEDE7;
+  --color-ocre: var(--falta-ink);
+  --color-ocre-forte: var(--falta);
+  --color-ocre-fundo: var(--falta-bg);
+  --color-verde: var(--atendida-ink);
+  --color-verde-forte: var(--atendida);
+  --color-verde-fundo: var(--atendida-bg);
+  --color-vermelho: var(--erro-ink);
+  --color-vermelho-forte: var(--error);
+  --color-vermelho-fundo: var(--erro-bg);
+  --color-azul: var(--confirmada-ink);
+  --color-azul-forte: var(--confirmada);
+  --color-azul-fundo: var(--confirmada-bg);
+  --color-cinza-fundo: var(--muted-surface);
+  --color-sobre-status: var(--on-status);
+  --color-inverso: var(--inverse);
+  --color-sobre-inverso: var(--on-inverse);
 
-  --radius-campo: 8px;
+  --radius-campo: var(--r-field);
+  --radius-botao: var(--r-btn);
+  --radius-cartao: var(--r-lg);
+  --radius-grande: var(--r-xl);
+
+  --shadow-cartao: var(--elev-1);
+  --shadow-elevado: var(--elev-2);
+  --shadow-flutuante: var(--elev-3);
 }
 
 html {
   -webkit-text-size-adjust: 100%;
-  color-scheme: light;
 }
 
 body {
@@ -79,9 +113,25 @@ body {
 
 /* Boas-vindas: faixa da marca com degradê (formato do cabeçalho do app HopeCore) */
 .cabecalho-marca {
-  background: linear-gradient(140deg, var(--color-anil-escuro), var(--color-anil) 60%, #5b5fc7);
+  background: var(--header-from);
+  background-image: var(--grad-header);
+  color: var(--on-header);
 }
 
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
 }
+
+/* ---- Componentes do formato HopeCore (ver design-system/styles.css) ---- */
+.titulo-display { font-family: var(--font-display); font-weight: var(--display-weight); font-variation-settings: var(--display-opsz); letter-spacing: -.01em; }
+.rotulo { font-size: 11px; line-height: 1.3; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.cartao { background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--r-lg); box-shadow: var(--elev-1); }
+.cartao-boas-vindas { position: relative; overflow: hidden; }
+.cartao-boas-vindas::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--grad-strip); }
+.btn-degrade { background-color: var(--primary); background-image: var(--grad-btn); color: var(--on-primary); }
+.carteira { background: var(--wallet); background-image: var(--grad-wallet); color: var(--on-wallet); border: 1px solid var(--wallet-line); border-radius: var(--r-xl); box-shadow: var(--elev-2); }
+.carteira .rotulo { color: var(--wallet-muted); }
+.carteira-bloco { background: var(--wallet-block); border: 1px solid var(--wallet-line); border-radius: var(--r-md); }
+.atalho-icone { border-radius: var(--tile-icon-radius); }
+.pressionar { transition: transform 120ms cubic-bezier(.2,.8,.2,1); }
+.pressionar:active { transform: scale(.98); }

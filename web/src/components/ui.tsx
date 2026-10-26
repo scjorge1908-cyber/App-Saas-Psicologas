@@ -12,10 +12,10 @@ export function cx(...c: Array<string | false | null | undefined>) {
 // ---------------------------------------------------------------- Botão -----
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 const VARIANTS: Record<Variant, string> = {
-  primary: 'bg-anil text-white hover:bg-anil-escuro disabled:bg-anil/50',
-  secondary: 'bg-papel text-tinta border border-linha-forte hover:border-anil hover:text-anil disabled:opacity-50',
-  ghost: 'text-anil hover:bg-anil-claro disabled:opacity-50',
-  danger: 'bg-vermelho text-white hover:brightness-95 disabled:opacity-50',
+  primary: 'btn-degrade shadow-cartao hover:brightness-105 hover:shadow-elevado disabled:opacity-50',
+  secondary: 'bg-papel text-anil-escuro border border-anil-escuro/50 hover:bg-anil-claro/60 disabled:opacity-50',
+  ghost: 'text-anil-escuro hover:bg-anil-claro/70 disabled:opacity-50',
+  danger: 'bg-vermelho-forte text-sobre-status hover:brightness-95 disabled:opacity-50',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; busy?: boolean; size?: 'md' | 'sm' }>(
@@ -24,8 +24,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
       <button
         ref={ref}
         className={cx(
-          'inline-flex items-center justify-center gap-2 rounded-[var(--radius-campo)] font-bold transition-colors disabled:cursor-not-allowed',
-          size === 'md' ? 'min-h-11 px-4 text-[15px]' : 'min-h-9 px-3 text-sm',
+          'pressionar inline-flex items-center justify-center gap-2 rounded-botao font-bold transition-[filter,box-shadow,background-color] disabled:cursor-not-allowed',
+          size === 'md' ? 'min-h-12 px-5 text-[15px]' : 'min-h-10 px-3.5 text-sm',
           VARIANTS[variant], className,
         )}
         disabled={disabled || busy}
@@ -54,7 +54,7 @@ export function Loading({ label = 'Carregando…' }: { label?: string }) {
 }
 
 // --------------------------------------------------------------- Campos -----
-const inputBase = 'w-full min-h-11 rounded-[var(--radius-campo)] border border-linha-forte bg-papel px-3 py-2 text-tinta placeholder:text-tinta-3 focus:border-anil focus:outline-none focus:ring-2 focus:ring-anil/25 disabled:bg-cinza-fundo aria-[invalid=true]:border-vermelho';
+const inputBase = 'w-full min-h-12 rounded-campo border-[1.5px] border-linha bg-papel px-4 py-2 text-tinta placeholder:text-tinta-3 focus:border-anil focus:outline-none focus:ring-2 focus:ring-anil/25 disabled:bg-cinza-fundo aria-[invalid=true]:border-vermelho';
 
 interface FieldProps { label: string; hint?: ReactNode; error?: string | null; required?: boolean; children: (id: string, describedBy?: string) => ReactNode; className?: string }
 export function Field({ label, hint, error, required, children, className }: FieldProps) {
@@ -63,7 +63,7 @@ export function Field({ label, hint, error, required, children, className }: Fie
   const errId = error ? `${id}-err` : undefined;
   return (
     <div className={cx('flex flex-col gap-1', className)}>
-      <label htmlFor={id} className="text-sm font-bold text-tinta-2">
+      <label htmlFor={id} className="rotulo">
         {label}{required && <span className="text-vermelho" aria-hidden> *</span>}
       </label>
       {children(id, [hintId, errId].filter(Boolean).join(' ') || undefined)}
@@ -97,22 +97,22 @@ export const STATUS_LABEL: Record<AppointmentStatus, string> = {
   agendado: 'Agendada', confirmado: 'Confirmada', atendido: 'Atendida', faltou: 'Falta', cancelado: 'Cancelada',
 };
 const STATUS_STYLE: Record<AppointmentStatus, string> = {
-  agendado: 'bg-ocre-fundo text-ocre',
-  confirmado: 'bg-anil-claro text-anil-escuro',
+  agendado: 'bg-anil-claro text-sobre-anil-claro',
+  confirmado: 'bg-azul-fundo text-azul',
   atendido: 'bg-verde-fundo text-verde',
-  faltou: 'bg-vermelho-fundo text-vermelho',
-  cancelado: 'bg-cinza-fundo text-tinta-3 line-through decoration-1',
+  faltou: 'bg-ocre-fundo text-ocre',
+  cancelado: 'bg-cinza-fundo text-tinta-2',
 };
 export const STATUS_BAR: Record<AppointmentStatus, string> = {
-  agendado: 'border-l-ocre', confirmado: 'border-l-anil', atendido: 'border-l-verde', faltou: 'border-l-vermelho', cancelado: 'border-l-linha-forte',
+  agendado: 'border-l-anil', confirmado: 'border-l-azul-forte', atendido: 'border-l-verde-forte', faltou: 'border-l-ocre-forte', cancelado: 'border-l-linha-forte',
 };
 export function StatusBadge({ status }: { status: AppointmentStatus }) {
-  return <span className={cx('inline-flex items-center rounded px-2 py-0.5 text-sm font-bold', STATUS_STYLE[status])}>{STATUS_LABEL[status]}</span>;
+  return <span className={cx('inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-bold', STATUS_STYLE[status])}><span aria-hidden className="size-1.5 rounded-full bg-current opacity-85" />{STATUS_LABEL[status]}</span>;
 }
 
 export function Badge({ tone = 'neutro', children }: { tone?: 'neutro' | 'atencao' | 'ok' | 'erro' | 'anil'; children: ReactNode }) {
-  const t = { neutro: 'bg-cinza-fundo text-tinta-2', atencao: 'bg-ocre-fundo text-ocre', ok: 'bg-verde-fundo text-verde', erro: 'bg-vermelho-fundo text-vermelho', anil: 'bg-anil-claro text-anil-escuro' }[tone];
-  return <span className={cx('inline-flex items-center rounded px-2 py-0.5 text-sm font-bold', t)}>{children}</span>;
+  const t = { neutro: 'bg-cinza-fundo text-tinta-2', atencao: 'bg-ocre-fundo text-ocre', ok: 'bg-verde-fundo text-verde', erro: 'bg-vermelho-fundo text-vermelho', anil: 'bg-anil-claro text-sobre-anil-claro' }[tone];
+  return <span className={cx('inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-bold', t)}>{children}</span>;
 }
 
 // ----------------------------------------------------------- Estruturas -----
@@ -120,7 +120,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-[26px] font-bold leading-tight text-tinta">{title}</h1>
+        <h1 className="titulo-display text-[30px] leading-tight text-tinta">{title}</h1>
         {subtitle && <p className="mt-1 text-tinta-2">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -130,10 +130,10 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 
 export function Panel({ title, actions, children, className }: { title?: string; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cx('rounded-lg border border-linha bg-papel', className)}>
+    <section className={cx('cartao', className)}>
       {(title || actions) && (
-        <div className="flex items-center justify-between gap-3 border-b border-linha px-4 py-3">
-          {title && <h2 className="text-lg font-bold">{title}</h2>}
+        <div className="flex items-center justify-between gap-3 border-b border-linha/70 px-4 py-3.5">
+          {title && <h2 className="text-[17px] font-bold">{title}</h2>}
           {actions}
         </div>
       )}
@@ -144,7 +144,7 @@ export function Panel({ title, actions, children, className }: { title?: string;
 
 export function Empty({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed border-linha-forte bg-papel/60 p-6">
+    <div className="flex flex-col items-start gap-2 rounded-cartao border border-dashed border-linha-forte bg-papel/60 p-6">
       <p className="font-bold">{title}</p>
       {children && <div className="text-tinta-2">{children}</div>}
       {action}
@@ -153,12 +153,12 @@ export function Empty({ title, children, action }: { title: string; children?: R
 }
 
 export function ErrorBox({ children }: { children: ReactNode }) {
-  return <div role="alert" className="rounded-lg border border-vermelho/40 bg-vermelho-fundo px-4 py-3 text-vermelho">{children}</div>;
+  return <div role="alert" className="rounded-campo border border-vermelho/30 bg-vermelho-fundo px-4 py-3 text-vermelho">{children}</div>;
 }
 
 export function Notice({ children, tone = 'anil' }: { children: ReactNode; tone?: 'anil' | 'ocre' }) {
   return (
-    <div className={cx('rounded-lg border px-4 py-3 text-[15px]', tone === 'anil' ? 'border-anil/30 bg-anil-claro text-anil-escuro' : 'border-ocre/30 bg-ocre-fundo text-ocre')}>
+    <div className={cx('rounded-campo border px-4 py-3 text-[15px]', tone === 'anil' ? 'border-anil/25 bg-anil-claro text-sobre-anil-claro' : 'border-ocre/30 bg-ocre-fundo text-ocre')}>
       {children}
     </div>
   );
@@ -175,7 +175,7 @@ export function Tabs<T extends string>({ value, onChange, items, label }: { valu
           onClick={() => onChange(it.value)}
           className={cx(
             'shrink-0 border-b-[3px] px-3 py-2.5 font-bold transition-colors',
-            value === it.value ? 'border-anil text-anil' : 'border-transparent text-tinta-3 hover:text-tinta',
+            value === it.value ? 'border-anil text-anil-escuro' : 'border-transparent text-tinta-3 hover:text-tinta',
           )}
         >
           {it.label}{it.count ? <span className="ml-1.5 rounded bg-ocre-fundo px-1.5 text-sm text-ocre num">{it.count}</span> : null}
@@ -203,7 +203,7 @@ export function Dialog({ open, onClose, title, children, footer, wide }: { open:
       ref={ref}
       onCancel={(e) => { e.preventDefault(); onClose(); }}
       className={cx(
-        'm-0 mt-auto w-full max-w-none rounded-t-2xl bg-papel p-0 text-tinta shadow-xl backdrop:bg-tinta/40 sm:m-auto sm:rounded-2xl',
+        'm-0 mt-auto w-full max-w-none rounded-t-grande bg-papel p-0 text-tinta shadow-flutuante backdrop:bg-black/45 sm:m-auto sm:rounded-grande',
         wide ? 'sm:max-w-2xl' : 'sm:max-w-lg',
       )}
       aria-labelledby="dlg-title"
@@ -264,7 +264,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         </Dialog>
         <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-20 z-50 flex flex-col items-center gap-2 px-4 lg:bottom-6">
           {toasts.map((t) => (
-            <div key={t.id} className={cx('pointer-events-auto max-w-md rounded-lg px-4 py-3 font-bold shadow-lg', t.tone === 'ok' ? 'bg-tinta text-white' : 'bg-vermelho text-white')}>
+            <div key={t.id} className={cx('pointer-events-auto max-w-md rounded-campo px-4 py-3 font-bold shadow-flutuante', t.tone === 'ok' ? 'bg-inverso text-sobre-inverso' : 'bg-vermelho-forte text-sobre-status')}>
               {t.text}
             </div>
           ))}
@@ -279,7 +279,7 @@ export function DescList({ items }: { items: Array<[string, ReactNode]> }) {
     <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
       {items.filter(([, v]) => v !== null && v !== undefined && v !== '').map(([k, v]) => (
         <div key={k}>
-          <dt className="text-sm text-tinta-3">{k}</dt>
+          <dt className="rotulo">{k}</dt>
           <dd className="font-bold">{v}</dd>
         </div>
       ))}

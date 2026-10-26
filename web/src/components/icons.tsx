@@ -44,3 +44,10 @@ export const IconEye = (p: SVGProps<SVGSVGElement>) => (
 export const IconEyeOff = (p: SVGProps<SVGSVGElement>) => (
   <svg {...base(p)}><path d="M10.6 5.6A9.6 9.6 0 0112 5.5c6 0 9.5 6.5 9.5 6.5a16.7 16.7 0 01-2.7 3.4M6.6 6.7C3.9 8.4 2.5 12 2.5 12S6 18.5 12 18.5a9 9 0 004.4-1.1M9.9 9.9a3 3 0 004.2 4.2M3 3l18 18" /></svg>
 );
+export const IconClock = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><rect x="3.5" y="4.5" width="17" height="16" rx="2" /><path d="M3.5 9h17M8 2.5v4M16 2.5v4M12 12.5v3l2 1.2" /></svg>);
+export const IconCheck = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>);
+export const IconAlert = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M12 4l9 16H3z" /><path d="M12 10v4M12 17h.01" /></svg>);
+export const IconVideo = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><rect x="3" y="6.5" width="12.5" height="11" rx="2" /><path d="M15.5 10.5l5-3v9l-5-3" /></svg>);
+export const IconPin = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0113 0c0 5-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>);
+export const IconSun = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4" /></svg>);
+export const IconLogout = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M14 4h4.5A1.5 1.5 0 0120 5.5v13a1.5 1.5 0 01-1.5 1.5H14M10 16l-4-4 4-4M6 12h10" /></svg>);

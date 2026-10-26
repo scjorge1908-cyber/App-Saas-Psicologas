@@ -221,7 +221,7 @@ function WeekGrid({ start, byDay, tz, from, to, onOpen, onNew }: {
               if (top < 0 || top > PX * hours.length) return null;
               return (
                 <button key={it.id} onClick={() => onOpen(it)} style={{ top, height }}
-                  className={cx('absolute inset-x-1 overflow-hidden rounded border-l-4 bg-papel px-1.5 py-0.5 text-left text-sm shadow-sm ring-1 ring-linha hover:ring-anil', STATUS_BAR[it.status], it.status === 'cancelado' && 'opacity-60')}>
+                  className={cx('absolute inset-x-1 overflow-hidden rounded border-l-4 bg-papel px-1.5 py-0.5 text-left text-sm shadow-cartao ring-1 ring-linha hover:ring-anil', STATUS_BAR[it.status], it.status === 'cancelado' && 'opacity-60')}>
                   <span className="num block font-bold">{s.time}</span>
                   <span className="block truncate">{it.patient_social_name || it.patient_name}</span>
                 </button>
@@ -249,7 +249,7 @@ function MonthGrid({ start, days, month, byDay, today, onPick }: { start: string
           return (
             <button key={d} onClick={() => onPick(d)} aria-label={`${formatLongDate(d)}: ${list.length} sessões`}
               className={cx('min-h-16 border-b border-r border-linha p-1.5 text-left align-top hover:bg-anil-claro/50 sm:min-h-24', !inMonth && 'bg-gesso/60 text-tinta-3', weekday(d) === 0 && 'border-r-0')}>
-              <span className={cx('num inline-flex h-7 w-7 items-center justify-center rounded-full font-bold', d === today && 'bg-anil text-white')}>{Number(d.slice(8))}</span>
+              <span className={cx('num inline-flex h-7 w-7 items-center justify-center rounded-full font-bold', d === today && 'bg-anil text-sobre-anil')}>{Number(d.slice(8))}</span>
               {list.length > 0 && (
                 <span className="mt-1 block text-sm">
                   <span className="num font-bold">{list.length}</span><span className="hidden sm:inline"> {list.length === 1 ? 'sessão' : 'sessões'}</span>

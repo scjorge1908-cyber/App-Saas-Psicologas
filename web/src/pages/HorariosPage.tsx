@@ -59,7 +59,7 @@ export function HorariosPage() {
           {lista.map((l) => (
             <li key={l.id}>
               <button type="button" onClick={() => setEditLocal(l)}
-                className={cx('flex w-full items-center gap-3 rounded-2xl border border-linha bg-papel px-4 py-3 text-left shadow-[0_1px_3px_rgba(30,36,48,.06)]', !l.active && 'opacity-60')}>
+                className={cx('flex w-full items-center gap-3 cartao pressionar px-4 py-3 text-left', !l.active && 'opacity-60')}>
                 <span className="size-3 shrink-0 rounded-full" style={{ background: l.color ?? 'var(--color-anil)' }} aria-hidden />
                 <span className="min-w-0 flex-1">
                   <strong className="block truncate">{l.name}</strong>

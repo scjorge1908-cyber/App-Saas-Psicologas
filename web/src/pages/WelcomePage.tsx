@@ -46,7 +46,7 @@ export function WelcomePage() {
 
   return (
     <div className="boas-vindas-app flex min-h-dvh flex-col">
-      <header className="cabecalho-marca px-6 pb-10 pt-[calc(2.5rem+var(--sat,0px))] text-white">
+      <header className="cabecalho-marca px-6 pb-10 pt-[calc(2.5rem+var(--sat,0px))]">
         <p className="text-sm font-semibold uppercase tracking-[.14em] opacity-80">PsiConsultório</p>
         <h1 className="mt-3 max-w-md text-[30px] font-bold leading-tight">Seu consultório inteiro no celular.</h1>
         <p className="mt-3 max-w-md text-[17px] opacity-90">Agenda, prontuário, documentos e financeiro — feito para psicólogas.</p>
@@ -55,7 +55,7 @@ export function WelcomePage() {
       <main className="-mt-6 flex flex-1 flex-col gap-5 rounded-t-[28px] bg-gesso px-5 pb-[calc(1.5rem+var(--sab,0px))] pt-6">
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {RECURSOS.map(({ Icone, titulo, texto }) => (
-            <li key={titulo} className="flex items-start gap-3 rounded-2xl border border-linha bg-papel p-4 shadow-[0_1px_3px_rgba(30,36,48,.06)]">
+            <li key={titulo} className="flex items-start gap-3 cartao p-4">
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-anil-claro text-anil"><Icone /></span>
               <span>
                 <strong className="block text-[16px]">{titulo}</strong>
@@ -69,7 +69,7 @@ export function WelcomePage() {
 
         <div className="mt-auto flex flex-col gap-3">
           <button type="button" onClick={conhecer}
-            className="min-h-13 rounded-2xl bg-anil px-5 text-[17px] font-bold text-white shadow-[0_6px_18px_rgba(59,63,143,.28)] transition active:scale-[.98]">
+            className="min-h-13 btn-degrade pressionar rounded-botao px-5 text-[17px] font-bold shadow-elevado">
             Conhecer o app
           </button>
           <p className="-mt-1 text-center text-sm text-tinta-3">Sem cadastro, com dados fictícios. Nada sai do seu celular.</p>

@@ -8,6 +8,9 @@ import { AuthProvider } from './auth/AuthProvider';
 import { FeedbackProvider } from './components/ui';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { escutarRetornoGoogle } from './lib/google';
+import { aplicarTema } from './lib/tema';
+
+aplicarTema(); // antes de desenhar, para não piscar o tema errado
 
 // Android/iOS: o login com Google volta ao app por br.com.clinicahope.psi://auth
 escutarRetornoGoogle((msg) => window.dispatchEvent(new CustomEvent('psi:erro-login', { detail: msg })));

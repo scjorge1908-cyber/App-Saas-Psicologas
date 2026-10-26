@@ -75,7 +75,15 @@ jobs:
           KS: ${{ secrets.PSI_UPLOAD_KEYSTORE_B64 }}
         run: |
           if [ -z "$KS" ]; then echo "::warning::Segredos PSI_UPLOAD_* não cadastrados: o AAB sai sem assinatura."; exit 0; fi
-          echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          # tolera espaços, quebras de linha e BOM que vêm junto ao copiar e colar
+          LIMPO="$(printf '%s' "$KS" | tr -d ' \r\n\t' | sed 's/^\xEF\xBB\xBF//')"
+          # diagnóstico sem revelar o valor: tamanho, 3 primeiros caracteres (PKCS12 começa com "MII") e caracteres inválidos
+          INVALIDOS="$(printf '%s' "$LIMPO" | tr -d 'A-Za-z0-9+/=' | wc -c)"
+          echo "PSI_UPLOAD_KEYSTORE_B64: ${#LIMPO} caracteres, começa com '${LIMPO:0:3}', caracteres fora do base64: $INVALIDOS"
+          if ! printf '%s' "$LIMPO" | base64 -d > "$RUNNER_TEMP/upload.jks" 2>/dev/null; then
+            echo "::error::PSI_UPLOAD_KEYSTORE_B64 não é base64 válido (${#LIMPO} caracteres, esperado cerca de 5984, começando com MII). Recadastre copiando só a linha longa do SEGREDOS-GITHUB.txt."
+            exit 1
+          fi
           echo "PSI_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
       - name: Compilar AAB (release)
         working-directory: web/android

@@ -14,16 +14,18 @@ import { InvoicesPage } from './pages/InvoicesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PublicConfirmPage } from './pages/PublicConfirmPage';
 import { TermsPage } from './pages/TermsPage';
+import { WelcomePage } from './pages/WelcomePage';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading, recovering } = useAuth();
   const { profile, isLoading, error } = useProfile();
   const loc = useLocation();
   if (loading || (session && isLoading)) return <div className="p-6"><Loading /></div>;
-  if (!session) return <Navigate to="/entrar" replace state={{ from: loc.pathname }} />;
+  if (!session) return <Navigate to="/boas-vindas" replace state={{ from: loc.pathname }} />;
   if (recovering) return <Navigate to="/redefinir-senha" replace />;
   if (error) return <div className="p-6"><ErrorBox>Não foi possível carregar seu perfil. Recarregue a página.</ErrorBox></div>;
-  if (profile && (!profile.onboarded_at || !profile.crp)) return <OnboardingPage />;
+  // Só o nome é pedido no começo; o CRP é pedido quando ela for emitir documento.
+  if (profile && !profile.onboarded_at) return <OnboardingPage />;
   return <>{children}</>;
 }
 
@@ -45,6 +47,7 @@ export default function App() {
     <Routes>
       <Route path="/c/:token" element={<PublicConfirmPage />} />
       <Route path="/termos" element={<TermsPage />} />
+      <Route path="/boas-vindas" element={<PublicOnly><WelcomePage /></PublicOnly>} />
       <Route path="/entrar" element={<PublicOnly><LoginPage /></PublicOnly>} />
       <Route path="/cadastro" element={<PublicOnly><SignupPage /></PublicOnly>} />
       <Route path="/esqueci-senha" element={<PublicOnly><ForgotPasswordPage /></PublicOnly>} />

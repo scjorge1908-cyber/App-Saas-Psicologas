@@ -4,6 +4,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../lib/types';
 import { DEFAULT_TZ } from '../lib/format';
+import { DEMO_USER_ID, isDemo, sairDaDemo, useDemo } from '../lib/demo/modo';
+import { limparDemo, perfilDemo } from '../lib/demo/api-demo';
+
+// Sessão fictícia da demonstração: só existe no aparelho e não dá acesso a nada no servidor.
+const SESSAO_DEMO = { access_token: 'demo', refresh_token: 'demo', token_type: 'bearer', expires_in: 0,
+  user: { id: DEMO_USER_ID, app_metadata: {}, user_metadata: {}, aud: 'demo', created_at: '' } } as unknown as Session;
 
 interface AuthState {
   session: Session | null;
@@ -35,8 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { mounted = false; sub.subscription.unsubscribe(); };
   }, [qc]);
 
+  // Entrar ou sair da demonstração troca a fonte dos dados: nada da demonstração fica em cache para a conta real.
+  const demo = useDemo();
+  useEffect(() => { qc.clear(); }, [demo, qc]);
+
   return (
-    <AuthCtx.Provider value={{ session, loading, recovering, clearRecovering: () => setRecovering(false) }}>
+    <AuthCtx.Provider value={{ session: demo ? SESSAO_DEMO : session, loading: demo ? false : loading, recovering, clearRecovering: () => setRecovering(false) }}>
       {children}
     </AuthCtx.Provider>
   );
@@ -50,6 +60,7 @@ export function useProfile() {
     queryKey: ['profile', session?.user.id],
     enabled: !!session,
     queryFn: async () => {
+      if (isDemo()) return { ...perfilDemo() };
       const { data, error } = await supabase.from('profiles').select('*').eq('id', session!.user.id).single();
       if (error) throw error;
       return data as Profile;
@@ -59,5 +70,10 @@ export function useProfile() {
 }
 
 export async function signOut() {
+  if (isDemo()) {
+    limparDemo();
+    sairDaDemo();
+    return;
+  }
   await supabase.auth.signOut();
 }

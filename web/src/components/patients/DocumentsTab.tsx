@@ -13,6 +13,7 @@ import { useProfile } from '../../auth/AuthProvider';
 import { supabase } from '../../lib/supabase';
 import { Button, Dialog, Empty, ErrorBox, Field, Input, Loading, Notice, Select, TextField, Textarea, useToast } from '../ui';
 import { IconDownload } from '../icons';
+import { isDemo } from '../../lib/demo/modo';
 
 interface FieldDef { k: string; label: string; long?: boolean; hint?: string; type?: string; placeholder?: string }
 
@@ -176,7 +177,7 @@ function DocumentDialog({ open, onClose, patient }: { open: boolean; onClose: ()
         patient_id: patient.id, doc_type: type, title: DOC_LABELS[type], purpose: fields.finalidade?.trim() || null,
         recipient: fields.solicitante?.trim() || null, issued_on: issuedOn, fields: { ...fields, sigilo }, attachment_id: att.id, pdf_sha256: sha,
       });
-      await supabase.rpc('log_event', { p_action: 'GERAR_DOCUMENTO', p_table: 'documents' });
+      if (!isDemo()) await supabase.rpc('log_event', { p_action: 'GERAR_DOCUMENTO', p_table: 'documents' });
       await qc.invalidateQueries({ queryKey: ['documents', patient.id] });
       await qc.invalidateQueries({ queryKey: ['attachments', patient.id] });
       saveBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), `${DOC_LABELS[type]} - ${patient.full_name}.pdf`);

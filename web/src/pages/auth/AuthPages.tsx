@@ -6,6 +6,8 @@ import { errorMessage } from '../../lib/errors';
 import { normalizeCrp, onlyDigits } from '../../lib/format';
 import { Button, ErrorBox, Notice, TextField } from '../../components/ui';
 import { useAuth, useProfile } from '../../auth/AuthProvider';
+import { entrarComGoogle } from '../../lib/google';
+import { LogoGoogle } from '../WelcomePage';
 
 function AuthLayout({ title, children, footer }: { title: string; children: ReactNode; footer?: ReactNode }) {
   return (
@@ -21,6 +23,26 @@ function AuthLayout({ title, children, footer }: { title: string; children: Reac
 }
 
 const linkCls = 'font-bold text-anil underline-offset-4 hover:underline';
+
+/** Entrar/criar conta com Google em um toque (mesma conta serve para entrar depois). */
+function BotaoGoogle({ rotulo }: { rotulo: string }) {
+  const [erro, setErro] = useState<string | null>(null);
+  const [indo, setIndo] = useState(false);
+  async function ir() {
+    setErro(null); setIndo(true);
+    try { await entrarComGoogle(); } catch (e) { setErro(errorMessage(e)); } finally { setIndo(false); }
+  }
+  return (
+    <div className="mb-6 flex flex-col gap-3">
+      {erro && <ErrorBox>{erro}</ErrorBox>}
+      <button type="button" onClick={ir} disabled={indo}
+        className="flex min-h-12 items-center justify-center gap-3 rounded-xl border border-linha-forte bg-papel px-4 font-bold transition active:scale-[.98] disabled:opacity-60">
+        <LogoGoogle /> {indo ? 'Abrindo o Google…' : rotulo}
+      </button>
+      <div className="flex items-center gap-3 text-sm text-tinta-3"><span className="h-px flex-1 bg-linha" />ou com e-mail<span className="h-px flex-1 bg-linha" /></div>
+    </div>
+  );
+}
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -43,6 +65,7 @@ export function LoginPage() {
       <Link to="/esqueci-senha" className={linkCls}>Esqueci minha senha</Link>
       <span>Ainda não tem conta? <Link to="/cadastro" className={linkCls}>Criar conta</Link></span>
     </>}>
+      <BotaoGoogle rotulo="Entrar com Google" />
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         {error && <ErrorBox>{error}</ErrorBox>}
         <TextField label="E-mail" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -91,6 +114,7 @@ export function SignupPage() {
 
   return (
     <AuthLayout title="Criar conta" footer={<span>Já tem conta? <Link to="/entrar" className={linkCls}>Entrar</Link></span>}>
+      <BotaoGoogle rotulo="Criar conta com Google" />
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         {error && <ErrorBox>{error}</ErrorBox>}
         <TextField label="Nome completo" autoComplete="name" required value={form.name} onChange={set('name')} />
@@ -196,12 +220,12 @@ export function OnboardingPage() {
     setError(null);
     const crpN = normalizeCrp(crp);
     if (name.trim().length < 3) return setError('Informe seu nome completo.');
-    if (!crpN) return setError('Informe o CRP no formato região/número, por exemplo 06/123456.');
+    if (crp.trim() && !crpN) return setError('CRP no formato região/número, por exemplo 06/123456. Pode deixar em branco e preencher depois.');
     const ph = onlyDigits(phone);
     if (ph && (ph.length < 10 || ph.length > 11)) return setError('Telefone inválido. Informe DDD + número.');
     setBusy(true);
     const { error } = await supabase.from('profiles').update({
-      full_name: name.trim(), crp: crpN, phone: ph || null, city: city.trim() || null,
+      full_name: name.trim(), crp: crpN || null, phone: ph || null, city: city.trim() || null,
       uf: uf.trim().toUpperCase() || null, onboarded_at: new Date().toISOString(),
     }).eq('id', profile!.id);
     setBusy(false);
@@ -211,11 +235,11 @@ export function OnboardingPage() {
 
   return (
     <AuthLayout title="Seu perfil profissional">
-      <p className="mb-5 text-tinta-2">Nome e CRP aparecem nos documentos que você emitir e na página em que o paciente confirma a sessão.</p>
+      <p className="mb-5 text-tinta-2">Só o nome é obrigatório agora. O CRP aparece nos documentos e na página de confirmação do paciente; se preferir, preencha depois em Configurações.</p>
       <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
         {error && <ErrorBox>{error}</ErrorBox>}
         <TextField label="Nome completo" required value={name} onChange={(e) => setName(e.target.value)} />
-        <TextField label="CRP" required placeholder="06/123456" value={crp} onChange={(e) => setCrp(e.target.value)} />
+        <TextField label="CRP (opcional agora)" placeholder="06/123456" value={crp} onChange={(e) => setCrp(e.target.value)} />
         <TextField label="Telefone profissional" inputMode="tel" placeholder="(48) 99999-9999" value={phone} onChange={(e) => setPhone(e.target.value)} />
         <div className="grid grid-cols-[1fr_5rem] gap-3">
           <TextField label="Cidade" value={city} onChange={(e) => setCity(e.target.value)} />

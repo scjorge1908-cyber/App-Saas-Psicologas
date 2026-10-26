@@ -9,6 +9,8 @@ import type { BackupProgress } from '../lib/backup';
 import { signOut, useAuth, useProfile } from '../auth/AuthProvider';
 import { Button, ErrorBox, Field, Loading, Notice, PageHeader, Panel, Select, TextField, useConfirm, useToast } from '../components/ui';
 import { saveBlob } from '../components/patients/DocumentsTab';
+import { isDemo } from '../lib/demo/modo';
+import { atualizarPerfilDemo } from '../lib/demo/api-demo';
 
 export function SettingsPage() {
   const { profile, isLoading } = useProfile();
@@ -34,8 +36,12 @@ function useSaveProfile() {
   const qc = useQueryClient();
   const toast = useToast();
   return async (id: string, patch: Partial<Profile>, setError: (e: string | null) => void) => {
-    const { error } = await supabase.from('profiles').update(patch).eq('id', id);
-    if (error) { setError(errorMessage(error)); return false; }
+    if (isDemo()) {
+      atualizarPerfilDemo(patch); // demonstração: muda só no aparelho
+    } else {
+      const { error } = await supabase.from('profiles').update(patch).eq('id', id);
+      if (error) { setError(errorMessage(error)); return false; }
+    }
     await qc.invalidateQueries({ queryKey: ['profile'] });
     toast('Configurações salvas');
     return true;

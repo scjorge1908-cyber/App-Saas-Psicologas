@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react';
 import { cx } from './ui';
 import { IconCalendar, IconMoney, IconMore, IconPeople, IconReceipt, IconSettings, IconToday } from './icons';
 import { signOut, useProfile } from '../auth/AuthProvider';
+import { useNavigate } from 'react-router-dom';
+import { useDemo } from '../lib/demo/modo';
 
 type NavItem = { to: string; label: string; icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement; end?: boolean };
 const MAIN: NavItem[] = [
@@ -24,8 +26,10 @@ export function AppShell() {
   // Leva o foco ao conteúdo ao trocar de página (leitores de tela)
   useEffect(() => { mainRef.current?.focus(); window.scrollTo(0, 0); }, [loc.pathname]);
 
+  const demo = useDemo();
   return (
     <div className="min-h-dvh lg:flex">
+      {demo && <FaixaDemo />}
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-papel focus:px-3 focus:py-2">Pular para o conteúdo</a>
 
       {/* Lateral (desktop) */}
@@ -46,7 +50,7 @@ export function AppShell() {
         <button onClick={() => signOut()} className="m-3 rounded-lg px-3 py-2.5 text-left font-bold text-tinta-3 hover:bg-cinza-fundo">Sair</button>
       </aside>
 
-      <main id="conteudo" ref={mainRef} tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-5 outline-none sm:px-6 lg:pb-12 lg:pt-8">
+      <main id="conteudo" ref={mainRef} tabIndex={-1} className={cx('mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-5 outline-none sm:px-6 lg:pb-12 lg:pt-8', demo && 'mt-11')}>
         <Outlet />
       </main>
 
@@ -75,6 +79,21 @@ export function MorePage() {
         </NavLink>
       ))}
       <button onClick={() => signOut()} className="mt-4 rounded-lg border border-linha bg-papel px-4 py-3.5 text-left font-bold text-vermelho">Sair da conta</button>
+    </div>
+  );
+}
+
+/** Aviso fixo durante a demonstração, com o caminho para criar a conta de verdade. */
+function FaixaDemo() {
+  const nav = useNavigate();
+  async function criarConta() {
+    await signOut(); // sai da demonstração e descarta os dados fictícios
+    nav('/cadastro');
+  }
+  return (
+    <div className="pt-safe fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-3 bg-ocre-fundo px-4 py-2 text-[14px] text-ocre lg:left-64">
+      <span><b>Demonstração</b> · dados fictícios, nada é salvo</span>
+      <button type="button" onClick={criarConta} className="shrink-0 rounded-lg bg-ocre px-3 py-1.5 font-bold text-white">Criar minha conta</button>
     </div>
   );
 }

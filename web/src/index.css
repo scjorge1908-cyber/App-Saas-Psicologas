@@ -76,3 +76,12 @@ body {
 [tabindex="-1"]:focus-visible {
   outline: none;
 }
+
+/* Boas-vindas: faixa da marca com degradê (formato do cabeçalho do app HopeCore) */
+.cabecalho-marca {
+  background: linear-gradient(140deg, var(--color-anil-escuro), var(--color-anil) 60%, #5b5fc7);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}

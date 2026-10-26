@@ -6,6 +6,17 @@
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>br.com.clinicahope.psi</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>br.com.clinicahope.psi</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleDisplayName</key>
         <string>PsiConsultório</string>
 	<key>CFBundleExecutable</key>

@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { useProfile } from '../../auth/AuthProvider';
 import { Badge, Button, Dialog, Empty, ErrorBox, Field, Input, Loading, Notice, Select, TextField, Textarea, useToast } from '../ui';
 import { IconLock } from '../icons';
+import { isDemo } from '../../lib/demo/modo';
 
 export const KIND_LABEL: Record<RecordKind, string> = {
   identificacao_demanda: 'Avaliação da demanda',
@@ -26,7 +27,7 @@ export function RecordTab({ patientId, sessionId, sessions }: { patientId: strin
   const [history, setHistory] = useState<RecordEntry | null>(null);
 
   // Registra acesso ao prontuário (auditoria sem conteúdo)
-  useEffect(() => { void supabase.rpc('log_event', { p_action: 'VISUALIZAR_PRONTUARIO', p_table: 'record_entries' }); }, [patientId]);
+  useEffect(() => { if (!isDemo()) void supabase.rpc('log_event', { p_action: 'VISUALIZAR_PRONTUARIO', p_table: 'record_entries' }); }, [patientId]);
 
   // Vindo de "Registrar no prontuário" a partir de uma sessão
   useEffect(() => {

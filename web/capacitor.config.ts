@@ -1,9 +1,9 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 // Aplicativo Android/iOS empacotando o mesmo build web (dist/).
-// appId provisório: definir o identificador definitivo antes de publicar nas lojas.
+// Identificador definitivo nas lojas (aprovado 26/10/2026). Publicado pela conta de desenvolvedor da Hope.
 const config: CapacitorConfig = {
-  appId: 'br.com.psiconsultorio.app',
+  appId: 'br.com.clinicahope.psi',
   appName: 'PsiConsultório',
   webDir: 'dist',
   android: { allowMixedContent: false },

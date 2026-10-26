@@ -9,7 +9,8 @@ import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet, useInvalidateAgenda } from '../components/appointments/AppointmentSheet';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
 import { Button, ErrorBox, Loading, STATUS_BAR, StatusBadge, cx, useToast } from '../components/ui';
-import { IconPlus } from '../components/icons';
+import { IconEye, IconEyeOff, IconPlus } from '../components/icons';
+import { VALOR_OCULTO, useValoresVisiveis } from '../lib/privacidade';
 
 function useNow(intervalMs = 60000) {
   const [now, setNow] = useState(() => Date.now());
@@ -18,6 +19,8 @@ function useNow(intervalMs = 60000) {
 }
 
 export function TodayPage() {
+  const [valoresVisiveis, alternarValores] = useValoresVisiveis();
+  const valor = (n: number) => (valoresVisiveis ? money(n) : VALOR_OCULTO);
   const { profile, tz } = useProfile();
   const now = useNow();
   const today = todayIn(tz);
@@ -61,7 +64,7 @@ export function TodayPage() {
         <ul className="mb-7 flex flex-col gap-1.5 text-[15px]">
           {d.to_register > 0 && <Attention to="#registrar">{d.to_register} {d.to_register === 1 ? 'sessão passada aguarda' : 'sessões passadas aguardam'} registro de presença</Attention>}
           {d.to_confirm_48h > 0 && <Attention to="/agenda">{d.to_confirm_48h} {d.to_confirm_48h === 1 ? 'sessão' : 'sessões'} nas próximas 48 horas sem confirmação</Attention>}
-          {d.overdue > 0 && <Attention to="/financeiro">{money(d.overdue)} em cobranças vencidas</Attention>}
+          {d.overdue > 0 && <Attention to="/financeiro">{valor(d.overdue)} em cobranças vencidas</Attention>}
           {d.receita_saude_pending > 0 && <Attention to="/financeiro?aba=receita">{d.receita_saude_pending} {d.receita_saude_pending === 1 ? 'recebimento' : 'recebimentos'} sem recibo no Receita Saúde</Attention>}
           {d.invoices_pending > 0 && <Attention to="/notas-fiscais">{d.invoices_pending} {d.invoices_pending === 1 ? 'nota fiscal' : 'notas fiscais'} a emitir</Attention>}
         </ul>
@@ -153,8 +156,14 @@ export function TodayPage() {
       )}
 
       {d && (
-        <p className="num mt-10 text-tinta-2">
-          Recebido neste mês: <strong className="text-tinta">{money(d.received_month)}</strong>. A receber: <strong className="text-tinta">{money(d.receivable)}</strong>. Pacientes ativos: <strong className="text-tinta">{d.active_patients}</strong>.
+        <p className="num mt-10 flex flex-wrap items-center gap-x-1 text-tinta-2">
+          <span>
+            Recebido neste mês: <strong className="text-tinta">{valor(d.received_month)}</strong>. A receber: <strong className="text-tinta">{valor(d.receivable)}</strong>. Pacientes ativos: <strong className="text-tinta">{d.active_patients}</strong>.
+          </span>
+          <button type="button" onClick={alternarValores} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-tinta-2 hover:text-tinta"
+            aria-label={valoresVisiveis ? 'Ocultar valores' : 'Mostrar valores'} aria-pressed={valoresVisiveis}>
+            {valoresVisiveis ? <IconEyeOff /> : <IconEye />}
+          </button>
         </p>
       )}
       {!profile?.crp && <p className="mt-4 text-ocre">Complete seu CRP em Configurações para emitir documentos.</p>}

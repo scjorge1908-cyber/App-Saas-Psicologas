@@ -1,4 +1,4 @@
-package br.com.psiconsultorio.app;
+package br.com.clinicahope.psi;
 
 import com.getcapacitor.BridgeActivity;
 

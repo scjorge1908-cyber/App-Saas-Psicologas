@@ -1,0 +1,120 @@
+# PsiConsultório — gera o AAB assinado (formato da Google Play) e, se pedido, envia ao TESTE INTERNO.
+# Só roda à mão (Actions › play-teste-interno › Run workflow). Produção na loja não é feita por aqui.
+#
+# Segredos do repositório (Settings › Secrets and variables › Actions):
+#   PSI_UPLOAD_KEYSTORE_B64       arquivo .jks da chave de upload, em base64
+#   PSI_UPLOAD_KEYSTORE_PASSWORD  senha do arquivo
+#   PSI_UPLOAD_KEY_ALIAS          alias da chave
+#   PSI_UPLOAD_KEY_PASSWORD       senha da chave
+#   PLAY_SERVICE_ACCOUNT_JSON     conta de serviço com acesso de envio ao app br.com.clinicahope.psi no Play Console
+# Variáveis (não secretas): VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_PUBLIC_APP_URL.
+#
+# A Google Play exige que a PRIMEIRA versão de um app novo seja enviada à mão pelo Play Console:
+# rode com enviar=nao, baixe o AAB em Artifacts e envie no teste interno. Daí em diante, enviar=teste-interno.
+name: play-teste-interno
+on:
+  workflow_dispatch:
+    inputs:
+      versao_codigo:
+        description: 'versionCode (vazio = número deste run; tem de ser maior que o último enviado)'
+        required: false
+        default: ''
+      enviar:
+        description: 'Enviar ao teste interno da Google Play'
+        default: 'nao'
+        type: choice
+        options: ['nao', 'teste-interno']
+permissions:
+  contents: read
+env:
+  # último versionCode enviado à Google Play (0 = nenhum ainda). Atualizar a cada envio.
+  ULTIMO_VERSION_CODE_ENVIADO: 0
+concurrency:
+  group: play-teste-interno
+  cancel-in-progress: false
+jobs:
+  aab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci --no-audit --no-fund
+      - name: Testes unitários
+        run: npx vitest run
+      - name: Build web
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_PUBLIC_APP_URL: ${{ vars.VITE_PUBLIC_APP_URL }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::warning::Variáveis do Supabase não cadastradas: o app abre com aviso de configuração ausente."
+          fi
+          npm run build
+          # nenhuma chave privilegiada pode entrar no app
+          if grep -rqE 'service_role|sb_secret_' dist; then echo "::error::Chave privilegiada encontrada no build."; exit 1; fi
+          npx cap sync android
+      - name: Chave de upload
+        env:
+          KS: ${{ secrets.PSI_UPLOAD_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KS" ]; then echo "::warning::Segredos PSI_UPLOAD_* não cadastrados: o AAB sai sem assinatura."; exit 0; fi
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "PSI_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+      - name: Compilar AAB (release)
+        working-directory: web/android
+        env:
+          PSI_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.PSI_UPLOAD_KEYSTORE_PASSWORD }}
+          PSI_UPLOAD_KEY_ALIAS: ${{ secrets.PSI_UPLOAD_KEY_ALIAS }}
+          PSI_UPLOAD_KEY_PASSWORD: ${{ secrets.PSI_UPLOAD_KEY_PASSWORD }}
+          PSI_VERSION_CODE: ${{ github.event.inputs.versao_codigo }}
+        run: |
+          VC="${PSI_VERSION_CODE:-${{ github.run_number }}}"
+          if ! echo "$VC" | grep -qE '^[0-9]+$' || [ "$VC" -le "$ULTIMO_VERSION_CODE_ENVIADO" ]; then
+            echo "::error::versionCode $VC inválido: tem de ser maior que $ULTIMO_VERSION_CODE_ENVIADO."; exit 1
+          fi
+          export PSI_VERSION_CODE="$VC"
+          echo "versao_codigo=$VC" >> "$GITHUB_ENV"
+          chmod +x gradlew
+          ./gradlew --no-daemon bundleRelease > "$RUNNER_TEMP/gradle.log" 2>&1 || { grep -A8 -E "What went wrong|error:" "$RUNNER_TEMP/gradle.log" | head -n 40 | sed 's/^/::error::/'; exit 1; }
+          AAB=app/build/outputs/bundle/release/app-release.aab
+          if jarsigner -verify "$AAB" 2>/dev/null | grep -q "jar verified"; then ASS=assinado; else ASS=SEM-ASSINATURA; fi
+          echo "assinatura=$ASS" >> "$GITHUB_ENV"
+          { echo "### AAB"; echo "- assinatura: **$ASS**"; echo "- versionCode: $VC"; } >> "$GITHUB_STEP_SUMMARY"
+          rm -f "$RUNNER_TEMP/upload.jks"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: psiconsultorio-${{ env.versao_codigo }}-${{ env.assinatura }}
+          path: web/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14
+          if-no-files-found: error
+      - name: Conferir antes do envio
+        if: github.event.inputs.enviar == 'teste-interno'
+        env:
+          PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ "$assinatura" != assinado ]; then echo "::error::AAB sem assinatura — não enviado."; exit 1; fi
+          if [ -z "$PLAY_JSON" ]; then echo "::error::Segredo PLAY_SERVICE_ACCOUNT_JSON não cadastrado — não enviado."; exit 1; fi
+      - name: Enviar ao teste interno da Google Play
+        if: github.event.inputs.enviar == 'teste-interno'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: br.com.clinicahope.psi
+          releaseFiles: web/android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+          releaseName: ${{ env.versao_codigo }}

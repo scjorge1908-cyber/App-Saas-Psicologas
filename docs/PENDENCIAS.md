@@ -4,11 +4,11 @@
 
 | # | Decisão | Por que bloqueia | Opções | Custo |
 |---|---------|------------------|--------|-------|
-| D1 | **Projeto Supabase** | A conta já tem 2 projetos gratuitos ativos (limite do plano Free); a criação foi recusada pela plataforma | (a) pausar um projeto existente (ex.: `hope-agenda` já está inativo; verificar qual conta como ativo, inclusive em outra organização); (b) usar outra conta Supabase só para este produto; (c) plano Pro | (a)/(b) R$ 0; (c) ~US$ 25/mês |
+| D1 | **Projeto Supabase** (26/10/2026: ainda bloqueado — a organização visível tem só 1 projeto ativo, mas a criação foi recusada; o 2º projeto ativo está em outra organização da mesma conta) | A conta já tem 2 projetos gratuitos ativos (limite do plano Free); a criação foi recusada pela plataforma | (a) pausar um projeto existente (ex.: `hope-agenda` já está inativo; verificar qual conta como ativo, inclusive em outra organização); (b) usar outra conta Supabase só para este produto; (c) plano Pro | (a)/(b) R$ 0; (c) ~US$ 25/mês |
 | D2 | **Hospedagem do app web** | Teste: **Vercel Hobby (decidido)**, permitido para uso não comercial. Lançamento: Hobby e GitHub Pages proíbem SaaS comercial | Produção: Cloudflare Pages ou Vercel Pro | Teste R$ 0; produção R$ 0 (Cloudflare) ou US$ 20/mês (Vercel Pro) |
 | D3 | **Domínio** | Necessário para links de confirmação estáveis, e-mails e lojas | Ex.: `app.seudominio.com.br` | ~R$ 40/ano (registro.br) |
 | D4 | **E-mail transacional (SMTP)** | O SMTP embutido do Supabase só envia para membros da equipe → recuperação de senha e confirmação de cadastro não chegam às usuárias | Brevo Free (300/dia) ou Resend Free (100/dia), com domínio próprio | R$ 0; exige criar conta e chave (credencial) |
-| D5 | **Nome comercial** | Nome provisório "PsiConsultório"; verificar marca no INPI antes de publicar | — | — |
+| D5 | **Nome comercial** | Nome provisório "PsiConsultório"; verificar marca no INPI antes de publicar. Identificador nas lojas já definido: `br.com.clinicahope.psi` (conta de desenvolvedor da Hope) | — | — |
 | D6 | **Revisão jurídica** | Termos de uso, política de privacidade, contrato de operador (DPA), prazos de guarda e destino do acervo (ver `CONFORMIDADE.md`) | Advogado com experiência em LGPD/saúde | Honorários |
 | D7 | ~~Repositório remoto~~ | **Resolvido**: https://github.com/scjorge1908-cyber/App-Saas-Psicologas, com CI verde | — | — |
 

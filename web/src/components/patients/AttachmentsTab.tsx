@@ -15,7 +15,7 @@ export const CATEGORY_LABEL: Record<AttachmentCategory, string> = {
   nota_fiscal: 'Nota fiscal',
   outro: 'Outro',
 };
-const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,text/xml,application/xml,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,image/heic,image/heif,text/xml,application/xml,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel';
 const PROTECTED: AttachmentCategory[] = ['avaliacao', 'documento_emitido'];
 
 export function AttachmentsTab({ patientId }: { patientId: string }) {
@@ -64,7 +64,7 @@ export function AttachmentsTab({ patientId }: { patientId: string }) {
         )}</Field>
         <input ref={input} type="file" accept={ACCEPT} className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
         <Button busy={busy} onClick={() => input.current?.click()}>Escolher arquivo</Button>
-        <p className="w-full text-sm text-tinta-3">PDF, imagem, XML, TXT ou DOCX, até 10 MB. Os arquivos ficam em armazenamento privado, acessível só pela sua conta.</p>
+        <p className="w-full text-sm text-tinta-3">PDF, imagem (inclusive foto de iPhone), Word, Excel, XML ou TXT, até 10 MB. Os arquivos ficam em armazenamento privado, acessível só pela sua conta.</p>
       </div>
       {q.isLoading && <Loading />}
       {q.data?.length === 0 && <Empty title="Nenhum anexo." />}

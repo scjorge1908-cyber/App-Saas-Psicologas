@@ -9,7 +9,7 @@ import * as api from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { addDays, formatLongDate, formatTime, minutesBetween, todayIn, zonedToUtc } from '../../lib/format';
 import { useProfile } from '../../auth/AuthProvider';
-import { Button, Dialog, ErrorBox, Input, Loading, STATUS_BAR, StatusBadge, cx, useToast } from '../ui';
+import { Button, Dialog, ErrorBox, Input, Loading, STATUS_BAR, cx, useToast } from '../ui';
 import { IconCheck, IconPin, IconVideo, IconWhats } from '../icons';
 import { AppointmentSheet, useInvalidateAgenda } from './AppointmentSheet';
 import { WhatsAppCard } from './WhatsAppCard';
@@ -21,7 +21,7 @@ export function ConfirmarAgendaDialog({ open, onClose }: { open: boolean; onClos
   const hoje = todayIn(tz);
   const amanha = addDays(hoje, 1);
   const [dia, setDia] = useState(hoje);
-  const [sessao, setSessao] = useState<{ item: AgendaItem; mover?: boolean } | null>(null);
+  const [sessao, setSessao] = useState<{ item: AgendaItem; mover?: boolean; falta?: boolean } | null>(null);
   const [whats, setWhats] = useState<AgendaItem | null>(null);
   const de = zonedToUtc(dia, '00:00', tz);
   const ate = zonedToUtc(addDays(dia, 1), '00:00', tz);
@@ -30,7 +30,7 @@ export function ConfirmarAgendaDialog({ open, onClose }: { open: boolean; onClos
   const [agora] = useState(() => Date.now());
 
   async function atendida(it: AgendaItem) {
-    try { await api.setStatus(it.id, 'atendido'); await invalidate(); toast('Sessão registrada como atendida'); }
+    try { await api.setStatus(it.id, 'atendido'); await invalidate(); toast('Presença registrada'); }
     catch (e) { toast(errorMessage(e), 'erro'); }
   }
 
@@ -65,21 +65,22 @@ export function ConfirmarAgendaDialog({ open, onClose }: { open: boolean; onClos
                         <p className="num text-[1.0625rem] font-bold leading-none">{formatTime(it.starts_at, tz)}</p>
                         <p className="num mt-1 text-[0.75rem] text-tinta-3">{minutesBetween(it.starts_at, it.ends_at)} min</p>
                       </div>
-                      <button onClick={() => setSessao({ item: it })} className="min-w-0 flex-1 text-left">
+                      <div className="min-w-0 flex-1">
                         <span className="block truncate font-bold">{nome}</span>
                         <span className="mt-1 flex flex-wrap items-center gap-2 text-sm text-tinta-2">
-                          <StatusBadge status={it.status} />
+                          <SituacaoConfirmacao item={it} />
                           {it.modality === 'online' ? <span className="inline-flex items-center gap-1"><IconVideo className="size-4" /> On-line</span>
                             : it.location_name ? <span className="inline-flex items-center gap-1"><IconPin className="size-4" /> {it.location_name}</span> : null}
                         </span>
-                      </button>
+                      </div>
                       <button onClick={() => setWhats(it)} aria-label={`Enviar WhatsApp para ${nome}`} title="WhatsApp: confirmar presença e outras mensagens"
                         className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
                     </div>
                     {comecou && ativa && (
                       <div className="flex flex-wrap gap-2 pl-16">
-                        <Button size="sm" onClick={() => atendida(it)}><IconCheck className="size-4" /> Atendida</Button>
-                        <Button size="sm" variant="secondary" onClick={() => setSessao({ item: it })}>Falta ou outro</Button>
+                        {/* Só os dois registros que fazem sentido aqui (27/10); "Compareceu" serve para homem e mulher */}
+                        <Button size="sm" onClick={() => atendida(it)}><IconCheck className="size-4" /> Compareceu</Button>
+                        <Button size="sm" variant="secondary" onClick={() => setSessao({ item: it, falta: true })}>Falta</Button>
                       </div>
                     )}
                   </li>
@@ -89,8 +90,19 @@ export function ConfirmarAgendaDialog({ open, onClose }: { open: boolean; onClos
           )}
         </div>
       </Dialog>
-      <AppointmentSheet item={sessao?.item ?? null} mover={sessao?.mover} onClose={() => setSessao(null)} />
+      <AppointmentSheet item={sessao?.item ?? null} mover={sessao?.mover} falta={sessao?.falta} onClose={() => setSessao(null)} />
       <WhatsAppCard key={whats?.id ?? 'nenhum'} item={whats} onClose={() => setWhats(null)} onMover={(item) => setSessao({ item, mover: true })} />
     </>
   );
+}
+
+/** Situação pensada para confirmar a agenda (27/10): nada de "Agendada", que confundia. */
+function SituacaoConfirmacao({ item }: { item: AgendaItem }) {
+  const [rotulo, cor] =
+    item.status === 'confirmado' ? ['Confirmado', 'bg-verde-fundo text-verde']
+    : item.status === 'atendido' ? ['Compareceu', 'bg-verde-fundo text-verde']
+    : item.status === 'faltou' ? ['Faltou', 'bg-ocre-fundo text-ocre']
+    : item.confirmation_link_at ? ['Aguardando confirmação', 'bg-azul-fundo text-azul']
+    : ['Falta enviar link', 'bg-vermelho-fundo text-vermelho'];
+  return <span className={cx('inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[0.8125rem] font-bold', cor)}><span aria-hidden className="size-1.5 rounded-full bg-current" />{rotulo}</span>;
 }

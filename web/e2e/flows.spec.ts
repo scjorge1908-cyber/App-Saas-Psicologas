@@ -435,6 +435,8 @@ test('Resumo: Confirmar agenda com sessões de hoje ou amanhã e WhatsApp', asyn
   await expect(dlg.getByRole('tab', { name: 'Hoje' })).toHaveAttribute('aria-selected', 'true');
   await dlg.getByRole('tab', { name: 'Amanhã' }).click();
   await expect(dlg.getByRole('tab', { name: 'Amanhã' })).toHaveAttribute('aria-selected', 'true');
+  await expect(dlg.getByText('Agendada', { exact: true })).toHaveCount(0); // situação: Confirmado / Aguardando confirmação / Falta enviar link
+  await expect(dlg.getByRole('button', { name: 'Falta ou outro' })).toHaveCount(0);
   await dlg.getByRole('button', { name: 'Fechar' }).last().click();
 });
 

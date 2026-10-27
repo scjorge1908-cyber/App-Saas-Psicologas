@@ -117,6 +117,8 @@ export interface AgendaItem {
   location_name: string | null;
   location_color: string | null;
   patient_birth_date?: string | null;
+  /** Quando o link de confirmação válido foi gerado (enviado pelo WhatsApp); vazio = falta enviar. */
+  confirmation_link_at?: string | null;
 }
 
 /** Local de atendimento (sala, consultório ou on-line). */

@@ -24,7 +24,6 @@ const AGENDA: AjudaTela = {
     'Use Semana para ver todos os dias e Dia para um dia só. As setas trocam a semana (ou o dia).',
     'Cada cartão é um dia de uma sala, com manhã, tarde e noite. Linha verde “LIVRE”: toque para agendar naquele horário.',
     'Linha azul é paciente: ⇄ move (dia, horário ou sala) e o botão verde abre o WhatsApp. Toque no nome para registrar atendida, falta ou cancelamento.',
-    'Toque em “livres” ou “agendados”, no topo, para ver só esses horários.',
   ],
   duvidas: [
     { p: 'Como configuro meus horários?', r: 'Toque em “Editar grade”, escolha a sala, os dias, o turno, a duração e o intervalo, e salve. Os horários aparecem na agenda como livres.' },

@@ -24,19 +24,24 @@ select tests.eq(tests.affected(format($q$insert into public.working_hours (locat
 select tests.throws(format($q$insert into public.working_hours (location_id, weekday, start_time, end_time, session_minutes)
   values (%L, 2, '07:00', '12:00', 5)$q$, tests.id('L')), '23514', 'Duração menor que 10 min é recusada');
 
--- Laudo permanente; RG pode ser excluído (sem arquivo real: só a linha)
+-- Anexos do prontuário (sem arquivo real: só a linha)
 with _i as (insert into public.attachments (patient_id, category, storage_path, file_name, mime_type, size_bytes)
   values (tests.id('P'), 'laudo', tests.id('A')::text || '/x/laudo.pdf', 'laudo.pdf', 'application/pdf', 10) returning id)
 select tests.put('LAU', id) from _i;
 with _i as (insert into public.attachments (patient_id, category, storage_path, file_name, mime_type, size_bytes)
   values (tests.id('P'), 'documento_identidade', tests.id('A')::text || '/x/rg.jpg', 'rg.jpg', 'image/jpeg', 10) returning id)
 select tests.put('RG', id) from _i;
-select tests.throws(format($q$delete from public.attachments where id = %L$q$, tests.id('LAU')), 'P0001', 'Laudo não pode ser excluído');
-select tests.throws(format($q$update public.attachments set category = 'outro' where id = %L$q$, tests.id('LAU')), 'P0001', 'Laudo não muda de categoria');
+-- Desde a migration 20261027000900: laudo e encaminhamento podem ser excluídos (anexo errado); exame continua permanente
+with _i as (insert into public.attachments (patient_id, category, storage_path, file_name, mime_type, size_bytes)
+  values (tests.id('P'), 'exame', tests.id('A')::text || '/x/exame.pdf', 'exame.pdf', 'application/pdf', 10) returning id)
+select tests.put('EXA', id) from _i;
+select tests.throws(format($q$delete from public.attachments where id = %L$q$, tests.id('EXA')), 'P0001', 'Exame não pode ser excluído');
+select tests.throws(format($q$update public.attachments set category = 'outro' where id = %L$q$, tests.id('EXA')), 'P0001', 'Exame não muda de categoria');
+select tests.eq(tests.affected(format($q$delete from public.attachments where id = %L$q$, tests.id('LAU'))), 1, 'Laudo pode ser excluído');
 select tests.eq(tests.affected(format($q$delete from public.attachments where id = %L$q$, tests.id('RG'))), 1, 'Anexo comum pode ser excluído');
 with _i as (insert into public.attachments (patient_id, category, storage_path, file_name, mime_type, size_bytes)
   values (tests.id('P'), 'encaminhamento', tests.id('A')::text || '/x/enc.pdf', 'enc.pdf', 'application/pdf', 10) returning id)
 select tests.put('ENC', id) from _i;
-select tests.throws(format($q$delete from public.attachments where id = %L$q$, tests.id('ENC')), 'P0001', 'Encaminhamento médico não pode ser excluído');
+select tests.eq(tests.affected(format($q$delete from public.attachments where id = %L$q$, tests.id('ENC'))), 1, 'Encaminhamento médico pode ser excluído');
 
 rollback;

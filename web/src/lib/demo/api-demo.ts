@@ -345,11 +345,13 @@ export async function endSeries(seriesId: string, fromDate: string): Promise<num
   db().appointments = db().appointments.filter((a) => !(a.series_id === seriesId && a.starts_at >= desde && ['agendado', 'confirmado'].includes(a.status)));
   return antes - db().appointments.length;
 }
-export async function changeSeries(args: { seriesId: string; fromDate: string; newStartDate: string; newTime: string; duration?: number | null; price?: number | null; frequency?: SeriesFrequency | null }): Promise<SeriesResult> {
+export async function changeSeries(args: { seriesId: string; fromDate: string; newStartDate: string; newTime: string; duration?: number | null; price?: number | null; frequency?: SeriesFrequency | null; locationId?: string | null; modality?: Modality | null }): Promise<SeriesResult> {
   const serie = db().series.find((s) => s.id === args.seriesId);
   if (!serie) throw new Error('Série não encontrada.');
   await endSeries(args.seriesId, args.fromDate);
   serie.time = args.newTime;
+  if (args.locationId !== undefined) serie.location_id = args.locationId;
+  if (args.modality) serie.modality = args.modality;
   if (args.duration) serie.duration = args.duration;
   if (args.price !== undefined && args.price !== null) serie.price = args.price;
   if (args.frequency) serie.frequency = args.frequency;
@@ -423,8 +425,8 @@ export async function downloadAttachment(a: Pick<Attachment, 'storage_path'>): P
 }
 export async function deleteAttachment(a: Attachment) {
   await atraso();
-  if (['avaliacao', 'documento_emitido', 'laudo', 'encaminhamento', 'exame'].includes(a.category)) {
-    throw new Error('Avaliações, laudos, encaminhamentos e documentos emitidos fazem parte do prontuário e não podem ser excluídos.');
+  if (['avaliacao', 'documento_emitido', 'exame'].includes(a.category)) {
+    throw new Error('Avaliações, exames e documentos emitidos fazem parte do prontuário e não podem ser excluídos.');
   }
   db().attachments = db().attachments.filter((x) => x.id !== a.id);
   db().blobs.delete(a.storage_path);

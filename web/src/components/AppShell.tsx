@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../lib/demo/modo';
 import { Versao } from './Versao';
 import { BotaoAjuda, Passeio } from './ajuda/Ajuda';
+import { BotaoAvisos, JanelaAvisos, JanelaAvulsosGlobal } from './AvisosHoje';
 
 type NavItem = { to: string; label: string; icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement; end?: boolean };
 const MAIN: NavItem[] = [
@@ -35,6 +36,9 @@ export function AppShell() {
   return (
     <div className="min-h-dvh lg:flex">
       <Passeio />
+      {/* Janela dos avisos do dia (abre pelo sininho do cabeçalho) */}
+      <JanelaAvisos />
+      <JanelaAvulsosGlobal />
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-papel focus:px-3 focus:py-2">Pular para o conteúdo</a>
 
       {/* Lateral (desktop) */}
@@ -59,13 +63,14 @@ export function AppShell() {
       {demo && <FaixaDemo />}
       {/* Cabeçalho com degradê (celular) — formato HopeCore */}
       <header className="cabecalho-marca pt-safe sticky top-0 z-30 lg:hidden">
-        <div className="flex min-h-16 items-center gap-1 pl-4 pr-1">
+        <div className="flex min-h-16 items-center pl-4 pr-1">
           <div className="min-w-0 flex-1"><Marca /></div>
           <BotaoAjuda className="shrink-0" />
+          <BotaoAvisos />
           <NavLink to="/configuracoes" aria-label="Configurações" className="grid size-12 shrink-0 place-items-center rounded-full hover:bg-white/15"><IconSettings /></NavLink>
         </div>
       </header>
-      <div className="hidden justify-end px-6 pt-4 text-anil-escuro lg:flex"><BotaoAjuda className="hover:bg-anil-claro/60" /></div>
+      <div className="hidden justify-end px-6 pt-4 text-anil-escuro lg:flex"><BotaoAjuda className="hover:bg-anil-claro/60" /><BotaoAvisos className="hover:bg-anil-claro/60" /></div>
       <main id="conteudo" ref={mainRef} tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-5 outline-none sm:px-6 lg:pb-12 lg:pt-2">
         <Outlet />
         <Versao className="mt-10" />
@@ -120,15 +125,16 @@ function FaixaDemo() {
   );
 }
 
-/** Marca: símbolo da logo (versão branca, sobre o degradê) + "PSI" em cima e "CONSULTÓRIO" embaixo, como na logo. */
+/** Marca: símbolo da logo (versão branca, sobre o degradê) + "PSI CONSULTÓRIO" lado a lado quando cabe;
+ *  em espaço estreito (celular pequeno, zoom), volta a PSI em cima e CONSULTÓRIO embaixo, para o nome nunca cortar. */
 export function Marca() {
   return (
-    <span className="flex items-center gap-2.5">
+    <span className="@container flex w-full min-w-0 items-center gap-2.5">
       <span className="sr-only">PsiConsultório</span>
       <img src={`${import.meta.env.BASE_URL}logo-branca.png`} alt="" width={38} height={38} className="size-[38px] shrink-0 object-contain" />
-      <span aria-hidden className="marca-texto flex flex-col whitespace-nowrap leading-none">
-        <span className="text-[1.375rem] font-extrabold tracking-[.04em]">PSI</span>
-        <span className="mt-0.5 text-[0.75rem] font-bold tracking-[.2em]">CONSULTÓRIO</span>
+      <span aria-hidden className="marca-texto flex flex-col whitespace-nowrap leading-none @[12rem]:flex-row @[12rem]:items-baseline @[12rem]:gap-1.5">
+        <span className="text-[1.375rem] font-extrabold tracking-[.04em] @[12rem]:text-[0.9375rem]">PSI</span>
+        <span className="mt-0.5 text-[0.75rem] font-bold tracking-[.2em] @[12rem]:mt-0 @[12rem]:text-[0.9375rem] @[12rem]:tracking-[.02em]">CONSULTÓRIO</span>
       </span>
     </span>
   );

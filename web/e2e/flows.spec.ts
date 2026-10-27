@@ -288,6 +288,24 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await expect(mv.getByRole('radiogroup', { name: 'Data de início' }).getByRole('radio', { checked: true })).toHaveCount(1);
   await mv.getByRole('button', { name: 'Outro horário' }).click();
   await mv.getByRole('button', { name: 'Voltar' }).click();
+  // WhatsApp: cartão com mensagens prontas (aviso de que não vai atender) e atalho para mover
+  await page.getByRole('button', { name: /^Enviar WhatsApp para / }).first().click();
+  const wz = page.getByRole('dialog');
+  await expect(wz.getByRole('button', { name: /Mover a sessão/ })).toBeVisible();
+  await wz.getByRole('button', { name: /Avisar que não vou atender/ }).click();
+  await expect(wz.getByRole('textbox')).toHaveValue(/não vou poder atender/);
+  await expect(wz.getByRole('button', { name: 'Abrir no WhatsApp' })).toBeVisible();
+  await wz.getByRole('button', { name: 'Voltar' }).click();
+  await wz.getByRole('button', { name: 'Fechar' }).first().click();
+});
+
+test('sessão registrada (atendida ou falta) sai da agenda e fica no histórico do paciente', async () => {
+  await page.goto('/');
+  // A sessão passada do Carlos foi registrada como atendida no teste do financeiro: não aparece mais como linha da agenda
+  await expect(page.getByRole('button', { name: /, Atendida\. Abrir detalhes$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /, Falta\. Abrir detalhes$/ })).toHaveCount(0);
+  await page.goto(patientUrl);
+  await expect(page.getByText(/1 atendidas, 0 faltas no histórico/)).toBeVisible();
 });
 
 test('ajuda: botão ?, passeio opcional (uma vez) e página de tutoriais', async () => {

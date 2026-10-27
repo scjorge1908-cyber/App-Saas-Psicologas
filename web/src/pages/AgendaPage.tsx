@@ -14,13 +14,13 @@ import type { AgendaItem, AppointmentStatus, WorkingHour } from '../lib/types';
 import { horariosLivres } from '../lib/horarios';
 import { periodoDe } from '../lib/periodos';
 import { agruparColunas, type Bloco, type Coluna, type Linha } from '../lib/agenda-colunas';
-import { addDays, ageOn, firstName, formatDate, formatTime, minutesBetween, monthName, todayIn, weekday, weekdayName, weekdayShort, zonedParts, zonedToUtc } from '../lib/format';
+import { addDays, ageOn, formatDate, formatTime, minutesBetween, monthName, todayIn, weekday, weekdayName, weekdayShort, zonedParts, zonedToUtc } from '../lib/format';
 import { errorMessage } from '../lib/errors';
-import { whatsappLink } from '../lib/messages';
 import { useProfile } from '../auth/AuthProvider';
-import { AppointmentSheet, openReminder } from '../components/appointments/AppointmentSheet';
+import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
+import { WhatsAppCard } from '../components/appointments/WhatsAppCard';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
-import { ErrorBox, Loading, cx, useToast } from '../components/ui';
+import { ErrorBox, Loading, cx } from '../components/ui';
 import { PrimeirosPassos, iniciarPasseio } from '../components/ajuda/Ajuda';
 import { FLAG_PASSEIO_OFERECIDO, FLAG_WHATS_ENVIADO, gravarFlag, lerFlag } from '../lib/ajuda';
 import { IconCake, IconCheck, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSwap, IconVideo, IconWhats } from '../components/icons';
@@ -47,15 +47,17 @@ const SITUACAO: Record<AppointmentStatus, { rotulo: string; linha: string; texto
   cancelado: { rotulo: 'Cancelada', linha: 'bg-cinza-fundo border-l-linha-forte', texto: 'text-tinta-2' },
 };
 
+const registrada = (it: AgendaItem) => it.status === 'atendido' || it.status === 'faltou';
+
 export function AgendaPage() {
   const { profile, tz } = useProfile();
-  const toast = useToast();
   const [params, setParams] = useSearchParams();
   const hoje = todayIn(tz);
   const date = params.get('d') || hoje;
   const visao: Visao = params.get('v') === 'dia' ? 'dia' : 'semana';
   const [open, setOpen] = useState<{ item: AgendaItem; mover?: boolean } | null>(null);
   const [novoEm, setNovoEm] = useState<NovoEm | null>(null);
+  const [whats, setWhats] = useState<AgendaItem | null>(null);
   const [passeioPerguntado, setPasseioPerguntado] = useState(() => lerFlag(FLAG_PASSEIO_OFERECIDO));
 
   // "Semana" = 7 dias a partir de hoje (ex.: hoje terça → terça a segunda). As setas andam de 7 em 7 dias
@@ -96,8 +98,9 @@ export function AgendaPage() {
           if (ok) usados.add(it.id);
           return ok;
         });
+        // Sessão já registrada (atendida ou falta) sai da agenda: fica no histórico do paciente e no financeiro.
         const linhas: Linha[] = [
-          ...sessoes.map((item) => ({ tipo: 'sessao' as const, hora: formatTime(item.starts_at, tz), item })),
+          ...sessoes.filter((item) => !registrada(item)).map((item) => ({ tipo: 'sessao' as const, hora: formatTime(item.starts_at, tz), item })),
           ...livres.filter((l) => l.faixaId === f.id).map((livre) => ({ tipo: 'livre' as const, hora: livre.time, livre })),
         ];
         // Quinzenal: o horário do paciente aparece toda semana; o vago das semanas alternadas aparece como
@@ -122,7 +125,7 @@ export function AgendaPage() {
       }
       // Sessão de outra sala ou on-line sem bloco próprio: entra no mesmo período do dia (com selo); sem período, "Outros horários"
       const outros: Linha[] = [];
-      for (const it of itens.filter((x) => !usados.has(x.id))) {
+      for (const it of itens.filter((x) => !usados.has(x.id) && !registrada(x))) {
         const hora = formatTime(it.starts_at, tz);
         const alvo = doDia.find((b) => b.titulo === periodoDe(hora).nome);
         if (alvo) alvo.linhas = [...alvo.linhas, { tipo: 'sessao' as const, hora, item: it }].sort((a, b) => a.hora.localeCompare(b.hora));
@@ -152,21 +155,6 @@ export function AgendaPage() {
     ? `${diaNome(date)}, ${Number(date.slice(8))} de ${monthName(Number(date.slice(5, 7)))}`
     : `${ddmm(semana)} a ${ddmm(addDays(semana, 6))}`;
   const subRotulo = visao === 'dia' ? (date === hoje ? 'Hoje' : 'voltar para hoje') : (naSemanaAtual ? 'A partir de hoje' : 'voltar para hoje');
-
-  async function enviarWhatsApp(item: AgendaItem) {
-    const janela = window.open('', '_blank'); // abre já no toque, para o navegador não bloquear
-    try {
-      const r = await openReminder(item, tz, profile?.full_name ?? '');
-      const nasc = item.patient_birth_date;
-      const aniversario = !!nasc && nasc.slice(5) === zonedParts(item.starts_at, tz).date.slice(5);
-      const wa = aniversario
-        ? whatsappLink(item.patient_phone, `Feliz aniversário, ${firstName(item.patient_social_name || item.patient_name)}! Desejo um dia muito especial.\n\n${r.text}`)
-        : r.wa;
-      if (!wa) { janela?.close(); toast('Paciente sem celular cadastrado.', 'erro'); return; }
-      if (janela) janela.location.href = wa; else window.location.href = wa;
-      gravarFlag(FLAG_WHATS_ENVIADO);
-    } catch (e) { janela?.close(); toast(errorMessage(e), 'erro'); }
-  }
 
   return (
     <div className="flex flex-col gap-3 pb-6">
@@ -281,7 +269,7 @@ export function AgendaPage() {
                       <LinhaPaciente key={l.item.id} item={l.item} date={c.date} tz={tz}
                         foraDaSala={!!c.sala && (l.item.location_id ? l.item.location_id !== c.sala.id : l.item.modality === 'online')}
                         marcarWhats={primeiroWhats?.l === l}
-                        onOpen={() => setOpen({ item: l.item })} onMover={() => setOpen({ item: l.item, mover: true })} onWhats={() => enviarWhatsApp(l.item)} />
+                        onOpen={() => setOpen({ item: l.item })} onMover={() => setOpen({ item: l.item, mover: true })} onWhats={() => setWhats(l.item)} />
                     ))}
                   </ul>
                 </div>
@@ -317,6 +305,7 @@ export function AgendaPage() {
       </div>
 
       <AppointmentSheet item={open?.item ?? null} mover={open?.mover} onClose={() => setOpen(null)} />
+      <WhatsAppCard key={whats?.id ?? 'nenhum'} item={whats} onClose={() => setWhats(null)} onMover={(item) => setOpen({ item, mover: true })} />
       <NewAppointmentDialog open={!!novoEm} onClose={() => setNovoEm(null)} initialDate={novoEm?.date} initialTime={novoEm?.time}
         initialLocationId={novoEm?.locationId ?? null} initialMinutes={novoEm?.minutes} initialModo={novoEm?.modo} initialRepeat={novoEm?.repeat} />
     </div>

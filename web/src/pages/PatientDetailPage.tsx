@@ -16,6 +16,7 @@ import { AttachmentsTab } from '../components/patients/AttachmentsTab';
 import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
 import { ChargesList } from '../components/finance/ChargesList';
+import { abrirExterno } from '../lib/abrir-externo';
 import { ChargeDialog, METHOD_LABEL, PaymentDialog } from '../components/finance/PaymentDialog';
 
 type Tab = 'resumo' | 'sessoes' | 'prontuario' | 'documentos' | 'financeiro' | 'anexos';
@@ -65,7 +66,7 @@ export function PatientDetailPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-campo)] border border-linha-forte bg-papel px-3 font-bold text-verde"><IconWhats /> WhatsApp</a>}
+          {wa && <a href={wa} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); abrirExterno(wa); }} className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-campo)] border border-linha-forte bg-papel px-3 font-bold text-verde"><IconWhats /> WhatsApp</a>}
           <Button variant="secondary" onClick={() => setEditing(true)}>Editar cadastro</Button>
           {pt.status === 'ativo' && <Button onClick={() => setScheduling(true)}>Agendar</Button>}
         </div>

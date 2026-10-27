@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { AgendaItem, DashboardSummary } from '../lib/types';
-import { addDays, formatDate, formatLongDate, formatTime, minutesBetween, money, todayIn, zonedParts, zonedToUtc } from '../lib/format';
+import { addDays, formatLongDate, formatTime, minutesBetween, money, todayIn, zonedToUtc } from '../lib/format';
 import { errorMessage } from '../lib/errors';
 import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet, useInvalidateAgenda } from '../components/appointments/AppointmentSheet';
@@ -34,7 +34,7 @@ export function TodayPage() {
 
   const day = useQuery({ queryKey: ['agenda', from, to], queryFn: () => api.listAgenda(from, to) });
   const dash = useQuery({ queryKey: ['dashboard'], queryFn: api.dashboard });
-  const pending = useQuery({ queryKey: ['to-register', from], queryFn: () => api.listToRegister(from) });
+
 
   async function quick(item: AgendaItem, status: 'atendido') {
     try {
@@ -160,26 +160,7 @@ export function TodayPage() {
         )}
       </section>
 
-      {pending.data && pending.data.length > 0 && (
-        <section id="registrar" aria-labelledby="t-reg">
-          <h2 id="t-reg" className="text-[1.125rem] font-bold">Aguardando registro</h2>
-          <p className="mb-2 text-tinta-2">Sessões de dias anteriores ainda marcadas como agendadas ou confirmadas.</p>
-          <ul className="cartao divide-y divide-linha/70 overflow-hidden">
-            {pending.data.map((it) => (
-              <li key={it.id} className={cx('flex flex-wrap items-center justify-between gap-3 border-l-4 px-4 py-3', STATUS_BAR[it.status])}>
-                <button onClick={() => setOpen(it)} className="text-left">
-                  <span className="block font-bold">{it.patient_social_name || it.patient_name}</span>
-                  <span className="num text-sm text-tinta-2">{formatDate(zonedParts(it.starts_at, tz).date)} às {formatTime(it.starts_at, tz)}</span>
-                </button>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => quick(it, 'atendido')}>Atendida</Button>
-                  <Button size="sm" variant="secondary" onClick={() => setOpen(it)}>Falta ou outro</Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* "Aguardando registro" saiu daqui (27/10): agora abre como janela na Agenda, com botão e número no fim dela */}
 
       {/* Carteira escura — valores ocultos até tocar no olho */}
       {d && (

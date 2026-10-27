@@ -32,6 +32,22 @@ export function reminderText(opts: {
   return lines.join('\n');
 }
 
+/** Aviso de que a profissional não vai atender no dia da sessão (texto pronto; ela revisa antes de enviar). */
+export function ausenciaText(opts: { patientName: string; startsAt: string; tz: string; professionalName: string }): string {
+  const p = zonedParts(opts.startsAt, opts.tz);
+  return [
+    `Olá, ${firstName(opts.patientName)}! Tudo bem?`,
+    `Passando para avisar que no dia ${formatLongDate(p.date)}, às ${formatTime(opts.startsAt, opts.tz)}, não vou poder atender.`,
+    'Peço desculpas pelo transtorno. Vamos combinar um novo horário? Me diga o melhor dia para você.',
+    opts.professionalName,
+  ].join('\n');
+}
+
+/** Início de conversa livre (a profissional escreve o resto no WhatsApp). */
+export function conversaText(opts: { patientName: string; professionalName: string }): string {
+  return `Olá, ${firstName(opts.patientName)}! Aqui é ${opts.professionalName}.`;
+}
+
 export function chargeText(opts: { patientName: string; amount: number; description: string; professionalName: string }): string {
   return [
     `Olá, ${firstName(opts.patientName)}! Tudo bem?`,

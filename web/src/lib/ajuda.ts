@@ -11,7 +11,7 @@ export const PASSEIOS: Record<PasseioId, PassoPasseio[]> = {
   agenda: [
     { alvo: 'grade', titulo: 'Sua grade de horários', texto: 'Aqui você cria os dias, turnos e salas em que atende. A agenda mostra os horários livres a partir dela.' },
     { alvo: 'livre', titulo: 'Horário livre', texto: 'Linha verde é horário livre. Toque nela para marcar um paciente neste horário; dá para cadastrar o paciente na hora.' },
-    { alvo: 'whats', titulo: 'Lembrete pelo WhatsApp', texto: 'Abre o WhatsApp com o lembrete e o link de confirmação prontos. Você confere e envia.' },
+    { alvo: 'whats', titulo: 'Lembrete pelo WhatsApp', texto: 'Abre as mensagens prontas: confirmar presença, avisar que não vai atender ou mensagem livre. Também leva para mover a sessão.' },
     { alvo: 'nav-pacientes', titulo: 'Pacientes', texto: 'Cadastro, sessões, documentos e financeiro de cada paciente.' },
     { alvo: 'nav-mais', titulo: 'Mais opções', texto: 'Resumo do dia, notas fiscais, configurações e esta ajuda ficam em Mais.' },
   ],
@@ -23,12 +23,12 @@ const AGENDA: AjudaTela = {
   comoUsar: [
     'Use Semana para ver todos os dias e Dia para um dia só. As setas trocam a semana (ou o dia).',
     'Cada cartão é um dia de uma sala, com manhã, tarde e noite. Linha verde “LIVRE”: toque para agendar naquele horário.',
-    'Linha azul é paciente: ⇄ move (dia, horário ou sala) e o botão verde abre o WhatsApp. Toque no nome para registrar atendida, falta ou cancelamento.',
+    'Linha azul é paciente: ⇄ move (dia, horário ou sala) e o botão verde abre o WhatsApp. Toque no nome para registrar atendida, falta ou cancelamento; depois de registrada, a sessão sai da agenda e fica no histórico do paciente.',
   ],
   duvidas: [
     { p: 'Como configuro meus horários?', r: 'Toque em “Editar grade”, escolha a sala, os dias, o turno, a duração e o intervalo, e salve. Os horários aparecem na agenda como livres.' },
     { p: 'Como agendo um paciente?', r: 'Toque numa linha verde “LIVRE”. Escolha um paciente cadastrado ou cadastre um novo no mesmo formulário.' },
-    { p: 'Como envio a confirmação?', r: 'Toque no botão verde do WhatsApp na sessão. O app abre o WhatsApp com o lembrete e o link; o paciente confirma por ali.' },
+    { p: 'Como envio a confirmação?', r: 'Toque no botão verde do WhatsApp na sessão e escolha "Confirmar presença". O app abre o WhatsApp com o lembrete e o link; o paciente confirma por ali.' },
     { p: 'Por que uma sessão aparece em “Outros horários”?', r: 'Ela foi marcada num turno sem grade naquele dia. Ela continua valendo; só não pertence a nenhum bloco da grade.' },
   ],
 };

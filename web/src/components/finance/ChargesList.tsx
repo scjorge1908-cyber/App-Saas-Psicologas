@@ -7,6 +7,7 @@ import { chargeText, whatsappLink } from '../../lib/messages';
 import { useProfile } from '../../auth/AuthProvider';
 import { Badge, Button, cx, useConfirm, useToast } from '../ui';
 import { IconWhats } from '../icons';
+import { abrirExterno } from '../../lib/abrir-externo';
 import { PaymentDialog, useInvalidateFinance } from './PaymentDialog';
 
 const STATUS: Record<ChargeBalance['status'], { label: string; tone: 'atencao' | 'ok' | 'neutro' | 'anil' }> = {
@@ -43,7 +44,7 @@ export function ChargesList({ charges, patients, showPatient = true }: { charges
               <div className="flex flex-wrap items-center gap-2">
                 <span className="num text-lg font-bold">{money(c.status === 'paga' || c.status === 'cancelada' ? c.amount : c.balance)}</span>
                 {c.balance > 0 && <Button size="sm" onClick={() => setPaying(c)}>Receber</Button>}
-                {wa && <a href={wa} target="_blank" rel="noopener noreferrer" aria-label={`Lembrar ${c.patient_name} pelo WhatsApp`} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-campo)] px-2 text-verde hover:bg-verde-fundo"><IconWhats /></a>}
+                {wa && <a href={wa} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); abrirExterno(wa); }} aria-label={`Lembrar ${c.patient_name} pelo WhatsApp`} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-campo)] px-2 text-verde hover:bg-verde-fundo"><IconWhats /></a>}
                 {c.status === 'aberta' && !c.appointment_id && (
                   <Button size="sm" variant="ghost" onClick={async () => {
                     if (!(await confirm({ title: 'Cancelar cobrança?', body: `${c.description} (${money(c.amount)}) deixa de constar como a receber.`, confirmLabel: 'Cancelar cobrança', danger: true }))) return;

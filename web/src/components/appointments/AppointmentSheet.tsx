@@ -12,6 +12,7 @@ import { useProfile } from '../../auth/AuthProvider';
 import { Button, Dialog, Field, Input, Select, StatusBadge, TextField, Textarea, useConfirm, useToast } from '../ui';
 import { IconWhats } from '../icons';
 import { FLAG_WHATS_ENVIADO, gravarFlag } from '../../lib/ajuda';
+import { abrirExterno } from '../../lib/abrir-externo';
 import { EscolherDataInicio, EscolherHorario, type Escolha, type FreqMover } from './EscolherHorario';
 import { PatientForm } from '../patients/PatientForm';
 
@@ -210,7 +211,7 @@ export function AppointmentSheet({ item, onClose, mover }: { item: AgendaItem | 
                   <pre className="whitespace-pre-wrap rounded bg-cinza-fundo p-3 font-sans text-[0.9375rem]">{reminder.text}</pre>
                   <div className="flex flex-wrap gap-2">
                     {reminder.wa ? (
-                      <a href={reminder.wa} target="_blank" rel="noopener noreferrer" onClick={() => gravarFlag(FLAG_WHATS_ENVIADO)} className="inline-flex min-h-11 items-center gap-2 rounded-botao bg-verde-forte px-4 font-bold text-sobre-status"><IconWhats /> Abrir no WhatsApp</a>
+                      <a href={reminder.wa} target="_blank" rel="noopener noreferrer" onClick={(e) => { e.preventDefault(); gravarFlag(FLAG_WHATS_ENVIADO); abrirExterno(reminder.wa!); }} className="inline-flex min-h-11 items-center gap-2 rounded-botao bg-verde-forte px-4 font-bold text-sobre-status"><IconWhats /> Abrir no WhatsApp</a>
                     ) : <p className="text-sm text-ocre">Paciente sem telefone cadastrado. Copie a mensagem.</p>}
                     <Button variant="secondary" onClick={async () => { await navigator.clipboard.writeText(reminder.text); toast('Mensagem copiada'); }}>Copiar mensagem</Button>
                   </div>

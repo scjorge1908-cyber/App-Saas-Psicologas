@@ -68,7 +68,7 @@ export function TodayPage() {
       {d && (d.to_register + d.to_confirm_48h + d.receita_saude_pending + d.invoices_pending > 0 || d.overdue > 0) && (
         <section aria-label="Precisa de atenção" className="grid gap-3 sm:grid-cols-2">
           {d.to_register > 0 && <Aviso to="#registrar" numero={d.to_register} titulo={d.to_register === 1 ? 'Sessão aguarda registro' : 'Sessões aguardam registro'} sub="Marque presença ou falta" />}
-          {d.to_confirm_48h > 0 && <Aviso to="/agenda" tom="info" numero={d.to_confirm_48h} titulo="Sem confirmação" sub="Nas próximas 48 horas" />}
+          {d.to_confirm_48h > 0 && <Aviso to="/?v=semana" tom="info" numero={d.to_confirm_48h} titulo="Sem confirmação" sub="Nas próximas 48 horas" />}
           {d.overdue > 0 && <Aviso to="/financeiro" tom="erro" numero="R$" titulo={`${valor(d.overdue)} vencidos`} sub="Cobranças em atraso" />}
           {d.receita_saude_pending > 0 && <Aviso to="/financeiro?aba=receita" numero={d.receita_saude_pending} titulo="Sem recibo no Receita Saúde" sub="Recebimentos do mês" />}
           {d.invoices_pending > 0 && <Aviso to="/notas-fiscais" tom="info" numero={d.invoices_pending} titulo={d.invoices_pending === 1 ? 'Nota fiscal a emitir' : 'Notas fiscais a emitir'} sub="Abrir notas fiscais" />}
@@ -89,7 +89,7 @@ export function TodayPage() {
       <section aria-labelledby="t-hoje">
         <div className="mb-2 flex items-center justify-between gap-2">
           <h2 id="t-hoje" className="text-[18px] font-bold">Sessões de hoje</h2>
-          <Link to="/agenda" className="inline-flex min-h-11 items-center px-2 text-[15px] font-bold text-anil-escuro">Ver agenda</Link>
+          <Link to="/" className="inline-flex min-h-11 items-center px-2 text-[15px] font-bold text-anil-escuro">Ver agenda</Link>
         </div>
 
         {day.isLoading && <Loading />}
@@ -215,7 +215,7 @@ export function TodayPage() {
 }
 
 const ATALHOS = [
-  { to: '/agenda', label: 'Agenda', icon: IconCalendar, cor: 'bg-anil-claro text-sobre-anil-claro' },
+  { to: '/', label: 'Agenda', icon: IconCalendar, cor: 'bg-anil-claro text-sobre-anil-claro' },
   { to: '/pacientes', label: 'Pacientes', icon: IconPeople, cor: 'bg-acento-claro text-sobre-acento-claro' },
   { to: '/prontuario', label: 'Prontuário', icon: IconDoc, cor: 'bg-azul-fundo text-azul' },
   { to: '/financeiro', label: 'Financeiro', icon: IconMoney, cor: 'bg-verde-fundo text-verde' },

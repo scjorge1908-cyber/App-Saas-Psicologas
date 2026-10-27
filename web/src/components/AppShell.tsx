@@ -9,13 +9,13 @@ import { Versao } from './Versao';
 
 type NavItem = { to: string; label: string; icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement; end?: boolean };
 const MAIN: NavItem[] = [
-  { to: '/', label: 'Hoje', icon: IconToday, end: true },
-  { to: '/agenda', label: 'Agenda', icon: IconCalendar },
+  { to: '/', label: 'Agenda', icon: IconCalendar, end: true },
   { to: '/pacientes', label: 'Pacientes', icon: IconPeople },
+  { to: '/prontuario', label: 'Prontuário', icon: IconDoc },
   { to: '/financeiro', label: 'Financeiro', icon: IconMoney },
 ];
 const EXTRA: NavItem[] = [
-  { to: '/prontuario', label: 'Prontuário', icon: IconDoc },
+  { to: '/resumo', label: 'Resumo do dia', icon: IconToday },
   { to: '/agenda/horarios', label: 'Horários', icon: IconClock },
   { to: '/notas-fiscais', label: 'Notas fiscais', icon: IconReceipt },
   { to: '/configuracoes', label: 'Configurações', icon: IconSettings },

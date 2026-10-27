@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
-import type { AgendaItem, Location } from '../lib/types';
+import type { AgendaItem } from '../lib/types';
 import { horariosLivres, type HorarioLivre } from '../lib/horarios';
 import {
   addDays, daysInMonth, formatLongDate, formatTime, monthName, startOfMonth, startOfWeek, todayIn,
@@ -12,15 +12,15 @@ import { errorMessage } from '../lib/errors';
 import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
-import { Button, ErrorBox, Loading, STATUS_BAR, StatusBadge, Tabs, cx } from '../components/ui';
-import { IconChevronLeft, IconChevronRight, IconPlus, IconToday } from '../components/icons';
+import { ErrorBox, Loading, STATUS_BAR, StatusBadge, cx } from '../components/ui';
+import { IconAlert, IconChevronLeft, IconChevronRight, IconClock, IconPlus } from '../components/icons';
 
 type View = 'dia' | 'semana' | 'mes';
 
 export function AgendaPage() {
   const { profile, tz } = useProfile();
   const [params, setParams] = useSearchParams();
-  const view = (params.get('v') as View) || 'semana';
+  const view = (params.get('v') as View) || 'dia';
   const date = params.get('d') || todayIn(tz);
   const [open, setOpen] = useState<AgendaItem | null>(null);
   const [newAt, setNewAt] = useState<{ date: string; time?: string; locationId?: string | null } | null>(null);
@@ -44,6 +44,8 @@ export function AgendaPage() {
   const locais = useQuery({ queryKey: ['locations'], queryFn: api.listLocations });
   const horas = useQuery({ queryKey: ['working-hours'], queryFn: api.listWorkingHours });
   const semHorarios = horas.data !== undefined && horas.data.length === 0;
+  const dash = useQuery({ queryKey: ['dashboard'], queryFn: api.dashboard });
+  const hoje = todayIn(tz);
   const livresDo = (d: string): HorarioLivre[] => !horas.data || !profile ? [] : horariosLivres({
     date: d, hours: horas.data, locations: locais.data ?? [], items: (q.data ?? []).filter((i) => zonedParts(i.starts_at, tz).date === d),
     sessionMinutes: profile.session_minutes, bufferMinutes: profile.buffer_minutes, tz,
@@ -70,52 +72,61 @@ export function AgendaPage() {
   };
 
   const title = view === 'dia'
-    ? formatLongDate(date, true)
+    ? formatLongDate(date, date.slice(0, 4) !== todayIn(tz).slice(0, 4))
     : view === 'semana'
       ? `Semana de ${Number(range.start.slice(8))} de ${monthName(Number(range.start.slice(5, 7)))}`
       : `${monthName(Number(date.slice(5, 7)))[0].toUpperCase()}${monthName(Number(date.slice(5, 7))).slice(1)} de ${date.slice(0, 4)}`;
 
   return (
-    <div>
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[26px] font-bold">Agenda</h1>
-        <div className="flex items-center gap-1">
-          <Link to="/agenda/horarios" className="inline-flex min-h-11 items-center gap-1.5 rounded-xl px-3 text-[15px] font-bold text-tinta-2 hover:bg-cinza-fundo hover:text-anil">
-            <IconToday /> Horários
-          </Link>
-          <Button onClick={() => setNewAt({ date: view === 'dia' ? date : todayIn(tz) })}><IconPlus /> Nova sessão</Button>
+    <div className="pb-24">
+      {/* Cabeçalho limpo: data em destaque, setas e atalhos discretos */}
+      <header className="mb-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="rotulo">{view === 'dia' && date === hoje ? 'Minha agenda · hoje' : 'Minha agenda'}</p>
+            <h1 className="titulo-display mt-0.5 text-[26px] leading-tight first-letter:uppercase">{title}</h1>
+          </div>
+          <Link to="/agenda/horarios" aria-label="Horários de atendimento" title="Horários de atendimento"
+            className="grid size-12 shrink-0 place-items-center rounded-full text-tinta-2 hover:bg-cinza-fundo"><IconClock /></Link>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <div role="tablist" aria-label="Visualização" className="inline-flex gap-1 rounded-campo bg-afundado p-1">
+            {([['dia', 'Dia'], ['semana', 'Semana'], ['mes', 'Mês']] as Array<[View, string]>).map(([v, rot]) => (
+              <button key={v} role="tab" aria-selected={view === v} onClick={() => set(v, date)}
+                className={cx('min-h-10 rounded-[calc(var(--r-field)-4px)] px-3.5 text-sm font-bold', view === v ? 'bg-papel text-anil-escuro shadow-cartao' : 'text-tinta-2')}>{rot}</button>
+            ))}
+          </div>
+          <div className="ml-auto flex items-center">
+            {date !== hoje && <button onClick={() => set(view, hoje)} className="min-h-11 rounded-full px-3 text-sm font-bold text-anil-escuro hover:bg-anil-claro/60">Hoje</button>}
+            <button onClick={() => move(-1)} aria-label="Anterior" className="grid size-11 place-items-center rounded-full text-tinta-2 hover:bg-cinza-fundo"><IconChevronLeft /></button>
+            <button onClick={() => move(1)} aria-label="Próximo" className="grid size-11 place-items-center rounded-full text-tinta-2 hover:bg-cinza-fundo"><IconChevronRight /></button>
+          </div>
         </div>
       </header>
 
       {semHorarios && (
-        <Link to="/agenda/horarios" className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-anil/30 bg-anil-claro px-4 py-3 text-anil-escuro">
+        <Link to="/agenda/horarios" className="cartao mb-4 flex items-center justify-between gap-3 px-4 py-3">
           <span><strong className="block">Cadastre seus horários de atendimento</strong>
-            <span className="text-[15px]">Locais e dias em que você atende. A agenda passa a mostrar os horários livres.</span></span>
-          <IconChevronRight />
+            <span className="text-[15px] text-tinta-2">A agenda passa a mostrar os horários disponíveis.</span></span>
+          <IconChevronRight className="shrink-0 text-tinta-3" />
         </Link>
       )}
 
-      <Tabs label="Visualização" value={view} onChange={(v) => set(v, date)} items={[
-        { value: 'dia', label: 'Dia' }, { value: 'semana', label: 'Semana' }, { value: 'mes', label: 'Mês' },
-      ]} />
-
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Button variant="secondary" size="sm" onClick={() => move(-1)} aria-label="Anterior"><IconChevronLeft /></Button>
-        <Button variant="secondary" size="sm" onClick={() => move(1)} aria-label="Próximo"><IconChevronRight /></Button>
-        <Button variant="ghost" size="sm" onClick={() => set(view, todayIn(tz))}>Hoje</Button>
-        <h2 className="ml-1 text-lg font-bold first-letter:uppercase">{title}</h2>
-        <label className="ml-auto flex items-center gap-2 text-sm text-tinta-2">
-          <input type="checkbox" className="h-4 w-4 accent-anil" checked={showCanceled} onChange={(e) => setShowCanceled(e.target.checked)} />
-          Mostrar canceladas
-        </label>
-      </div>
+      {dash.data && dash.data.to_register > 0 && (
+        <Link to="/resumo#registrar" className="mb-4 flex min-h-12 items-center gap-2 rounded-campo bg-ocre-fundo px-4 py-2 text-[15px] font-bold text-ocre">
+          <IconAlert className="size-5 shrink-0" />
+          <span className="flex-1">{dash.data.to_register} {dash.data.to_register === 1 ? 'sessão aguarda' : 'sessões aguardam'} registro</span>
+          <IconChevronRight className="size-5 shrink-0" />
+        </Link>
+      )}
 
       {q.isLoading && <Loading />}
       {q.error && <ErrorBox>{errorMessage(q.error)}</ErrorBox>}
 
       {q.data && view === 'dia' && (
         <DayList date={date} items={byDay.get(date) ?? []} tz={tz} onOpen={setOpen} onNew={() => setNewAt({ date })}
-          livres={livresDo(date)} onLivre={(h) => setNewAt({ date, time: h.time, locationId: h.location?.id ?? null })} />
+          livres={livresDo(date)} onLivre={(h) => setNewAt({ date, time: h.time, locationId: h.location?.id ?? null })}
+          mostrarLocal={(locais.data ?? []).filter((l) => l.active).length > 1} />
       )}
 
       {q.data && view === 'semana' && (
@@ -137,48 +148,74 @@ export function AgendaPage() {
         <MonthGrid start={range.start} days={range.days} month={date.slice(0, 7)} byDay={byDay} today={todayIn(tz)} onPick={(d) => set('dia', d)} />
       )}
 
+      <label className="mt-6 flex items-center justify-center gap-2 text-sm text-tinta-3">
+        <input type="checkbox" className="h-4 w-4 accent-anil" checked={showCanceled} onChange={(e) => setShowCanceled(e.target.checked)} />
+        Mostrar canceladas
+      </label>
+
+      {/* Botão flutuante: novo agendamento */}
+      <button onClick={() => setNewAt({ date: view === 'dia' ? date : hoje })}
+        className="btn-degrade pressionar fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-14 items-center gap-2 rounded-cartao pl-4 pr-5 text-[15px] font-bold shadow-flutuante lg:bottom-8 lg:right-8">
+        <IconPlus /> Novo agendamento
+      </button>
+
       <AppointmentSheet item={open} onClose={() => setOpen(null)} />
       <NewAppointmentDialog open={!!newAt} onClose={() => setNewAt(null)} initialDate={newAt?.date} initialTime={newAt?.time} initialLocationId={newAt?.locationId ?? null} />
     </div>
   );
 }
 
-function DayList({ date, items, tz, onOpen, onNew, compact, livres = [], onLivre }: {
+type Linha = { tipo: 'sessao'; hora: string; item: AgendaItem } | { tipo: 'livre'; hora: string; livre: HorarioLivre };
+
+function DayList({ date, items, tz, onOpen, onNew, compact, livres = [], onLivre, mostrarLocal }: {
   date: string; items: AgendaItem[]; tz: string; onOpen: (i: AgendaItem) => void; onNew: () => void; compact?: boolean;
-  livres?: HorarioLivre[]; onLivre?: (h: HorarioLivre) => void;
+  livres?: HorarioLivre[]; onLivre?: (h: HorarioLivre) => void; mostrarLocal?: boolean;
 }) {
+  const variosLocais = mostrarLocal && new Set(livres.map((h) => h.location?.id ?? '')).size > 1;
+  // Sessões e horários disponíveis numa única linha do tempo, por hora (na semana, só a contagem de livres).
+  const linhas: Linha[] = [
+    ...items.map((item) => ({ tipo: 'sessao' as const, hora: formatTime(item.starts_at, tz), item })),
+    ...(compact ? [] : livres.map((livre) => ({ tipo: 'livre' as const, hora: livre.time, livre }))),
+  ].sort((x, y) => x.hora.localeCompare(y.hora));
+
   return (
     <section aria-label={formatLongDate(date)}>
-      {compact && <h3 className="mb-2 font-bold first-letter:uppercase">{formatLongDate(date)}</h3>}
-      {livres.length > 0 && (
-        <div className="mb-2 flex gap-2 overflow-x-auto pb-1" aria-label="Horários livres">
-          {livres.map((h) => (
-            <button key={`${h.time}-${h.location?.id}`} type="button" onClick={() => onLivre?.(h)}
-              className="num inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full border border-dashed border-anil/40 bg-papel px-3 text-[14px] font-bold text-anil hover:bg-anil-claro">
-              <IconPlus className="size-4" /> {h.time}{h.location && <LocalPonto local={h.location} />}
-            </button>
-          ))}
+      {compact && (
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <h3 className="font-bold first-letter:uppercase">{formatLongDate(date)}</h3>
+          {livres.length > 0 && <button onClick={() => onLivre?.(livres[0])} className="text-sm font-bold text-anil-escuro">{livres.length} {livres.length === 1 ? 'horário disponível' : 'horários disponíveis'}</button>}
         </div>
       )}
-      {items.length === 0 && livres.length > 0 ? null : items.length === 0 ? (
-        <button onClick={onNew} className="w-full rounded-lg border border-dashed border-linha-forte px-4 py-3 text-left text-tinta-3 hover:border-anil hover:text-anil">
-          Livre. Toque para agendar.
+      {linhas.length === 0 ? (
+        <button onClick={onNew} className="w-full rounded-cartao border border-dashed border-linha-forte px-4 py-4 text-left text-tinta-2 hover:border-anil hover:text-anil-escuro">
+          {compact ? 'Sem sessões.' : 'Nenhuma sessão neste dia.'} <span className="font-bold text-anil-escuro">Agendar</span>
         </button>
       ) : (
-        <ul className="divide-y divide-linha rounded-lg border border-linha bg-papel">
-          {items.map((it) => (
-            <li key={it.id}>
-              <button onClick={() => onOpen(it)} className={cx('flex w-full items-center gap-4 border-l-4 px-4 py-3 text-left hover:bg-gesso', STATUS_BAR[it.status])}>
-                <span className="num w-24 shrink-0 font-bold">{formatTime(it.starts_at, tz)}–{formatTime(it.ends_at, tz)}</span>
-                <span className="min-w-0 flex-1">
-                  <span className={cx('block truncate font-bold', it.status === 'cancelado' && 'text-tinta-3 line-through')}>{it.patient_social_name || it.patient_name}</span>
-                  {it.location_name && <span className="flex items-center gap-1.5 truncate text-sm text-tinta-3"><span className="size-2 shrink-0 rounded-full" style={{ background: it.location_color ?? 'var(--color-anil)' }} aria-hidden />{it.location_name}</span>}
-                </span>
-                <StatusBadge status={it.status} />
-              </button>
+        <ol className="flex flex-col gap-2">
+          {linhas.map((l) => (
+            <li key={l.tipo === 'sessao' ? l.item.id : `livre-${l.hora}-${l.livre.location?.id ?? ''}`} className="flex items-stretch gap-3">
+              <span className={cx('num w-12 shrink-0 text-[15px] font-bold', l.tipo === 'sessao' ? 'pt-3.5 text-tinta' : 'pt-3 text-tinta-3')}>{l.hora}</span>
+              {l.tipo === 'sessao' ? (
+                <button onClick={() => onOpen(l.item)}
+                  className={cx('cartao pressionar flex min-h-16 min-w-0 flex-1 items-center gap-3 border-l-4 py-2.5 pl-3.5 pr-3 text-left', STATUS_BAR[l.item.status])}>
+                  <span className="min-w-0 flex-1">
+                    <span className={cx('block truncate font-bold', l.item.status === 'cancelado' && 'text-tinta-3 line-through')}>{l.item.patient_social_name || l.item.patient_name}</span>
+                    <span className="mt-0.5 flex items-center gap-1.5 truncate text-sm text-tinta-2">
+                      {l.item.modality === 'online' ? 'On-line' : l.item.location_name ?? 'Presencial'} · até {formatTime(l.item.ends_at, tz)}
+                    </span>
+                  </span>
+                  <StatusBadge status={l.item.status} />
+                </button>
+              ) : (
+                <button onClick={() => onLivre?.(l.livre)}
+                  className="flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-cartao border border-dashed border-linha px-3.5 text-left text-tinta-3 hover:border-anil hover:bg-anil-claro/40 hover:text-anil-escuro">
+                  <span className="flex-1">Horário disponível{variosLocais && l.livre.location && <span className="text-tinta-3"> · {l.livre.location.name}</span>}</span>
+                  <IconPlus className="size-5 shrink-0 text-anil-escuro" />
+                </button>
+              )}
             </li>
           ))}
-        </ul>
+        </ol>
       )}
     </section>
   );
@@ -262,8 +299,4 @@ function MonthGrid({ start, days, month, byDay, today, onPick }: { start: string
       </div>
     </div>
   );
-}
-
-function LocalPonto({ local }: { local: Location }) {
-  return <span className="size-2 rounded-full" style={{ background: local.color ?? 'var(--color-anil)' }} title={local.name} aria-label={local.name} />;
 }

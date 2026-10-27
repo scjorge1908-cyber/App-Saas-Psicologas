@@ -32,7 +32,7 @@ export function HorariosPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex items-center gap-2">
-        <Link to="/agenda" className="grid size-11 place-items-center rounded-xl text-tinta-2 hover:bg-cinza-fundo" aria-label="Voltar para a agenda"><IconChevronLeft /></Link>
+        <Link to="/" className="grid size-11 place-items-center rounded-xl text-tinta-2 hover:bg-cinza-fundo" aria-label="Voltar para a agenda"><IconChevronLeft /></Link>
         <div>
           <h1 className="text-[24px] font-bold leading-tight">Horários</h1>
           <p className="text-[15px] text-tinta-2">Onde e quando você atende. A agenda sugere os horários livres a partir daqui.</p>

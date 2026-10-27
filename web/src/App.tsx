@@ -55,8 +55,9 @@ export default function App() {
       <Route path="/esqueci-senha" element={<PublicOnly><ForgotPasswordPage /></PublicOnly>} />
       <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
       <Route element={<RequireAuth><AppShell /></RequireAuth>}>
-        <Route index element={<TodayPage />} />
-        <Route path="agenda" element={<AgendaPage />} />
+        <Route index element={<AgendaPage />} />
+        <Route path="agenda" element={<Navigate to="/" replace />} />
+        <Route path="resumo" element={<TodayPage />} />
         <Route path="agenda/horarios" element={<HorariosPage />} />
         <Route path="prontuario" element={<ProntuarioPage />} />
         <Route path="pacientes" element={<PatientsPage />} />

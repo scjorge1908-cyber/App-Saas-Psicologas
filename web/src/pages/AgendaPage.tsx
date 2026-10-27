@@ -25,7 +25,7 @@ import { PrimeirosPassos, iniciarPasseio } from '../components/ajuda/Ajuda';
 import { FLAG_PASSEIO_OFERECIDO, FLAG_WHATS_ENVIADO, gravarFlag, lerFlag } from '../lib/ajuda';
 import { IconCake, IconCheck, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSwap, IconVideo, IconWhats } from '../components/icons';
 
-type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente'; repeat?: 'quinzenal' };
+type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente'; repeat?: 'quinzenal'; encaixe?: boolean };
 type Visao = 'semana' | 'dia';
 
 const diaNome = (d: string) => { const n = weekdayName(d).replace('-feira', ''); return n[0].toUpperCase() + n.slice(1); };
@@ -255,15 +255,22 @@ export function AgendaPage() {
                       </li>
                     ) : l.tipo === 'fantasma' ? (
                       // Paciente quinzenal na semana em que não tem sessão: lembrete apagado com a próxima data
-                      <li key={`q-${l.item.id}`}>
+                      // Mover e WhatsApp valem para a próxima sessão (sempre disponíveis, como na linha do paciente)
+                      <li key={`q-${l.item.id}`} className="flex items-center gap-1 rounded-campo border border-dashed border-ag-pac-borda/40 py-1 pl-2.5 pr-1.5">
                         <button onClick={() => setOpen({ item: l.item })} aria-label={`${l.hora}, ${nomeCurto(l.item.patient_social_name || l.item.patient_name)}, quinzenal, próxima sessão em ${ddmm(l.proxima)}`}
-                          className="flex min-h-11 w-full items-center gap-2 rounded-campo border border-dashed border-ag-pac-borda/40 py-1 pl-2.5 pr-3 text-left opacity-80">
+                          className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left opacity-80">
                           <span className="num shrink-0 px-1 text-[1rem] font-extrabold text-tinta-2">{l.hora}</span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-bold text-tinta-2">{nomeCurto(l.item.patient_social_name || l.item.patient_name)}</span>
                             <span className="block text-[0.8125rem] text-tinta-3">Quinzenal · próxima <span className="num">{ddmm(l.proxima)}</span></span>
                           </span>
                         </button>
+                        {(l.item.status === 'agendado' || l.item.status === 'confirmado') && (
+                          <button onClick={() => setOpen({ item: l.item, mover: true })} aria-label={`Mover ${nomeCurto(l.item.patient_social_name || l.item.patient_name)} (sessão de ${ddmm(l.proxima)})`} title="Mover (dia, horário ou sala)"
+                            className="pressionar grid size-11 shrink-0 place-items-center rounded-full border-[1.5px] border-ag-pac-borda bg-papel text-ag-pac"><IconSwap className="size-5" /></button>
+                        )}
+                        <button onClick={() => setWhats(l.item)} aria-label={`Enviar WhatsApp para ${nomeCurto(l.item.patient_social_name || l.item.patient_name)} (sessão de ${ddmm(l.proxima)})`} title="Enviar WhatsApp"
+                          className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
                       </li>
                     ) : (
                       <LinhaPaciente key={l.item.id} item={l.item} date={c.date} tz={tz}
@@ -298,16 +305,30 @@ export function AgendaPage() {
         </section>
       )}
 
-      {/* Ações da agenda */}
+      {/* Ações da agenda: grade (horários fixos) e encaixe (sessão fora da grade) */}
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/agenda/horarios" data-ajuda="grade" className="cartao pressionar inline-flex min-h-14 items-center justify-center gap-2 px-2 text-center font-bold text-anil-escuro"><IconClock className="size-5 shrink-0" /> Editar grade</Link>
-        <button onClick={() => setNovoEm({ date, modo: 'existente' })} className="btn-degrade pressionar inline-flex min-h-14 items-center justify-center gap-2 rounded-cartao px-2 text-center font-bold shadow-elevado"><IconPlus className="size-5 shrink-0" /> Adicionar encaixe</button>
+        <Link to="/agenda/horarios" data-ajuda="grade"
+          className="pressionar group flex min-h-16 items-center gap-2.5 rounded-cartao border border-linha bg-papel p-2.5 text-left shadow-cartao hover:border-anil">
+          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-anil-claro text-sobre-anil-claro"><IconClock className="size-5" /></span>
+          <span className="min-w-0 leading-tight">
+            <span className="block text-[0.9375rem] font-extrabold text-tinta">Editar grade</span>
+            <span className="block text-[0.75rem] text-tinta-3">Dias, salas e horários</span>
+          </span>
+        </Link>
+        <button onClick={() => setNovoEm({ date, modo: 'existente', encaixe: true })}
+          className="pressionar flex min-h-16 items-center gap-2.5 rounded-cartao border border-anil/30 bg-anil p-2.5 text-left text-sobre-anil shadow-elevado hover:brightness-110">
+          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-sobre-anil/15"><IconPlus className="size-5" strokeWidth={2.4} /></span>
+          <span className="min-w-0 leading-tight">
+            <span className="block text-[0.9375rem] font-extrabold">Encaixe</span>
+            <span className="block text-[0.75rem] opacity-85">Sessão fora da grade</span>
+          </span>
+        </button>
       </div>
 
       <AppointmentSheet item={open?.item ?? null} mover={open?.mover} onClose={() => setOpen(null)} />
       <WhatsAppCard key={whats?.id ?? 'nenhum'} item={whats} onClose={() => setWhats(null)} onMover={(item) => setOpen({ item, mover: true })} />
       <NewAppointmentDialog open={!!novoEm} onClose={() => setNovoEm(null)} initialDate={novoEm?.date} initialTime={novoEm?.time}
-        initialLocationId={novoEm?.locationId ?? null} initialMinutes={novoEm?.minutes} initialModo={novoEm?.modo} initialRepeat={novoEm?.repeat} />
+        initialLocationId={novoEm?.locationId ?? null} initialMinutes={novoEm?.minutes} initialModo={novoEm?.modo} initialRepeat={novoEm?.repeat} encaixe={novoEm?.encaixe} />
     </div>
   );
 }
@@ -348,10 +369,9 @@ function LinhaPaciente({ item, date, tz, onOpen, onMover, onWhats, foraDaSala, m
           <button onClick={onMover} aria-label={`Mover ${nome}`} title="Mover (dia, horário ou sala)"
             className="pressionar grid size-11 place-items-center rounded-full border-[1.5px] border-ag-pac-borda bg-papel text-ag-pac"><IconSwap className="size-5" /></button>
         )}
-        {item.patient_phone && (
-          <button onClick={onWhats} {...(marcarWhats ? { 'data-ajuda': 'whats' } : {})} aria-label={`Enviar WhatsApp para ${nome}`} title={aniversario ? 'WhatsApp: parabéns + lembrete' : 'Enviar WhatsApp'}
-            className="pressionar grid size-11 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
-        )}
+        {/* WhatsApp sempre visível (pedido do Jorge, 27/10): sem celular, o cartão oferece copiar a mensagem */}
+        <button onClick={onWhats} {...(marcarWhats ? { 'data-ajuda': 'whats' } : {})} aria-label={`Enviar WhatsApp para ${nome}`} title={aniversario ? 'WhatsApp: parabéns + lembrete' : 'Enviar WhatsApp'}
+          className="pressionar grid size-11 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
       </span>
     </li>
   );

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { AgendaItem } from '../lib/types';
 import { errorMessage } from '../lib/errors';
-import { ageOn, formatCpf, formatDate, formatPhone, formatTime, money, sumMoney, todayIn, zonedParts } from '../lib/format';
+import { ageOn, formatCpf, formatDate, formatPhone, formatTime, money, sumMoney, todayIn, zonedParts, formatCnpj } from '../lib/format';
 import { whatsappLink } from '../lib/messages';
 import { useProfile } from '../auth/AuthProvider';
 import { Badge, Button, DescList, Empty, ErrorBox, Loading, Panel, StatusBadge, Tabs, useConfirm, useToast } from '../components/ui';
@@ -86,8 +86,8 @@ export function PatientDetailPage() {
               ['Emergência', [pt.emergency_contact_name, pt.emergency_contact_phone && formatPhone(pt.emergency_contact_phone)].filter(Boolean).join(', ')],
               ['Responsável legal', [pt.guardian_name, pt.guardian_relationship].filter(Boolean).join(', ')],
               ['Autorização do responsável', pt.guardian_authorization_date ? formatDate(pt.guardian_authorization_date) : pt.guardian_name ? 'não registrada' : ''],
-              ['Pagador', pt.payer_name ? `${pt.payer_name}${pt.payer_cpf ? `, CPF ${formatCpf(pt.payer_cpf)}` : ''}` : ''],
-              ['Nota fiscal', pt.nf_tomador === 'outro' ? `no nome de ${pt.payer_name ?? 'quem paga'}${pt.payer_email ? `, ${pt.payer_email}` : ''}${pt.payer_city ? `, ${pt.payer_city}/${pt.payer_uf ?? ''}` : ''}` : pt.nf_tomador === 'paciente' ? 'no nome do paciente' : ''],
+              ['Pagador', pt.payer_name ? `${pt.payer_name}${pt.payer_tipo === 'pj' && pt.payer_cnpj ? `, CNPJ ${formatCnpj(pt.payer_cnpj)}` : pt.payer_cpf ? `, CPF ${formatCpf(pt.payer_cpf)}` : ''}` : ''],
+              ['Nota fiscal', pt.nf_tomador === 'outro' ? `${pt.payer_tipo === 'pj' ? 'PJ' : 'PF'}, no nome de ${pt.payer_name ?? 'quem paga'}${pt.payer_email ? `, ${pt.payer_email}` : ''}${pt.payer_city ? `, ${pt.payer_city}/${pt.payer_uf ?? ''}` : ''}` : pt.nf_tomador === 'paciente' ? 'PF, no nome do paciente' : ''],
               ['Atendimento', `${pt.modality === 'online' ? 'Online' : 'Presencial'}${pt.session_minutes ? `, ${pt.session_minutes} min` : ''}`],
               ['Valor', pt.session_price != null ? `${money(pt.session_price)} ${pt.billing_mode === 'mensal' ? '(mensalidade/pacote)' : 'por sessão'}` : ''],
               ['Observações', pt.admin_notes],

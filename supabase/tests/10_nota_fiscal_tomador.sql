@@ -20,6 +20,12 @@ select tests.throws($q$insert into public.patients (full_name, payer_cep) values
 select tests.throws($q$insert into public.patients (full_name, payer_phone) values ('X', '9999')$q$, '23514', 'Telefone sem DDD é recusado');
 select tests.throws($q$insert into public.patients (full_name, payer_uf) values ('X', 'sc')$q$, '23514', 'UF minúscula é recusada');
 
+-- Empresa (PJ) pagando
+select tests.eq(tests.affected($q$insert into public.patients (full_name, nf_tomador, payer_tipo, payer_name, payer_cnpj, payer_im)
+  values ('Paciente PJ', 'outro', 'pj', 'Empresa Fictícia Ltda', '11222333000181', '12345')$q$), 1, 'Empresa (CNPJ) como tomadora da nota');
+select tests.throws($q$insert into public.patients (full_name, payer_tipo) values ('X', 'mei')$q$, '23514', 'Tipo de pagador desconhecido é recusado');
+select tests.throws($q$insert into public.patients (full_name, payer_cnpj) values ('X', '11.222.333/0001-81')$q$, '23514', 'CNPJ com pontuação é recusado');
+
 select tests.login(tests.id('B'));
 select tests.eq((select count(*)::int from public.patients where id = tests.id('P')), 0, 'Outra psicóloga não vê os dados da nota');
 reset role;

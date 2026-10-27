@@ -10,6 +10,7 @@ import { useAuth, useProfile } from '../../auth/AuthProvider';
 import { ENDERECO_VAZIO, EnderecoCampos, enderecoParaPaciente, type Endereco } from '../patients/EnderecoCampos';
 import { PatientForm } from '../patients/PatientForm';
 import { Button, Dialog, ErrorBox, Field, Input, Notice, Select, TextField, cx, useToast } from '../ui';
+import { NotaFiscalCampos, NOTA_VAZIA, faltandoNota, notaParaPaciente, type DadosPaciente, type NotaFiscal } from '../patients/NotaFiscalCampos';
 import { useInvalidateAgenda } from './AppointmentSheet';
 
 // Modalidade do atendimento (obrigatória): avulso = uma sessão; semanal e quinzenal criam a série.
@@ -24,9 +25,11 @@ type NovoPaciente = { full_name: string; phone: string; cpf: string; rg: string;
 const NOVO_VAZIO: NovoPaciente = { full_name: '', phone: '', cpf: '', rg: '', birth_date: '', nasc_texto: '', email: '', ...ENDERECO_VAZIO };
 type ArquivoPendente = { file: File; category: AttachmentCategory };
 
-export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, patientId, initialLocationId, initialMinutes, initialModo, initialRepeat }: {
+export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, patientId, initialLocationId, initialMinutes, initialModo, initialRepeat, encaixe }: {
   open: boolean; onClose: () => void; initialDate?: string; initialTime?: string; patientId?: string; initialLocationId?: string | null; initialMinutes?: number;
   initialModo?: 'novo' | 'existente'; initialRepeat?: SeriesFrequency;
+  /** Encaixe: sessão em qualquer dia e horário, mesmo fora da grade (só não pode bater com outra sessão). */
+  encaixe?: boolean;
 }) {
   const { profile, tz } = useProfile();
   const { session } = useAuth();
@@ -34,6 +37,8 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
   const toast = useToast();
   const [modo, setModo] = useState<'existente' | 'novo'>('existente');
   const [novo, setNovo] = useState<NovoPaciente>(NOVO_VAZIO);
+  const [nota, setNota] = useState<NotaFiscal>(NOTA_VAZIA);
+  const dadosNovo: DadosPaciente = { full_name: novo.full_name, cpf: novo.cpf, email: novo.email, phone: novo.phone, end: novo };
   const [arquivos, setArquivos] = useState<ArquivoPendente[]>([]);
   const invalidate = useInvalidateAgenda();
   const patients = useQuery({ queryKey: ['patients'], queryFn: api.listPatients, enabled: open });
@@ -66,7 +71,7 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
     setPid(patientId ?? ''); setDate(initialDate ?? todayIn(tz)); setTime(initialTime ?? '');
     setRepeat(initialRepeat ?? ''); setResult(null); setError(null); setEnding('quantidade'); setCount('12'); setUntil('');
     setLocationId(initialLocationId ?? '');
-    setNovo(NOVO_VAZIO); setArquivos([]); setModo(initialModo ?? 'existente'); setCadastrado(false); setEditandoCadastro(false);
+    setNovo(NOVO_VAZIO); setNota(NOTA_VAZIA); setArquivos([]); setModo(initialModo ?? 'existente'); setCadastrado(false); setEditandoCadastro(false);
     if (initialMinutes) setDuration(String(initialMinutes));
   }, [open, patientId, initialDate, initialTime, tz, initialLocationId, initialMinutes, initialModo, initialRepeat]);
 
@@ -126,6 +131,8 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
       if (novo.cpf && !isValidCpf(novo.cpf)) return setError('CPF inválido.');
       if (novo.nasc_texto && !novo.birth_date) return setError('Data de nascimento inválida. Use dia/mês/ano, por exemplo 25/03/1990.');
       if (novo.rg.trim() && (novo.rg.trim().length < 3 || novo.rg.trim().length > 20)) return setError('RG inválido.');
+      const faltaNota = faltandoNota(nota, dadosNovo);
+      if (faltaNota.length) return setError(`Nota fiscal: falta ${faltaNota.join(', ')}.`);
     } else if (!pid) return setError('Escolha o paciente.');
     if (!date) return setError('Informe a data.');
     if (!time) return setError('Informe o horário.');
@@ -144,7 +151,7 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
         const nn = (v: string) => (v.trim() ? v.trim() : null);
         const p = await api.savePatient({
           full_name: novo.full_name.trim(), phone: nn(onlyDigits(novo.phone)), cpf: nn(onlyDigits(novo.cpf)), rg: nn(novo.rg),
-          birth_date: nn(novo.birth_date), email: nn(novo.email), modality, ...enderecoParaPaciente(novo),
+          birth_date: nn(novo.birth_date), email: nn(novo.email), modality, ...enderecoParaPaciente(novo), ...notaParaPaciente(nota),
         });
         pacienteId = p.id;
         // Paciente já existe a partir daqui: se algo falhar depois, não cadastra de novo
@@ -185,7 +192,7 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
   const duracoes = DURACOES.includes(Number(duration)) || !Number(duration) ? DURACOES : [...DURACOES, Number(duration)].sort((a, b) => a - b);
 
   return (
-    <Dialog open={open} onClose={onClose} wide={modo === 'novo'} title={result ? (cadastrado ? 'Paciente cadastrado' : 'Agendamento') : modo === 'novo' ? 'Cadastrar paciente' : 'Novo agendamento'} footer={result ? <>
+    <Dialog open={open} onClose={onClose} wide={modo === 'novo'} title={result ? (cadastrado ? 'Paciente cadastrado' : 'Agendamento') : encaixe ? 'Encaixe fora da grade' : modo === 'novo' ? 'Cadastrar paciente' : 'Novo agendamento'} footer={result ? <>
       {cadastrado && patient && <Button variant="secondary" onClick={() => setEditandoCadastro(true)}>Editar cadastro</Button>}
       <Button onClick={onClose}>Concluir</Button>
     </> : <>
@@ -213,6 +220,12 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
       ) : (
         <div className="flex flex-col gap-4">
           {error && <ErrorBox>{error}</ErrorBox>}
+          {encaixe && (
+            <Notice tone="anil">
+              Para um horário que <b>não está na sua grade</b> (ex.: 12:30 ou 21:00, ou um dia em que você não atende). Escolha o dia e o horário livremente;
+              o app só não deixa coincidir com outra sessão. Nos horários da grade, use o <b>+ Agendar</b> da linha LIVRE.
+            </Notice>
+          )}
           {date && time && <p className="num rounded-campo bg-anil-claro/60 px-3 py-2 font-bold text-sobre-anil-claro first-letter:uppercase">{formatLongDate(date)} às {time}</p>}
           {!patientId && (
             <div role="tablist" aria-label="Paciente" className="inline-flex gap-1 self-start rounded-campo bg-afundado p-1">
@@ -235,7 +248,13 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
               {patient && <button type="button" onClick={() => setEditandoCadastro(true)} className="min-h-11 self-start px-1 text-sm font-bold text-anil-escuro underline">Editar cadastro deste paciente</button>}
             </div>
           ) : (
-            <NovoPacienteCampos valor={novo} onChange={setNovo} hoje={todayIn(tz)} />
+            <>
+              <NovoPacienteCampos valor={novo} onChange={setNovo} hoje={todayIn(tz)} />
+              <fieldset className="flex flex-col gap-2 rounded-cartao border border-linha p-3">
+                <legend className="px-1 text-base font-bold">Nota fiscal</legend>
+                <NotaFiscalCampos valor={nota} onChange={setNota} paciente={dadosNovo} />
+              </fieldset>
+            </>
           )}
           <div className="grid grid-cols-2 gap-3">
             {horarioFixo && initialDate ? (

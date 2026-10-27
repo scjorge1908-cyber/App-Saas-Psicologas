@@ -31,6 +31,7 @@ function useLivres(item: AgendaItem) {
   const agenda = useQuery({ queryKey: ['agenda', fromIso, toIso], queryFn: () => api.listAgenda(fromIso, toIso) });
   const locais = useQuery({ queryKey: ['locations'], queryFn: api.listLocations });
   const horas = useQuery({ queryKey: ['working-hours'], queryFn: api.listWorkingHours });
+  const bloqueios = useQuery({ queryKey: ['blocks'], queryFn: api.listBlocks });
 
   const porData = useMemo(() => {
     const m = new Map<string, Array<{ time: string; location: Location | null }>>();
@@ -41,10 +42,10 @@ function useLivres(item: AgendaItem) {
     for (let i = 0; i < SEMANAS * 7; i++) {
       const d = addDays(hoje, i);
       m.set(d, horariosLivres({ date: d, hours: faixas, locations: locais.data, items: itens.filter((it) => zonedParts(it.starts_at, tz).date === d),
-        sessionMinutes: profile.session_minutes, bufferMinutes: profile.buffer_minutes, tz }).map((l) => ({ time: l.time, location: l.location })));
+        sessionMinutes: profile.session_minutes, bufferMinutes: profile.buffer_minutes, tz, bloqueios: bloqueios.data }).map((l) => ({ time: l.time, location: l.location })));
     }
     return m;
-  }, [agenda.data, horas.data, locais.data, profile, item.id, item.series_id, item.starts_at, hoje, tz]);
+  }, [agenda.data, horas.data, locais.data, bloqueios.data, profile, item.id, item.series_id, item.starts_at, hoje, tz]);
 
   return { porData, hoje, carregando: agenda.isLoading || horas.isLoading || locais.isLoading, semGrade: !!horas.data && horas.data.length === 0 };
 }

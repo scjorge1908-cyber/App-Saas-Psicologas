@@ -55,6 +55,9 @@ export const importAll: typeof real.importAll = (...a) => (fonte().importAll as 
 export const listLocations: typeof real.listLocations = (...a) => (fonte().listLocations as typeof real.listLocations)(...a);
 export const saveLocation: typeof real.saveLocation = (...a) => (fonte().saveLocation as typeof real.saveLocation)(...a);
 export const deleteLocation: typeof real.deleteLocation = (...a) => (fonte().deleteLocation as typeof real.deleteLocation)(...a);
+export const listBlocks: typeof real.listBlocks = (...a) => (fonte().listBlocks as typeof real.listBlocks)(...a);
+export const saveBlock: typeof real.saveBlock = (...a) => (fonte().saveBlock as typeof real.saveBlock)(...a);
+export const deleteBlock: typeof real.deleteBlock = (...a) => (fonte().deleteBlock as typeof real.deleteBlock)(...a);
 export const listWorkingHours: typeof real.listWorkingHours = (...a) => (fonte().listWorkingHours as typeof real.listWorkingHours)(...a);
 export const saveWorkingHour: typeof real.saveWorkingHour = (...a) => (fonte().saveWorkingHour as typeof real.saveWorkingHour)(...a);
 export const deleteWorkingHour: typeof real.deleteWorkingHour = (...a) => (fonte().deleteWorkingHour as typeof real.deleteWorkingHour)(...a);

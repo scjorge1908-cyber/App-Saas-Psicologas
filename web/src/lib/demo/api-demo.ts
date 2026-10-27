@@ -4,8 +4,7 @@
 import type {
   AgendaItem, AppointmentStatus, Attachment, AttachmentCategory, ChargeBalance, DashboardSummary, DocumentRow,
   Expense, FinancialReportRow, InvoiceItem, Location, Modality, Patient, PaymentItem, Profile, RecordEntry, RecordEntryVersion,
-  SeriesFrequency, WorkingHour,
-} from '../types';
+  SeriesFrequency, WorkingHour, ScheduleBlock } from '../types';
 import { DEFAULT_TZ, addDays, todayIn, zonedParts, zonedToUtc } from '../format';
 import { sha256Hex } from '../hash';
 import { DEMO_USER_ID } from './modo';
@@ -35,6 +34,7 @@ interface Store {
   invoices: Invoice[];
   locations: Location[];
   hours: WorkingHour[];
+  blocks: ScheduleBlock[];
 }
 
 const uid = () => crypto.randomUUID();
@@ -74,7 +74,7 @@ function montarStore(): Store {
   const [mariana, rafael, beatriz, lucas, juliana, pedro] = patients;
 
   const s: Store = { profile: perfil, patients, series: [], appointments: [], records: [], versions: [], attachments: [],
-    blobs: new Map(), documents: [], charges: [], payments: [], expenses: [], invoices: [], locations: [], hours: [] };
+    blobs: new Map(), documents: [], charges: [], payments: [], expenses: [], invoices: [], locations: [], hours: [], blocks: [] };
 
   // locais e horários de atendimento: sala de seg a sex (manhã e tarde) e on-line à noite
   const sala: Location = { id: uid(), name: 'Sala 1 · Centro', modality: 'presencial', address: 'Rua Fictícia, 100, sala 1', color: '#146C70', active: true };
@@ -608,6 +608,23 @@ export async function deleteLocation(id: string) {
   db().locations = db().locations.filter((x) => x.id !== id);
   db().hours = db().hours.filter((h) => h.location_id !== id);
   for (const a of db().appointments) if (a.location_id === id) a.location_id = null;
+}
+export async function listBlocks(): Promise<ScheduleBlock[]> {
+  await atraso();
+  return [...(db().blocks ?? [])].sort((a, b) => a.starts_on.localeCompare(b.starts_on));
+}
+export async function saveBlock(b: Partial<ScheduleBlock> & Omit<ScheduleBlock, 'id'>): Promise<ScheduleBlock> {
+  await atraso();
+  if (b.ends_on < b.starts_on) throw new Error('O fim do bloqueio precisa ser no mesmo dia ou depois do início.');
+  db().blocks ??= [];
+  if (b.id) { const atual = db().blocks.find((x) => x.id === b.id); if (!atual) throw new Error('Bloqueio não encontrado.'); Object.assign(atual, b); return atual; }
+  const novo: ScheduleBlock = { ...b, id: uid() };
+  db().blocks.push(novo);
+  return novo;
+}
+export async function deleteBlock(id: string) {
+  await atraso();
+  db().blocks = (db().blocks ?? []).filter((x) => x.id !== id);
 }
 export async function listWorkingHours(): Promise<WorkingHour[]> {
   await atraso();

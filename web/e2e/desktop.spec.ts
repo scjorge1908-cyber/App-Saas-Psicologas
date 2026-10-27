@@ -40,7 +40,7 @@ test('desktop: agenda semanal em grade e ficha do paciente', async ({ page }) =>
   await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
   await page.getByLabel('CRP').fill('12/999999');
   await page.getByRole('button', { name: 'Começar a usar' }).click();
-  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeAttached();
+  await expect(page).toHaveURL(/\/(resumo)?$/); // entra no app (tela inicial = Resumo do dia)
 
   for (const [name, time, freq] of [['Helena Fictícia', '09:00', 'semanal'], ['Rafael Fictício', '11:00', 'quinzenal'], ['Júlia Fictícia', '16:30', 'semanal']] as const) {
     const a = await novoPacienteNoEncaixe(page, { nome: name, celular: '(48) 98888-0000', data: tzDate(1), hora: time, freq, n: 6, valor: '180,00' });

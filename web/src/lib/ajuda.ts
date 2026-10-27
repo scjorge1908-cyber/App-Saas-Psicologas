@@ -41,7 +41,7 @@ export const AJUDA: Array<{ rota: RegExp; ajuda: AjudaTela }> = [
   { rota: /^\/$/, ajuda: AGENDA },
   { rota: /^\/agenda\/horarios/, ajuda: {
     titulo: 'Grade e horários',
-    comoUsar: ['Escolha a sala e os dias, depois o turno.', 'Ajuste início e término, a duração da sessão e o intervalo.', 'Confira a pré-visualização e toque em “Salvar e gerar grade”.', 'Toque num bloco da grade atual para mudar ou excluir.'],
+    comoUsar: ['Em “Bloqueios”, marque férias, feriados (há atalho para os nacionais) e folgas: a agenda não oferece esses horários.', 'Escolha a sala e os dias, depois o turno.', 'Ajuste início e término, a duração da sessão e o intervalo.', 'Confira a pré-visualização e toque em “Salvar e gerar grade”.', 'Toque num bloco da grade atual para mudar ou excluir.'],
     duvidas: [
       { p: 'Posso ter turnos diferentes em salas diferentes?', r: 'Sim. Gere um bloco por vez: escolha a sala, os dias e o turno de cada um.' },
       { p: 'Excluir um bloco apaga sessões?', r: 'Não. Só tira os horários livres daquele bloco. As sessões marcadas continuam.' },

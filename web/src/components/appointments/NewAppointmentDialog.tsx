@@ -11,6 +11,7 @@ import { ENDERECO_VAZIO, EnderecoCampos, enderecoParaPaciente, type Endereco } f
 import { PatientForm } from '../patients/PatientForm';
 import { Button, Dialog, ErrorBox, Field, Input, Notice, Select, TextField, cx, useToast } from '../ui';
 import { NotaFiscalCampos, NOTA_VAZIA, faltandoNota, notaParaPaciente, type DadosPaciente, type NotaFiscal } from '../patients/NotaFiscalCampos';
+import { bloqueioNoHorario, textoBloqueio } from '../../lib/bloqueios';
 import { useInvalidateAgenda } from './AppointmentSheet';
 
 // Modalidade do atendimento (obrigatória): avulso = uma sessão; semanal e quinzenal criam a série.
@@ -84,15 +85,18 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
     queryFn: () => api.listAgenda(zonedToUtc(iniLista, '00:00', tz), zonedToUtc(addDays(iniLista, 84), '00:00', tz)),
     enabled: open && horarioFixo && !!initialDate,
   });
+  const bloqueios = useQuery({ queryKey: ['blocks'], queryFn: api.listBlocks, enabled: open });
   const datasLivres = useMemo(() => {
     if (!horarioFixo || !initialDate || !time || !ocupadas.data) return [];
     const dur = Number(duration) || 50;
     return Array.from({ length: 12 }, (_, i) => addDays(initialDate, 7 * i)).filter((d) => {
       const ini = new Date(zonedToUtc(d, time, tz)).getTime();
       const fim = ini + dur * 60000;
-      return !ocupadas.data.some((it) => it.status !== 'cancelado' && new Date(it.starts_at).getTime() < fim && ini < new Date(it.ends_at).getTime());
+      const m = Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+      return !ocupadas.data.some((it) => it.status !== 'cancelado' && new Date(it.starts_at).getTime() < fim && ini < new Date(it.ends_at).getTime())
+        && !bloqueioNoHorario(bloqueios.data, d, m, m + dur); // férias, feriados e folgas ficam de fora
     });
-  }, [horarioFixo, initialDate, time, duration, ocupadas.data, tz]);
+  }, [horarioFixo, initialDate, time, duration, ocupadas.data, bloqueios.data, tz]);
   // Se a data marcada deixar de estar livre (ex.: mudou a duração), passa para a primeira livre
   useEffect(() => { if (datasLivres.length && !datasLivres.includes(date)) setDate(datasLivres[0]); }, [datasLivres, date]);
 
@@ -138,6 +142,12 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
     } else if (!pid) return setError('Escolha o paciente.');
     if (!date) return setError('Informe a data.');
     if (!time) return setError('Informe o horário.');
+    {
+      // Bloqueio de agenda (27/10): não deixa marcar em férias, feriado ou folga
+      const m = Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+      const bq = bloqueioNoHorario(bloqueios.data, date, m, m + (Number(duration) || 50));
+      if (bq) return setError(`Esse horário está bloqueado: ${textoBloqueio(bq)}. Escolha outro dia ou horário.`);
+    }
     if (encaixe) {
       // Regra do encaixe (27/10): fora da grade, mas dentro do horário de atendimento do perfil e nunca no passado
       const ini = (profile?.agenda_start ?? '07:00').slice(0, 5); const fim = (profile?.agenda_end ?? '21:00').slice(0, 5);

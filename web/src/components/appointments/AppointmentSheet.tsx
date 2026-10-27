@@ -14,6 +14,7 @@ import { IconWhats } from '../icons';
 import { FLAG_WHATS_ENVIADO, gravarFlag } from '../../lib/ajuda';
 import { abrirExterno } from '../../lib/abrir-externo';
 import { EscolherDataInicio, EscolherHorario, type Escolha, type FreqMover } from './EscolherHorario';
+import { bloqueioNoHorario, textoBloqueio } from '../../lib/bloqueios';
 import { PatientForm } from '../patients/PatientForm';
 
 const FREQ_LABEL = { semanal: 'semanal', quinzenal: 'quinzenal', mensal: 'a cada 4 semanas' } as const;
@@ -46,6 +47,7 @@ export function AppointmentSheet({ item, onClose, mover, falta }: { item: Agenda
   const toast = useToast();
   const confirm = useConfirm();
   const [mode, setMode] = useState<Mode>('view');
+  const bloqueios = useQuery({ queryKey: ['blocks'], queryFn: api.listBlocks, enabled: !!item });
   const [busy, setBusy] = useState(false);
   const [cancelBy, setCancelBy] = useState<'paciente' | 'profissional'>('paciente');
   const [reason, setReason] = useState('');
@@ -117,6 +119,9 @@ export function AppointmentSheet({ item, onClose, mover, falta }: { item: Agenda
       const voltar = () => { setEscolha(null); setDataInicio(null); setEtapa('horario'); setManual(false); if (mover) close(); else setMode('view'); };
       // Uma sessão só (avulsa ou digitada fora da grade): muda dia, horário e sala desta sessão
       const moverUma = (date: string, time: string, locId: string | null) => {
+        const m = Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5));
+        const bq = bloqueioNoHorario(bloqueios.data, date, m, m + duration);
+        if (bq) { toast(`Esse horário está bloqueado: ${textoBloqueio(bq)}.`, 'erro'); return; }
         const s = zonedToUtc(date, time, tz);
         const e = new Date(new Date(s).getTime() + duration * 60000).toISOString();
         const loc = locais.data?.find((x) => x.id === locId);

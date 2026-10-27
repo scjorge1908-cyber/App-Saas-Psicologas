@@ -15,6 +15,7 @@ import { horariosLivres } from '../lib/horarios';
 import { periodoDe } from '../lib/periodos';
 import { agruparColunas, type Bloco, type Coluna, type Linha } from '../lib/agenda-colunas';
 import { linhaDoDia, referenciasDosAtivos } from '../lib/agenda-ativos';
+import { bloqueiosDoDia, textoBloqueio } from '../lib/bloqueios';
 import { addDays, ageOn, formatDate, formatTime, minutesBetween, monthName, todayIn, weekday, weekdayName, weekdayShort, zonedParts, zonedToUtc } from '../lib/format';
 import { errorMessage } from '../lib/errors';
 import { useProfile } from '../auth/AuthProvider';
@@ -27,7 +28,7 @@ import { NewAppointmentDialog } from '../components/appointments/NewAppointmentD
 import { ErrorBox, Loading, cx } from '../components/ui';
 import { PrimeirosPassos, iniciarPasseio } from '../components/ajuda/Ajuda';
 import { FLAG_PASSEIO_OFERECIDO, FLAG_WHATS_ENVIADO, gravarFlag, lerFlag } from '../lib/ajuda';
-import { IconCake, IconCheck, IconChevronLeft, IconChevronRight, IconClock, IconDoc, IconPlus, IconSwap, IconVideo, IconWhats } from '../components/icons';
+import { IconCake, IconCheck, IconChevronLeft, IconChevronRight, IconClock, IconDoc, IconLock, IconPlus, IconSwap, IconVideo, IconWhats } from '../components/icons';
 
 type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente'; repeat?: 'quinzenal'; encaixe?: boolean; livreAte?: string; patientId?: string };
 type Visao = 'semana' | 'dia';
@@ -97,6 +98,7 @@ export function AgendaPage() {
   const qa = useQuery({ queryKey: ['agenda', fromA, toA], queryFn: () => api.listAgenda(fromA, toA) });
   const pacientes = useQuery({ queryKey: ['patients'], queryFn: api.listPatients });
   const locais = useQuery({ queryKey: ['locations'], queryFn: api.listLocations });
+  const bloqueios = useQuery({ queryKey: ['blocks'], queryFn: api.listBlocks });
   const horas = useQuery({ queryKey: ['working-hours'], queryFn: api.listWorkingHours });
   const dash = useQuery({ queryKey: ['dashboard'], queryFn: api.dashboard });
   const semGrade = horas.data !== undefined && horas.data.length === 0;
@@ -112,7 +114,7 @@ export function AgendaPage() {
         .filter((h) => (locais.data ?? []).find((l) => l.id === h.location_id)?.active !== false)
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
       const livres = horariosLivres({ date: d, hours: faixas, locations: locais.data ?? [], items: q.data.filter((it) => zonedParts(it.starts_at, tz).date === d),
-        sessionMinutes: profile.session_minutes, bufferMinutes: profile.buffer_minutes, tz });
+        sessionMinutes: profile.session_minutes, bufferMinutes: profile.buffer_minutes, tz, bloqueios: bloqueios.data });
       const usados = new Set<string>();
       const doDia: Bloco[] = [];
       for (const f of faixas) {
@@ -173,12 +175,20 @@ export function AgendaPage() {
         if (alvo) alvo.linhas = [...alvo.linhas, { tipo: 'sessao' as const, hora, item: it }].sort((a, b) => a.hora.localeCompare(b.hora));
         else outros.push({ tipo: 'sessao' as const, hora, item: it });
       }
+      // Bloqueios do dia: uma linha no topo do primeiro cartão (o dia aparece mesmo sem horário livre)
+      for (const bq of bloqueiosDoDia(bloqueios.data, d)) {
+        const ini = bq.start_time ? bq.start_time.slice(0, 5) : '00:00'; const fim = bq.end_time ? bq.end_time.slice(0, 5) : '24:00';
+        const sessoes = itens.filter((it) => !registrada(it) && formatTime(it.starts_at, tz) < fim && formatTime(it.ends_at, tz) > ini).length;
+        const linha: Linha = { tipo: 'bloqueio', hora: ini, bloqueio: bq, sessoes };
+        if (doDia[0]) doDia[0].linhas = [linha, ...doDia[0].linhas];
+        else outros.unshift(linha);
+      }
       out.push(...doDia.filter((b) => b.linhas.length > 0));
       if (outros.length) out.push({ chave: `${d}-fora`, date: d, titulo: 'Outros horários', sala: null, faixa: null, linhas: outros.sort((a, b) => a.hora.localeCompare(b.hora)) });
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q.data, qx.data, qa.data, pacientes.data, horas.data, locais.data, profile, tz, semana]);
+  }, [q.data, qx.data, qa.data, pacientes.data, horas.data, locais.data, bloqueios.data, profile, tz, semana]);
 
   // Semana: dias de hoje em diante (e dias passados que tiveram sessão). Dia: só o dia escolhido.
   const colunasBase = agruparColunas(blocos.filter((b) => (visao === 'dia' ? b.date === date : b.date >= hoje || b.linhas.some((l) => l.tipo === 'sessao'))));
@@ -313,6 +323,12 @@ export function AgendaPage() {
                         )}
                         <button onClick={() => setWhats(l.item)} aria-label={`Enviar WhatsApp para ${nomeCurto(l.item.patient_social_name || l.item.patient_name)} (sessão de ${ddmm(l.proxima)})`} title="Enviar WhatsApp"
                           className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
+                      </li>
+                    ) : l.tipo === 'bloqueio' ? (
+                      // Férias / feriado / folga: sem horários livres na faixa; sessões já marcadas pedem ajuste
+                      <li key={`b-${l.bloqueio.id}-${c.date}`} className="flex flex-col gap-0.5 rounded-campo border border-linha-forte bg-afundado px-3 py-2">
+                        <span className="flex items-center gap-2 font-extrabold text-tinta-2"><IconLock className="size-4 shrink-0" /> Bloqueado · {textoBloqueio(l.bloqueio)}</span>
+                        {l.sessoes > 0 && <span className="text-[0.8125rem] font-bold text-ocre">{l.sessoes === 1 ? '1 sessão marcada neste bloqueio: mova ou cancele.' : `${l.sessoes} sessões marcadas neste bloqueio: mova ou cancele.`}</span>}
                       </li>
                     ) : l.tipo === 'futuro' ? (
                       // Paciente que só começa mais à frente: aparece desde já no horário dele (27/10)

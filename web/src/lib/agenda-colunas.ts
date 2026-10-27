@@ -1,7 +1,7 @@
 // Agenda em colunas (referência: agenda do Hope App): um cartão por dia + sala, com os períodos
 // (Manhã, Tarde, Noite) dentro e uma linha por horário — livre ou com paciente.
 // Só organiza o que a tela já calculou (blocos da grade + sessões); não muda regra de agenda.
-import type { AgendaItem, Location } from './types';
+import type { AgendaItem, Location, ScheduleBlock } from './types';
 import type { HorarioLivre } from './horarios';
 
 // livre.quinzenal: horário vago só nas semanas alternadas de um paciente quinzenal (dataAlvo = data para agendar).
@@ -12,7 +12,9 @@ export type Linha =
   | { tipo: 'fantasma'; hora: string; item: AgendaItem; proxima: string }
   // Paciente ativo fora da semana das sessões (27/10): "Começa dd/mm" ou avulso "sem próximo horário" (alerta para ajustar)
   | { tipo: 'futuro'; hora: string; item: AgendaItem; inicio: string; livreAte: string }
-  | { tipo: 'semHorario'; hora: string; item: AgendaItem };
+  | { tipo: 'semHorario'; hora: string; item: AgendaItem }
+  // Férias, feriado ou folga no dia (27/10): faixa bloqueada, com quantas sessões já marcadas caem nela
+  | { tipo: 'bloqueio'; hora: string; bloqueio: ScheduleBlock; sessoes: number };
 /** Bloco da grade num dia (sala + período), ou "Outros horários" (sessões fora de qualquer bloco). */
 export type Bloco = { chave: string; date: string; titulo: string; sala: Location | null; faixa: string | null; linhas: Linha[] };
 export type PeriodoColuna = { titulo: string; faixa: string | null; linhas: Linha[] };

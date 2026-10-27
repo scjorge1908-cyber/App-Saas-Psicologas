@@ -37,6 +37,8 @@ let backupPath = '';
 
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
+  // A janela de avisos abre sozinha ao abrir o app quando há pendências; nos fluxos ela é testada à parte (sininho)
+  await page.addInitScript(() => { try { sessionStorage.setItem('psi.avisos.mostrados', '1'); } catch { /* sem armazenamento */ } });
 });
 
 test('cadastro, perfil e tela inicial', async () => {
@@ -70,7 +72,7 @@ test('agenda: série semanal e sessão passada', async () => {
   let dlg = page.getByRole('dialog');
   await dlg.getByLabel('Data').fill(tzDate(1));
   await dlg.getByLabel('Horário').fill('14:00');
-  await dlg.getByLabel('Repetir').selectOption('semanal');
+  await dlg.getByLabel('Modalidade').selectOption('semanal');
   await dlg.getByLabel('Número de sessões').fill('4');
   await expect(dlg.getByText(/4 sessões, de/)).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/03-nova-serie.png` });
@@ -82,11 +84,13 @@ test('agenda: série semanal e sessão passada', async () => {
   dlg = page.getByRole('dialog');
   await dlg.getByLabel('Data').fill(tzDate(1));
   await dlg.getByLabel('Horário').fill('14:20');
+  await dlg.getByLabel('Modalidade').selectOption('nao');
   await dlg.getByRole('button', { name: 'Agendar', exact: true }).click();
   await expect(dlg.getByRole('alert')).toContainText('horário já está ocupado');
   // Sessão de ontem, para registrar presença
   await dlg.getByLabel('Data').fill(tzDate(-1));
   await dlg.getByLabel('Horário').fill('10:00');
+  await dlg.getByLabel('Modalidade').selectOption('nao');
   await dlg.getByRole('button', { name: 'Agendar', exact: true }).click();
   await expect(dlg).toBeHidden();
   await expect(page.getByText('Próximas sessões')).toBeVisible();
@@ -274,14 +278,25 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await expect(page.getByLabel('Dias da semana').getByRole('button')).toHaveCount(7);
   await page.getByRole('tab', { name: 'Semana' }).click();
   await expect(page.getByRole('button', { name: 'Próxima semana' })).toBeVisible();
-  // Mover: abre direto em dia/horário/sala
-  await page.getByRole('button', { name: 'Mover' }).first().click();
-  await expect(page.getByRole('dialog').getByLabel('Nova data')).toBeVisible();
-  await page.getByRole('dialog').getByRole('button', { name: 'Voltar' }).click();
+  // Mover em 2 etapas: 1) horário livre por dia da semana e sala 2) modalidade + data de início (ocupadas não escolhem)
+  await page.getByRole('button', { name: /^Mover / }).first().click();
+  const mv = page.getByRole('dialog');
+  await expect(mv.getByText('Toque no novo horário')).toBeVisible();
+  await mv.getByRole('button', { name: / às \d\d:\d\d, / }).first().click();
+  await mv.getByRole('button', { name: 'Mover', exact: true }).click();
+  await expect(mv.getByRole('radiogroup', { name: 'Modalidade' })).toBeVisible();
+  await expect(mv.getByRole('radiogroup', { name: 'Data de início' }).getByRole('radio', { checked: true })).toHaveCount(1);
+  await mv.getByRole('button', { name: 'Outro horário' }).click();
+  await mv.getByRole('button', { name: 'Voltar' }).click();
 });
 
 test('ajuda: botão ?, passeio opcional (uma vez) e página de tutoriais', async () => {
   await page.goto('/');
+  // Sininho de avisos no cabeçalho abre a janela dos avisos do dia
+  await page.getByRole('button', { name: /^Avisos de hoje/ }).click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: /^Hoje · / })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: /^Ajuda:/ }).click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'Ajuda · Agenda' })).toBeVisible();
   await page.getByRole('dialog').getByRole('button', { name: 'Fechar' }).click();

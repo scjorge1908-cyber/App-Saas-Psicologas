@@ -4,7 +4,12 @@
 import type { AgendaItem, Location } from './types';
 import type { HorarioLivre } from './horarios';
 
-export type Linha = { tipo: 'sessao'; hora: string; item: AgendaItem } | { tipo: 'livre'; hora: string; livre: HorarioLivre };
+// livre.quinzenal: horário vago só nas semanas alternadas de um paciente quinzenal (dataAlvo = data para agendar).
+// fantasma: paciente quinzenal na semana em que NÃO tem sessão — aparece apagado, com a data da próxima.
+export type Linha =
+  | { tipo: 'sessao'; hora: string; item: AgendaItem }
+  | { tipo: 'livre'; hora: string; livre: HorarioLivre; quinzenal?: boolean; dataAlvo?: string }
+  | { tipo: 'fantasma'; hora: string; item: AgendaItem; proxima: string };
 /** Bloco da grade num dia (sala + período), ou "Outros horários" (sessões fora de qualquer bloco). */
 export type Bloco = { chave: string; date: string; titulo: string; sala: Location | null; faixa: string | null; linhas: Linha[] };
 export type PeriodoColuna = { titulo: string; faixa: string | null; linhas: Linha[] };
@@ -45,6 +50,6 @@ export function agruparColunas(blocos: Bloco[]): Coluna[] {
 /** Contagem de linhas por tipo (para os totais da semana ou do dia). */
 export function contar(colunas: Coluna[]): { agendados: number; livres: number } {
   let agendados = 0; let livres = 0;
-  for (const c of colunas) for (const p of c.periodos) for (const l of p.linhas) { if (l.tipo === 'sessao') agendados++; else livres++; }
+  for (const c of colunas) for (const p of c.periodos) for (const l of p.linhas) { if (l.tipo === 'sessao') agendados++; else if (l.tipo === 'livre') livres++; }
   return { agendados, livres };
 }

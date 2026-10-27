@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
-import type { AgendaItem } from '../lib/types';
+import type { AgendaItem, DashboardSummary } from '../lib/types';
 import { addDays, formatDate, formatLongDate, formatTime, minutesBetween, money, todayIn, zonedParts, zonedToUtc } from '../lib/format';
 import { errorMessage } from '../lib/errors';
 import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet, useInvalidateAgenda } from '../components/appointments/AppointmentSheet';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
 import { Button, ErrorBox, Loading, Notice, STATUS_BAR, StatusBadge, cx, useToast } from '../components/ui';
-import { IconCalendar, IconCheck, IconChevronRight, IconClock, IconDoc, IconEye, IconEyeOff, IconMoney, IconPeople, IconPin, IconPlus, IconReceipt, IconVideo } from '../components/icons';
+import { IconCalendar, IconCheck, IconClock, IconDoc, IconEye, IconEyeOff, IconMoney, IconPeople, IconPin, IconReceipt, IconVideo } from '../components/icons';
 import { VALOR_OCULTO, useValoresVisiveis } from '../lib/privacidade';
 
 function useNow(intervalMs = 60000) {
@@ -61,28 +61,23 @@ export function TodayPage() {
           <h1 className="titulo-display mt-1 text-[1.875rem] leading-tight">{saudacao}{primeiroNome ? `, ${primeiroNome}` : ''}</h1>
           {d && <p className="mt-1 text-tinta-2">{d.sessions_today === 0 ? 'Nenhuma sessão hoje.' : `${d.sessions_today} ${d.sessions_today === 1 ? 'sessão' : 'sessões'} hoje.`}</p>}
         </div>
-        <Button onClick={() => setCreating(true)}><IconPlus /> Nova sessão</Button>
       </section>
 
-      {/* O que precisa de atenção — número grande (formato HopeCore) */}
-      {d && (d.to_register + d.to_confirm_48h + d.receita_saude_pending + d.invoices_pending > 0 || d.overdue > 0) && (
-        <section aria-label="Precisa de atenção" className="grid gap-3 sm:grid-cols-2">
-          {d.to_register > 0 && <Aviso to="#registrar" numero={d.to_register} titulo={d.to_register === 1 ? 'Sessão aguarda registro' : 'Sessões aguardam registro'} sub="Marque presença ou falta" />}
-          {d.to_confirm_48h > 0 && <Aviso to="/?v=semana" tom="info" numero={d.to_confirm_48h} titulo="Sem confirmação" sub="Nas próximas 48 horas" />}
-          {d.overdue > 0 && <Aviso to="/financeiro" tom="erro" numero="R$" titulo={`${valor(d.overdue)} vencidos`} sub="Cobranças em atraso" />}
-          {d.receita_saude_pending > 0 && <Aviso to="/financeiro?aba=receita" numero={d.receita_saude_pending} titulo="Sem recibo no Receita Saúde" sub="Recebimentos do mês" />}
-          {d.invoices_pending > 0 && <Aviso to="/notas-fiscais" tom="info" numero={d.invoices_pending} titulo={d.invoices_pending === 1 ? 'Nota fiscal a emitir' : 'Notas fiscais a emitir'} sub="Abrir notas fiscais" />}
-        </section>
-      )}
-
-      {/* Atalhos */}
+      {/* Atalhos — as pendências aparecem como bolinha com o número no atalho de cada área
+          (detalhes no sininho do cabeçalho). Agenda: aguardando registro + sem confirmação;
+          Financeiro: cobranças vencidas + recibos do Receita Saúde; Notas fiscais: notas a emitir. */}
       <nav aria-label="Atalhos" className="grid grid-cols-3 gap-3 sm:grid-cols-6">
-        {ATALHOS.map((a) => (
-          <Link key={a.to} to={a.to} className="cartao pressionar flex aspect-square flex-col items-center justify-center gap-2 p-2 text-center text-[0.8125rem] font-bold leading-tight">
-            <span className={cx('atalho-icone grid size-12 place-items-center', a.cor)}><a.icon /></span>
-            {a.label}
-          </Link>
-        ))}
+        {ATALHOS.map((a) => {
+          const n = d ? pendenciasDoAtalho(a.to, d) : 0;
+          return (
+            <Link key={a.to} to={a.to} aria-label={n ? `${a.label}: ${n} ${n === 1 ? 'pendência' : 'pendências'}` : a.label}
+              className="cartao pressionar relative flex aspect-square flex-col items-center justify-center gap-2 p-2 text-center text-[0.8125rem] font-bold leading-tight">
+              <span className={cx('atalho-icone grid size-12 place-items-center', a.cor)}><a.icon /></span>
+              {a.label}
+              {n > 0 && <span aria-hidden className="absolute right-2 top-2 grid min-w-6 place-items-center rounded-full bg-vermelho-forte px-1.5 text-[0.75rem] font-extrabold leading-6 text-white">{n}</span>}
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Sessões de hoje */}
@@ -223,20 +218,12 @@ const ATALHOS = [
   { to: '/agenda/horarios', label: 'Horários', icon: IconClock, cor: 'bg-acento-claro text-sobre-acento-claro' },
 ];
 
-const TOM_AVISO = {
-  alerta: 'bg-ocre-fundo text-ocre border-ocre-forte/30',
-  info: 'bg-azul-fundo text-azul border-azul-forte/30',
-  erro: 'bg-vermelho-fundo text-vermelho border-vermelho-forte/30',
-};
-
-function Aviso({ to, numero, titulo, sub, tom = 'alerta' }: { to: string; numero: number | string; titulo: string; sub: string; tom?: keyof typeof TOM_AVISO }) {
-  const cls = cx('pressionar flex min-h-[76px] min-w-0 items-center gap-3 rounded-cartao border py-3 pl-3 pr-2', TOM_AVISO[tom]);
-  const corpo = (<>
-    <span className="num min-w-11 text-center text-[2.25rem] font-extrabold leading-none tracking-tight">{numero}</span>
-    <span className="min-w-0 flex-1"><span className="block font-bold leading-snug">{titulo}</span><span className="block text-sm opacity-90">{sub}</span></span>
-    <IconChevronRight className="shrink-0 opacity-70" />
-  </>);
-  return to.startsWith('#') ? <a href={to} className={cls}>{corpo}</a> : <Link to={to} className={cls}>{corpo}</Link>;
+/** Número de pendências que aparece na bolinha de cada atalho. */
+function pendenciasDoAtalho(to: string, d: DashboardSummary): number {
+  if (to === '/') return d.to_register + d.to_confirm_48h;
+  if (to === '/financeiro') return (d.overdue > 0 ? 1 : 0) + d.receita_saude_pending;
+  if (to === '/notas-fiscais') return d.invoices_pending;
+  return 0;
 }
 
 function Kpi({ valor, rotulo, alerta }: { valor: number; rotulo: string; alerta?: boolean }) {

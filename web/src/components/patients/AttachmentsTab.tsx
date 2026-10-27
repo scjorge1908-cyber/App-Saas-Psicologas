@@ -20,7 +20,9 @@ export const CATEGORY_LABEL: Record<AttachmentCategory, string> = {
   exame: 'Exame',
 };
 const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,image/heic,image/heif,text/xml,application/xml,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel';
-export const PROTECTED: AttachmentCategory[] = ['avaliacao', 'documento_emitido', 'laudo', 'encaminhamento', 'exame'];
+// Permanentes (não se excluem): avaliação, documentos emitidos e exames. Laudo e encaminhamento médico podem ser
+// excluídos a qualquer momento (decisão do Jorge, 27/10/2026: corrigir documento anexado por engano).
+export const PROTECTED: AttachmentCategory[] = ['avaliacao', 'documento_emitido', 'exame'];
 /** Laudos e encaminhamentos médicos: aparecem também na aba Prontuário. */
 export const CATEGORIAS_PRONTUARIO: AttachmentCategory[] = ['laudo', 'encaminhamento'];
 const OPCOES: AttachmentCategory[] = ['outro', 'laudo', 'encaminhamento', 'avaliacao', 'autorizacao_responsavel', 'nota_fiscal'];
@@ -55,7 +57,14 @@ export function AttachmentsTab({ patientId, somente }: { patientId: string; some
   }
 
   async function remove(a: Attachment) {
-    if (!(await confirm({ title: 'Excluir anexo?', body: `"${a.file_name}" será apagado definitivamente.`, confirmLabel: 'Excluir', danger: true }))) return;
+    const doProntuario = CATEGORIAS_PRONTUARIO.includes(a.category);
+    if (!(await confirm({
+      title: doProntuario ? `Excluir ${CATEGORY_LABEL[a.category].toLowerCase()}?` : 'Excluir anexo?',
+      body: doProntuario
+        ? `"${a.file_name}" faz parte do prontuário do paciente. Depois de excluído, não dá para recuperar, e o prontuário fica sem este documento. Tem certeza de que quer excluir?`
+        : `"${a.file_name}" será apagado definitivamente. Tem certeza?`,
+      confirmLabel: 'Sim, excluir', danger: true,
+    }))) return;
     try {
       await api.deleteAttachment(a);
       await qc.invalidateQueries({ queryKey: ['attachments', patientId] });

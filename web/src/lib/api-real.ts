@@ -70,11 +70,19 @@ export async function createSeries(args: {
 export async function endSeries(seriesId: string, fromDate: string): Promise<number> {
   return check(await supabase.rpc('end_appointment_series', { p_series_id: seriesId, p_from_date: fromDate }));
 }
-export async function changeSeries(args: { seriesId: string; fromDate: string; newStartDate: string; newTime: string; duration?: number | null; price?: number | null; frequency?: SeriesFrequency | null }): Promise<SeriesResult> {
-  return check(await supabase.rpc('change_appointment_series', {
+export async function changeSeries(args: { seriesId: string; fromDate: string; newStartDate: string; newTime: string; duration?: number | null; price?: number | null; frequency?: SeriesFrequency | null; locationId?: string | null; modality?: Modality | null }): Promise<SeriesResult> {
+  const r: SeriesResult = check(await supabase.rpc('change_appointment_series', {
     p_series_id: args.seriesId, p_from_date: args.fromDate, p_new_start_date: args.newStartDate, p_new_time: args.newTime,
     p_new_duration_minutes: args.duration ?? null, p_new_price: args.price ?? null, p_new_frequency: args.frequency ?? null,
   }));
+  // Mover para outra sala: a série nova e as sessões dela ficam na sala escolhida (mesmo padrão do createSeries)
+  if (args.locationId !== undefined) {
+    const patch: Record<string, unknown> = { location_id: args.locationId };
+    if (args.modality) patch.modality = args.modality;
+    check(await supabase.from('appointment_series').update(patch).eq('id', r.series_id));
+    check(await supabase.from('appointments').update(patch).eq('series_id', r.series_id));
+  }
+  return r;
 }
 export async function extendSeries(seriesId: string, until: string): Promise<SeriesResult> {
   return check(await supabase.rpc('extend_appointment_series', { p_series_id: seriesId, p_until_date: until }));

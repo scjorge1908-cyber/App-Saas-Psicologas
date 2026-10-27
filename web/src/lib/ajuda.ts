@@ -29,6 +29,7 @@ const AGENDA: AjudaTela = {
     { p: 'Como configuro meus horários?', r: 'Toque em “Editar grade”, escolha a sala, os dias, o turno, a duração e o intervalo, e salve. Os horários aparecem na agenda como livres.' },
     { p: 'Como agendo um paciente?', r: 'Toque numa linha verde “LIVRE”. Escolha um paciente cadastrado ou cadastre um novo no mesmo formulário.' },
     { p: 'Como envio a confirmação?', r: 'Toque no botão verde do WhatsApp na sessão e escolha "Confirmar presença". O app abre o WhatsApp com o lembrete e o link; o paciente confirma por ali.' },
+    { p: 'O que é o Encaixe?', r: 'É uma sessão num horário que não está na sua grade (ex.: 12:30, 21:00 ou um dia em que você não atende). Toque em “Encaixe”, escolha o paciente, o dia e o horário. O app só não deixa coincidir com outra sessão. O encaixe aparece no cartão do dia, no turno do horário, ou em “Outros horários”.' },
     { p: 'Por que uma sessão aparece em “Outros horários”?', r: 'Ela foi marcada num turno sem grade naquele dia. Ela continua valendo; só não pertence a nenhum bloco da grade.' },
   ],
 };

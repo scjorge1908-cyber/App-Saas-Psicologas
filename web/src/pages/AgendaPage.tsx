@@ -25,7 +25,7 @@ import { PrimeirosPassos, iniciarPasseio } from '../components/ajuda/Ajuda';
 import { FLAG_PASSEIO_OFERECIDO, FLAG_WHATS_ENVIADO, gravarFlag, lerFlag } from '../lib/ajuda';
 import { IconCake, IconCheck, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSwap, IconVideo, IconWhats } from '../components/icons';
 
-type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente'; repeat?: 'quinzenal' };
+type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente'; repeat?: 'quinzenal'; encaixe?: boolean };
 type Visao = 'semana' | 'dia';
 
 const diaNome = (d: string) => { const n = weekdayName(d).replace('-feira', ''); return n[0].toUpperCase() + n.slice(1); };
@@ -298,16 +298,30 @@ export function AgendaPage() {
         </section>
       )}
 
-      {/* Ações da agenda */}
+      {/* Ações da agenda: grade (horários fixos) e encaixe (sessão fora da grade) */}
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/agenda/horarios" data-ajuda="grade" className="cartao pressionar inline-flex min-h-14 items-center justify-center gap-2 px-2 text-center font-bold text-anil-escuro"><IconClock className="size-5 shrink-0" /> Editar grade</Link>
-        <button onClick={() => setNovoEm({ date, modo: 'existente' })} className="btn-degrade pressionar inline-flex min-h-14 items-center justify-center gap-2 rounded-cartao px-2 text-center font-bold shadow-elevado"><IconPlus className="size-5 shrink-0" /> Adicionar encaixe</button>
+        <Link to="/agenda/horarios" data-ajuda="grade"
+          className="pressionar group flex min-h-16 items-center gap-2.5 rounded-cartao border border-linha bg-papel p-2.5 text-left shadow-cartao hover:border-anil">
+          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-anil-claro text-sobre-anil-claro"><IconClock className="size-5" /></span>
+          <span className="min-w-0 leading-tight">
+            <span className="block text-[0.9375rem] font-extrabold text-tinta">Editar grade</span>
+            <span className="block text-[0.75rem] text-tinta-3">Dias, salas e horários</span>
+          </span>
+        </Link>
+        <button onClick={() => setNovoEm({ date, modo: 'existente', encaixe: true })}
+          className="pressionar flex min-h-16 items-center gap-2.5 rounded-cartao border border-anil/30 bg-anil p-2.5 text-left text-sobre-anil shadow-elevado hover:brightness-110">
+          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-sobre-anil/15"><IconPlus className="size-5" strokeWidth={2.4} /></span>
+          <span className="min-w-0 leading-tight">
+            <span className="block text-[0.9375rem] font-extrabold">Encaixe</span>
+            <span className="block text-[0.75rem] opacity-85">Sessão fora da grade</span>
+          </span>
+        </button>
       </div>
 
       <AppointmentSheet item={open?.item ?? null} mover={open?.mover} onClose={() => setOpen(null)} />
       <WhatsAppCard key={whats?.id ?? 'nenhum'} item={whats} onClose={() => setWhats(null)} onMover={(item) => setOpen({ item, mover: true })} />
       <NewAppointmentDialog open={!!novoEm} onClose={() => setNovoEm(null)} initialDate={novoEm?.date} initialTime={novoEm?.time}
-        initialLocationId={novoEm?.locationId ?? null} initialMinutes={novoEm?.minutes} initialModo={novoEm?.modo} initialRepeat={novoEm?.repeat} />
+        initialLocationId={novoEm?.locationId ?? null} initialMinutes={novoEm?.minutes} initialModo={novoEm?.modo} initialRepeat={novoEm?.repeat} encaixe={novoEm?.encaixe} />
     </div>
   );
 }

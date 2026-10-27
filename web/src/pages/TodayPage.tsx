@@ -2,14 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
-import type { AgendaItem, DashboardSummary } from '../lib/types';
-import { addDays, formatLongDate, formatTime, minutesBetween, money, todayIn, zonedToUtc } from '../lib/format';
-import { errorMessage } from '../lib/errors';
+import type { DashboardSummary } from '../lib/types';
+import { formatLongDate, formatTime, money, todayIn } from '../lib/format';
 import { useProfile } from '../auth/AuthProvider';
-import { AppointmentSheet, useInvalidateAgenda } from '../components/appointments/AppointmentSheet';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
-import { Button, ErrorBox, Loading, Notice, STATUS_BAR, StatusBadge, cx, useToast } from '../components/ui';
-import { IconCalendar, IconCheck, IconClock, IconDoc, IconEye, IconEyeOff, IconMoney, IconPeople, IconPin, IconReceipt, IconVideo, IconPlus } from '../components/icons';
+import { ConfirmarAgendaDialog } from '../components/appointments/ConfirmarAgenda';
+import { Notice, cx } from '../components/ui';
+import { IconCalendar, IconClock, IconDoc, IconEye, IconEyeOff, IconMoney, IconPeople, IconReceipt, IconPlus, IconWhats } from '../components/icons';
 import { VALOR_OCULTO, useValoresVisiveis } from '../lib/privacidade';
 
 function useNow(intervalMs = 60000) {
@@ -24,30 +23,11 @@ export function TodayPage() {
   const { profile, tz } = useProfile();
   const now = useNow();
   const today = todayIn(tz);
-  const from = zonedToUtc(today, '00:00', tz);
-  const to = zonedToUtc(addDays(today, 1), '00:00', tz);
-  const [open, setOpen] = useState<AgendaItem | null>(null);
-  const [creating, setCreating] = useState(false);
   const [encaixe, setEncaixe] = useState(false);
-  const invalidate = useInvalidateAgenda();
-  const toast = useToast();
+  const [confirmar, setConfirmar] = useState(false);
 
-  const day = useQuery({ queryKey: ['agenda', from, to], queryFn: () => api.listAgenda(from, to) });
   const dash = useQuery({ queryKey: ['dashboard'], queryFn: api.dashboard });
 
-
-  async function quick(item: AgendaItem, status: 'atendido') {
-    try {
-      await api.setStatus(item.id, status);
-      await invalidate();
-      toast('Sessão registrada como atendida');
-    } catch (e) { toast(errorMessage(e), 'erro'); }
-  }
-
-  const items = day.data ?? [];
-  const visible = items.filter((i) => i.status !== 'cancelado');
-  const canceled = items.filter((i) => i.status === 'cancelado');
-  const nowIdx = visible.findIndex((i) => new Date(i.ends_at).getTime() > now);
   const d = dash.data;
 
   const primeiroNome = (profile?.full_name ?? '').trim().split(/\s+/)[0] ?? '';
@@ -81,84 +61,20 @@ export function TodayPage() {
         })}
       </nav>
 
-      {/* Encaixe (pedido do Jorge, 27/10): sessão fora da grade, dentro do horário de atendimento do perfil */}
-      <button onClick={() => setEncaixe(true)}
-        className="pressionar flex min-h-14 w-full items-center justify-center gap-2 whitespace-nowrap rounded-cartao border border-anil/30 bg-anil px-3 text-[0.9375rem] font-extrabold text-sobre-anil shadow-elevado hover:brightness-110">
-        <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-sobre-anil/15"><IconPlus className="size-[1.125rem]" strokeWidth={2.4} /></span>
-        Encaixe
-      </button>
-
-      {/* Sessões de hoje */}
-      <section aria-labelledby="t-hoje">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <h2 id="t-hoje" className="text-[1.125rem] font-bold">Sessões de hoje</h2>
-          <Link to="/" className="inline-flex min-h-11 items-center px-2 text-[0.9375rem] font-bold text-anil-escuro">Ver agenda</Link>
-        </div>
-
-        {day.isLoading && <Loading />}
-        {day.error && <ErrorBox>{errorMessage(day.error)}</ErrorBox>}
-
-        {day.data && visible.length === 0 && (
-          <div className="cartao p-5">
-            <p className="font-bold">Nenhuma sessão hoje.</p>
-            <p className="mt-1 text-tinta-2">Agende uma sessão ou veja a semana na agenda.</p>
-            <div className="mt-3 flex gap-2">
-              <Button variant="secondary" onClick={() => setCreating(true)}>Agendar sessão</Button>
-            </div>
-          </div>
-        )}
-
-        {visible.length > 0 && (
-          <ol className="flex flex-col gap-2" aria-label="Sessões de hoje">
-            {visible.map((it, idx) => {
-              const started = new Date(it.starts_at).getTime() <= now;
-              const ended = new Date(it.ends_at).getTime() <= now;
-              const canRegister = started && (it.status === 'agendado' || it.status === 'confirmado');
-              return (
-                <li key={it.id}>
-                  {idx === nowIdx && <NowLine tz={tz} now={now} />}
-                  <div className={cx('cartao flex gap-3 border-l-4 py-3 pl-4 pr-3', STATUS_BAR[it.status], ended && !canRegister && 'opacity-80')}>
-                    <div className="w-14 shrink-0 pt-0.5">
-                      <p className="num text-[1.0625rem] font-bold leading-none">{formatTime(it.starts_at, tz)}</p>
-                      <p className="num mt-1 text-[0.75rem] text-tinta-3">{minutesBetween(it.starts_at, it.ends_at)} min</p>
-                    </div>
-                    <div className="flex min-w-0 flex-1 flex-col gap-2">
-                      <button onClick={() => setOpen(it)} className="text-left">
-                        <span className="block truncate text-[1rem] font-bold hover:text-anil-escuro">{it.patient_social_name || it.patient_name}</span>
-                        <span className="mt-1 flex flex-wrap items-center gap-2 text-sm text-tinta-2">
-                          <StatusBadge status={it.status} />
-                          {it.modality === 'online' ? <span className="inline-flex items-center gap-1"><IconVideo className="size-4" /> On-line</span>
-                            : it.location_name ? <span className="inline-flex items-center gap-1"><IconPin className="size-4" /> {it.location_name}</span> : null}
-                          {it.series_frequency && <span>Recorrente</span>}
-                        </span>
-                      </button>
-                      {canRegister && (
-                        <div className="flex flex-wrap gap-2">
-                          <Button size="sm" onClick={() => quick(it, 'atendido')}><IconCheck className="size-4" /> Atendida</Button>
-                          <Button size="sm" variant="secondary" onClick={() => setOpen(it)}>Falta ou outro</Button>
-                        </div>
-                      )}
-                      {!started && it.status === 'agendado' && (
-                        <div><Button size="sm" variant="secondary" onClick={() => setOpen(it)}>Lembrar e confirmar</Button></div>
-                      )}
-                      {it.modality === 'online' && it.patient_meeting_url && !ended && (
-                        <a href={it.patient_meeting_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm font-bold text-anil-escuro underline-offset-4 hover:underline">Abrir sala on-line</a>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-            {nowIdx === -1 && <li><NowLine tz={tz} now={now} done /></li>}
-          </ol>
-        )}
-
-        {canceled.length > 0 && (
-          <p className="mt-3 text-sm text-tinta-3">
-            Canceladas hoje: {canceled.map((c) => `${formatTime(c.starts_at, tz)} ${c.patient_social_name || c.patient_name}`).join('; ')}
-          </p>
-        )}
-      </section>
+      {/* Ações do dia (pedido do Jorge, 27/10): Encaixe (sessão fora da grade) e Confirmar agenda
+          (sessões de hoje, amanhã ou outro dia, com o WhatsApp para confirmar presença). As sessões de hoje ficam lá dentro. */}
+      <div className="flex gap-3">
+        <button onClick={() => setEncaixe(true)}
+          className="pressionar flex min-h-14 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-cartao border border-anil/30 bg-anil px-4 text-[0.9375rem] font-extrabold text-sobre-anil shadow-elevado hover:brightness-110">
+          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-sobre-anil/15"><IconPlus className="size-[1.125rem]" strokeWidth={2.4} /></span>
+          Encaixe
+        </button>
+        <button onClick={() => setConfirmar(true)}
+          className="pressionar flex min-h-14 min-w-0 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-cartao border border-linha bg-papel px-3 text-[0.9375rem] font-extrabold text-tinta shadow-cartao hover:border-anil">
+          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-[#25D366]/20 text-[#128C4A]"><IconWhats className="size-[1.125rem]" /></span>
+          Confirmar agenda
+        </button>
+      </div>
 
       {/* "Aguardando registro" saiu daqui (27/10): agora abre como janela na Agenda, com botão e número no fim dela */}
 
@@ -192,9 +108,8 @@ export function TodayPage() {
 
       {!profile?.crp && <Notice tone="ocre">Complete seu CRP em <Link to="/configuracoes" className="font-bold underline">Configurações</Link> para emitir documentos.</Notice>}
 
-      <AppointmentSheet item={open} onClose={() => setOpen(null)} />
-      <NewAppointmentDialog open={creating} onClose={() => setCreating(false)} />
       <NewAppointmentDialog open={encaixe} onClose={() => setEncaixe(false)} encaixe />
+      <ConfirmarAgendaDialog key={confirmar ? 'aberta' : 'fechada'} open={confirmar} onClose={() => setConfirmar(false)} />
     </div>
   );
 }
@@ -221,16 +136,6 @@ function Kpi({ valor, rotulo, alerta }: { valor: number; rotulo: string; alerta?
     <div className="cartao p-3">
       <p className={cx('num text-[1.375rem] font-extrabold leading-tight', alerta ? 'text-ocre' : 'text-tinta')}>{valor}</p>
       <p className="rotulo mt-1">{rotulo}</p>
-    </div>
-  );
-}
-
-function NowLine({ tz, now, done }: { tz: string; now: number; done?: boolean }) {
-  return (
-    <div className="flex items-center gap-3 py-1.5" aria-label={`Agora, ${formatTime(new Date(now).toISOString(), tz)}`}>
-      <span className="num w-14 shrink-0 text-sm font-bold text-anil-escuro">{formatTime(new Date(now).toISOString(), tz)}</span>
-      <span className="h-0.5 flex-1 bg-anil" />
-      {done && <span className="text-sm text-tinta-3">fim das sessões do dia</span>}
     </div>
   );
 }

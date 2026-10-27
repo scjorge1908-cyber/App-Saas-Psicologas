@@ -427,6 +427,17 @@ test('sem rolagem horizontal nas telas principais (celular)', async () => {
   }
 });
 
+test('Resumo: Confirmar agenda com sessões de hoje ou amanhã e WhatsApp', async () => {
+  await page.goto('/resumo');
+  await expect(page.getByRole('heading', { name: 'Sessões de hoje' })).toHaveCount(0); // a lista saiu do Resumo
+  await page.getByRole('button', { name: 'Confirmar agenda' }).click();
+  const dlg = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Confirmar agenda' }) });
+  await expect(dlg.getByRole('tab', { name: 'Hoje' })).toHaveAttribute('aria-selected', 'true');
+  await dlg.getByRole('tab', { name: 'Amanhã' }).click();
+  await expect(dlg.getByRole('tab', { name: 'Amanhã' })).toHaveAttribute('aria-selected', 'true');
+  await dlg.getByRole('button', { name: 'Fechar' }).last().click();
+});
+
 test('encaixe no Resumo com regra de horário e Dar alta leva o paciente para Inativos', async () => {
   // Encaixe: fica no Resumo do dia e respeita o horário de atendimento do perfil
   await page.goto('/resumo');

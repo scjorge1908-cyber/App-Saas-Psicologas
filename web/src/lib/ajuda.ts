@@ -73,8 +73,8 @@ export const AJUDA: Array<{ rota: RegExp; ajuda: AjudaTela }> = [
     duvidas: [{ p: 'Como deixo as letras maiores?', r: 'Aumente a fonte do celular nas configurações do sistema. O app acompanha.' }] } },
   { rota: /^\/resumo/, ajuda: {
     titulo: 'Resumo do dia',
-    comoUsar: ['Avisos do que precisa de atenção, sessões de hoje e valores do mês (ocultos até tocar no olho).'],
-    duvidas: [] } },
+    comoUsar: ['Atalhos com as pendências, valores do mês (ocultos até tocar no olho), Encaixe e Confirmar agenda.', '“Confirmar agenda” mostra as sessões de hoje, de amanhã ou de outro dia; o botão verde abre o WhatsApp com “Confirmar presença”.'],
+    duvidas: [{ p: 'Como mando a confirmação um dia antes?', r: 'No Resumo do dia, toque em “Confirmar agenda”, escolha “Amanhã” e toque no botão verde do WhatsApp de cada paciente. Escolha “Confirmar presença”, confira o texto e toque em “Abrir no WhatsApp”.' }] } },
 ];
 
 export const ajudaDaRota = (caminho: string): AjudaTela => AJUDA.find((a) => a.rota.test(caminho))?.ajuda ?? AGENDA;

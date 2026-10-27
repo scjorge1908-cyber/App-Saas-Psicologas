@@ -14,6 +14,22 @@ async function irParaAgenda(p: Page) {
   await p.waitForURL(/\/$/);
 }
 
+/** Paciente novo nasce pelo agendamento (27/10): cadastra pelo Encaixe do Resumo do dia. */
+async function novoPacienteNoEncaixe(p: Page, o: { nome: string; celular: string; data: string; hora: string; freq: 'nao' | 'semanal' | 'quinzenal'; n?: number; valor?: string }) {
+  await p.goto('/resumo');
+  await p.getByRole('button', { name: 'Encaixe', exact: true }).click();
+  const d = p.getByRole('dialog');
+  await d.getByRole('tab', { name: 'Paciente novo' }).click();
+  await d.getByRole('textbox', { name: 'Nome completo', exact: true }).fill(o.nome);
+  await d.getByLabel('Celular (WhatsApp)').fill(o.celular);
+  await d.getByLabel('Data').fill(o.data);
+  await d.getByLabel('Horário').fill(o.hora);
+  if (o.valor) await d.getByLabel('Valor sessão').fill(o.valor);
+  await d.getByLabel('Modalidade').selectOption(o.freq);
+  if (o.n) await d.getByLabel('Número de sessões').fill(String(o.n));
+  return d;
+}
+
 const RUN = Date.now().toString(36);
 const SHOTS = '../docs/evidencias/telas';
 const tzDate = (offsetDays: number) => {
@@ -60,19 +76,21 @@ test('cadastro, perfil e tela inicial', async () => {
   await page.screenshot({ path: `${SHOTS}/01-agenda-vazia.png`, fullPage: true });
 });
 
-test('cadastro de paciente com validação', async () => {
-  await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Pacientes' }).click();
-  await page.getByRole('button', { name: 'Novo paciente' }).click();
-  const dlg = page.getByRole('dialog');
-  await dlg.getByLabel('Nome completo').fill('Carlos Fictício da Silva');
+test('cadastro de paciente com validação (o paciente nasce pelo agendamento)', async () => {
+  // Não existe mais cadastro solto em Pacientes
+  await page.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Pacientes' }).click();
+  await expect(page.getByRole('button', { name: 'Novo paciente' })).toHaveCount(0);
+  const dlg = await novoPacienteNoEncaixe(page, { nome: 'Carlos Fictício da Silva', celular: '(48) 99999-0001', data: tzDate(30), hora: '09:00', freq: 'nao', valor: '150,00' });
   await dlg.getByLabel('CPF', { exact: true }).fill('123.456.789-00');
-  await dlg.getByRole('button', { name: 'Cadastrar paciente' }).click();
-  await expect(dlg.getByRole('alert')).toContainText('CPF do paciente inválido');
+  await dlg.getByRole('button', { name: 'Agendar', exact: true }).click();
+  await expect(dlg.getByRole('alert')).toContainText('CPF inválido');
   await dlg.getByLabel('CPF', { exact: true }).fill('123.456.789-09');
-  await dlg.getByLabel('Celular (WhatsApp)').fill('(48) 99999-0001');
-  await dlg.getByLabel('Valor da sessão (R$)').fill('150,00');
   await page.screenshot({ path: `${SHOTS}/02-novo-paciente.png` });
-  await dlg.getByRole('button', { name: 'Cadastrar paciente' }).click();
+  await dlg.getByRole('button', { name: 'Agendar', exact: true }).click();
+  await expect(dlg.getByRole('heading', { name: 'Paciente cadastrado' })).toBeVisible();
+  await dlg.getByRole('button', { name: 'Concluir' }).click();
+  await page.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Pacientes' }).click();
+  await page.getByText('Carlos Fictício da Silva').click();
   await expect(page.getByRole('heading', { name: 'Carlos Fictício da Silva' })).toBeVisible();
   patientUrl = page.url();
 });
@@ -464,5 +482,45 @@ test('encaixe no Resumo com regra de horário e Dar alta leva o paciente para In
   await alta.getByRole('button', { name: 'Fechar' }).last().click();
   await page.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Pacientes' }).click();
   await page.getByRole('tab', { name: /Inativos/ }).click();
-  await expect(page.getByText('Carlos Fictício da Silva')).toBeVisible();
+  await expect(page.locator('#conteudo ul').getByText('Carlos Fictício da Silva')).toBeVisible();
+});
+
+test('paciente ativo sempre na agenda: "Começa dd/mm" e avulso sem próximo horário com alerta', async () => {
+  // Começa só daqui a 5 semanas: já aparece hoje (mesmo dia da semana) com "Começa dd/mm"
+  const inicio = tzDate(35);
+  const ddmm = `${inicio.slice(8, 10)}/${inicio.slice(5, 7)}`;
+  const d = await novoPacienteNoEncaixe(page, { nome: 'Fernanda Fictícia', celular: '(48) 97777-0000', data: inicio, hora: '10:00', freq: 'nao', valor: '150,00' });
+  await d.getByRole('button', { name: 'Agendar', exact: true }).click();
+  await d.getByRole('button', { name: 'Concluir' }).click();
+  await irParaAgenda(page);
+  await expect(page.getByText(`Começa ${ddmm}`).first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/22-comeca-no-futuro.png`, fullPage: true });
+
+  // Vira avulso sem próximo horário: sessão passada há 7 dias e a futura cancelada
+  await page.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Pacientes' }).click();
+  await page.getByText('Fernanda Fictícia').click();
+  await page.getByRole('button', { name: 'Agendar' }).first().click();
+  const a = page.getByRole('dialog');
+  await a.getByLabel('Data').fill(tzDate(-7));
+  await a.getByLabel('Horário').fill('10:00');
+  await a.getByLabel('Modalidade').selectOption('nao');
+  await a.getByRole('button', { name: 'Agendar', exact: true }).click();
+  await expect(a).toBeHidden();
+  await page.getByRole('button', { name: /Agendada/ }).first().click();
+  const sh = page.getByRole('dialog');
+  await sh.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  await sh.getByRole('button', { name: 'Cancelar sessão' }).click();
+  await expect(page.getByText('Sessão cancelada')).toBeVisible();
+
+  await irParaAgenda(page);
+  const linha = page.getByRole('button', { name: /Fernanda.*sem próximo horário: ajustar/ }).first();
+  await expect(linha).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/23-sem-proximo-horario.png`, fullPage: true });
+  await linha.click();
+  const aj = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Ajustar paciente' }) });
+  await expect(aj.getByRole('button', { name: 'Marcar novo horário' })).toBeVisible();
+  await aj.getByRole('button', { name: 'Dar alta' }).click();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: /^Dar alta a / }) }).getByRole('button', { name: 'Dar alta' }).click();
+  await expect(page.getByText(/Fernanda Fictícia foi para Inativos/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /Fernanda.*sem próximo horário/ })).toHaveCount(0);
 });

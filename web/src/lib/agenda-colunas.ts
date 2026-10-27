@@ -8,8 +8,11 @@ import type { HorarioLivre } from './horarios';
 // fantasma: paciente quinzenal na semana em que NÃO tem sessão — aparece apagado, com a data da próxima.
 export type Linha =
   | { tipo: 'sessao'; hora: string; item: AgendaItem }
-  | { tipo: 'livre'; hora: string; livre: HorarioLivre; quinzenal?: boolean; dataAlvo?: string }
-  | { tipo: 'fantasma'; hora: string; item: AgendaItem; proxima: string };
+  | { tipo: 'livre'; hora: string; livre: HorarioLivre; quinzenal?: boolean; dataAlvo?: string; ate?: string }
+  | { tipo: 'fantasma'; hora: string; item: AgendaItem; proxima: string }
+  // Paciente ativo fora da semana das sessões (27/10): "Começa dd/mm" ou avulso "sem próximo horário" (alerta para ajustar)
+  | { tipo: 'futuro'; hora: string; item: AgendaItem; inicio: string; livreAte: string }
+  | { tipo: 'semHorario'; hora: string; item: AgendaItem };
 /** Bloco da grade num dia (sala + período), ou "Outros horários" (sessões fora de qualquer bloco). */
 export type Bloco = { chave: string; date: string; titulo: string; sala: Location | null; faixa: string | null; linhas: Linha[] };
 export type PeriodoColuna = { titulo: string; faixa: string | null; linhas: Linha[] };

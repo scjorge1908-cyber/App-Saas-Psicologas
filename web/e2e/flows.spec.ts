@@ -46,7 +46,7 @@ let backupPath = '';
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
   // A janela de avisos abre sozinha ao abrir o app quando há pendências; nos fluxos ela é testada à parte (sininho)
-  await page.addInitScript(() => { try { sessionStorage.setItem('psi.avisos.mostrados', '1'); } catch { /* sem armazenamento */ } });
+  await page.addInitScript(() => { try { sessionStorage.setItem('psi.avisos.mostrados', '1'); sessionStorage.setItem('psi.pendencias.mostradas', '1'); } catch { /* sem armazenamento */ } });
 });
 
 test('cadastro, perfil e tela inicial', async () => {

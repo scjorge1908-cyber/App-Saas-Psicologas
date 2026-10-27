@@ -49,8 +49,11 @@ const SITUACAO: Record<AppointmentStatus, { rotulo: string; linha: string; texto
   cancelado: { rotulo: 'Cancelada', linha: 'bg-cinza-fundo border-l-linha-forte', texto: 'text-tinta-2' },
 };
 
-/** A janela de pendências já abriu sozinha nesta abertura do app. */
+/** A janela de pendências abre sozinha uma vez por abertura do app (marca em sessionStorage, como a dos avisos). */
+const CHAVE_PEND = 'psi.pendencias.mostradas';
 let pendenciasMostradas = false;
+const pendJaMostradas = () => { if (pendenciasMostradas) return true; try { return sessionStorage.getItem(CHAVE_PEND) === '1'; } catch { return false; } };
+const marcarPendMostradas = () => { pendenciasMostradas = true; try { sessionStorage.setItem(CHAVE_PEND, '1'); } catch { /* sem armazenamento */ } };
 
 const registrada = (it: AgendaItem) => it.status === 'atendido' || it.status === 'faltou';
 
@@ -69,7 +72,7 @@ export function AgendaPage() {
   const [pendAberta, setPendAberta] = useState(() => params.get('pendencias') === '1');
   // Abre sozinha uma vez por abertura do app, se houver pendências
   useEffect(() => {
-    if (!pendenciasMostradas && nPend > 0) { pendenciasMostradas = true; setPendAberta(true); }
+    if (nPend > 0 && !pendJaMostradas()) { marcarPendMostradas(); setPendAberta(true); }
   }, [nPend]);
   const [passeioPerguntado, setPasseioPerguntado] = useState(() => lerFlag(FLAG_PASSEIO_OFERECIDO));
 

@@ -135,3 +135,16 @@ Métricas de uso dentro do app exigem coleta de eventos. É uma decisão à part
 - [ ] Sessão on-line sem bloco no card do período, com selo?
 - [ ] Autorizar as entregas 1, 2 e 3, em versões separadas?
 - [ ] Sessão observada com psicólogas?
+
+## Resultado após as correções (v17)
+
+| Medida | Antes | Depois |
+| --- | --- | --- |
+| Duração quebrando linha (320/360 px) | 66 | 0 |
+| Rolagem lateral com zoom de 200% | 359 px | 0 px |
+| Controles fora da tela com zoom | 36 | 1 |
+| Alvos de toque < 44 px (360 px) | 142 | 7 |
+| Violações axe sérias | 12 | 0 |
+| Textos que não acompanham a fonte | ~metade | 0 de 266 |
+
+Testes: 48 de unidade e 16 de ponta a ponta passando; CI verde.

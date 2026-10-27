@@ -6,6 +6,7 @@ import { errorMessage } from '../../lib/errors';
 import { isMinor, isValidCpf, onlyDigits, parseMoney, todayIn } from '../../lib/format';
 import { useProfile } from '../../auth/AuthProvider';
 import { Button, Dialog, ErrorBox, Field, Input, Notice, Select, TextField, Textarea } from '../ui';
+import { EnderecoCampos, enderecoParaPaciente, type Endereco } from './EnderecoCampos';
 
 type Form = Record<string, string>;
 
@@ -23,7 +24,9 @@ function toForm(p?: Patient | null): Form {
   const s = (v: unknown) => (v === null || v === undefined ? '' : String(v));
   return {
     full_name: s(p?.full_name), social_name: s(p?.social_name), birth_date: s(p?.birth_date), cpf: s(p?.cpf),
-    phone: s(p?.phone), email: s(p?.email), address: s(p?.address),
+    phone: s(p?.phone), email: s(p?.email), address: s(p?.address), rg: s(p?.rg),
+    cep: s(p?.cep), street: s(p?.street), address_number: s(p?.address_number), address_complement: s(p?.address_complement),
+    neighborhood: s(p?.neighborhood), city: s(p?.city), uf: s(p?.uf),
     emergency_contact_name: s(p?.emergency_contact_name), emergency_contact_phone: s(p?.emergency_contact_phone),
     guardian_name: s(p?.guardian_name), guardian_cpf: s(p?.guardian_cpf), guardian_relationship: s(p?.guardian_relationship),
     guardian_phone: s(p?.guardian_phone), guardian_authorization_date: s(p?.guardian_authorization_date),
@@ -57,6 +60,7 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
       const d = onlyDigits(f[k]);
       if (d && (d.length < 10 || d.length > 11)) return setError(`${label} inválido: informe DDD + número.`);
     }
+    if (f.rg.trim() && (f.rg.trim().length < 3 || f.rg.trim().length > 20)) return setError('RG inválido.');
     const price = f.session_price.trim() ? parseMoney(f.session_price) : null;
     if (f.session_price.trim() && price === null) return setError('Valor da sessão inválido. Exemplo: 150,00');
     if (f.meeting_url && !/^https:\/\//i.test(f.meeting_url)) return setError('O link da sala online deve começar com https://');
@@ -66,7 +70,8 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
     const payload: Partial<Patient> = {
       id: patient?.id,
       full_name: f.full_name.trim(), social_name: nn(f.social_name), birth_date: nn(f.birth_date), cpf: nn(onlyDigits(f.cpf)),
-      phone: nn(onlyDigits(f.phone)), email: nn(f.email), address: nn(f.address),
+      phone: nn(onlyDigits(f.phone)), email: nn(f.email), address: nn(f.address), rg: nn(f.rg),
+      ...enderecoParaPaciente(f as unknown as Endereco),
       emergency_contact_name: nn(f.emergency_contact_name), emergency_contact_phone: nn(onlyDigits(f.emergency_contact_phone)),
       guardian_name: nn(f.guardian_name), guardian_cpf: nn(onlyDigits(f.guardian_cpf)), guardian_relationship: nn(f.guardian_relationship),
       guardian_phone: nn(onlyDigits(f.guardian_phone)), guardian_authorization_date: nn(f.guardian_authorization_date),
@@ -102,7 +107,8 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
           <div className="grid gap-3 sm:grid-cols-3">
             <TextField label="Nome social" value={f.social_name} onChange={set('social_name')} hint="Usado na agenda e nas mensagens." className="sm:col-span-3" />
             <Field label="Nascimento">{(id) => <Input id={id} type="date" value={f.birth_date} onChange={set('birth_date')} />}</Field>
-            <TextField label="CPF" inputMode="numeric" value={f.cpf} onChange={set('cpf')} hint="Necessário para recibos." className="sm:col-span-2" />
+            <TextField label="CPF" inputMode="numeric" value={f.cpf} onChange={set('cpf')} hint="Necessário para recibos." />
+            <TextField label="RG" value={f.rg} onChange={set('rg')} />
           </div>
         </Group>
 
@@ -111,7 +117,8 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
             <TextField label="Celular (WhatsApp)" inputMode="tel" placeholder="(48) 99999-9999" value={f.phone} onChange={set('phone')} />
             <TextField label="E-mail" type="email" value={f.email} onChange={set('email')} />
           </div>
-          <TextField label="Endereço" value={f.address} onChange={set('address')} />
+          <EnderecoCampos valor={f as unknown as Endereco} onChange={(e) => setF((x) => ({ ...x, ...e }))} />
+          {f.address && !f.street && <TextField label="Endereço anterior (texto livre)" value={f.address} onChange={set('address')} />}
           <div className="grid gap-3 sm:grid-cols-2">
             <TextField label="Contato de emergência" value={f.emergency_contact_name} onChange={set('emergency_contact_name')} />
             <TextField label="Telefone de emergência" inputMode="tel" value={f.emergency_contact_phone} onChange={set('emergency_contact_phone')} />

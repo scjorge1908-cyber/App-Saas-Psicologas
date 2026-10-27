@@ -12,7 +12,7 @@ import { IconChevronLeft, IconWhats } from '../components/icons';
 import { PatientForm } from '../components/patients/PatientForm';
 import { RecordTab } from '../components/patients/RecordTab';
 import { DocumentsTab } from '../components/patients/DocumentsTab';
-import { AttachmentsTab } from '../components/patients/AttachmentsTab';
+import { AttachmentsTab, CATEGORIAS_PRONTUARIO } from '../components/patients/AttachmentsTab';
 import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
 import { ChargesList } from '../components/finance/ChargesList';
@@ -106,7 +106,15 @@ export function PatientDetailPage() {
         )
       )}
 
-      {tab === 'prontuario' && <RecordTab patientId={pt.id} sessionId={params.get('sessao')} sessions={sessions.data ?? []} />}
+      {tab === 'prontuario' && (
+        <div className="flex flex-col gap-6">
+          <RecordTab patientId={pt.id} sessionId={params.get('sessao')} sessions={sessions.data ?? []} />
+          <section aria-labelledby="t-laudos">
+            <h2 id="t-laudos" className="mb-2 text-[17px] font-bold">Laudos e encaminhamentos médicos</h2>
+            <AttachmentsTab patientId={pt.id} somente={CATEGORIAS_PRONTUARIO} />
+          </section>
+        </div>
+      )}
       {tab === 'documentos' && <DocumentsTab patient={pt} />}
       {tab === 'financeiro' && <PatientFinance patientId={pt.id} />}
       {tab === 'anexos' && <AttachmentsTab patientId={pt.id} />}

@@ -216,12 +216,12 @@ export async function deleteLocation(id: string) {
   check(await supabase.from('locations').delete().eq('id', id));
 }
 export async function listWorkingHours(): Promise<WorkingHour[]> {
-  return check(await supabase.from('working_hours').select('id, location_id, weekday, start_time, end_time').order('weekday').order('start_time'));
+  return check(await supabase.from('working_hours').select('id, location_id, weekday, start_time, end_time, session_minutes, buffer_minutes').order('weekday').order('start_time'));
 }
 export async function saveWorkingHour(h: Partial<WorkingHour> & Omit<WorkingHour, 'id'>): Promise<WorkingHour> {
   const { id, ...rest } = h;
-  if (id) return check(await supabase.from('working_hours').update(rest).eq('id', id).select('id, location_id, weekday, start_time, end_time').single());
-  return check(await supabase.from('working_hours').insert(rest).select('id, location_id, weekday, start_time, end_time').single());
+  if (id) return check(await supabase.from('working_hours').update(rest).eq('id', id).select('id, location_id, weekday, start_time, end_time, session_minutes, buffer_minutes').single());
+  return check(await supabase.from('working_hours').insert(rest).select('id, location_id, weekday, start_time, end_time, session_minutes, buffer_minutes').single());
 }
 export async function deleteWorkingHour(id: string) {
   check(await supabase.from('working_hours').delete().eq('id', id));

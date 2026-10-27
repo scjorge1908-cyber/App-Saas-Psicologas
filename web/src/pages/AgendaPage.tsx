@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
-import type { AgendaItem } from '../lib/types';
+import type { AgendaItem, Location, WorkingHour } from '../lib/types';
+import { periodoDe } from '../lib/periodos';
 import { horariosLivres, type HorarioLivre } from '../lib/horarios';
 import {
   addDays, daysInMonth, formatLongDate, formatTime, monthName, startOfMonth, startOfWeek, todayIn,
@@ -23,7 +24,7 @@ export function AgendaPage() {
   const view = (params.get('v') as View) || 'dia';
   const date = params.get('d') || todayIn(tz);
   const [open, setOpen] = useState<AgendaItem | null>(null);
-  const [newAt, setNewAt] = useState<{ date: string; time?: string; locationId?: string | null } | null>(null);
+  const [newAt, setNewAt] = useState<{ date: string; time?: string; locationId?: string | null; minutes?: number } | null>(null);
   const [showCanceled, setShowCanceled] = useState(false);
 
   const set = (v: View, d: string) => setParams({ v, d }, { replace: true });
@@ -105,11 +106,13 @@ export function AgendaPage() {
       </header>
 
       {semHorarios && (
-        <Link to="/agenda/horarios" className="cartao mb-4 flex items-center justify-between gap-3 px-4 py-3">
-          <span><strong className="block">Cadastre seus horários de atendimento</strong>
-            <span className="text-[15px] text-tinta-2">A agenda passa a mostrar os horários disponíveis.</span></span>
-          <IconChevronRight className="shrink-0 text-tinta-3" />
-        </Link>
+        <section className="cartao cartao-boas-vindas mb-4 flex flex-col gap-3 px-4 pb-4 pt-5">
+          <div>
+            <strong className="block text-[17px]">Monte sua agenda</strong>
+            <span className="text-[15px] text-tinta-2">Escolha a sala, os dias e o período (manhã, tarde ou noite). O app cria os horários e mostra aqui os disponíveis para agendar.</span>
+          </div>
+          <Link to="/agenda/horarios?novo=1" className="btn-degrade pressionar inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-botao px-5 font-bold"><IconClock /> Criar meus horários</Link>
+        </section>
       )}
 
       {dash.data && dash.data.to_register > 0 && (
@@ -124,9 +127,9 @@ export function AgendaPage() {
       {q.error && <ErrorBox>{errorMessage(q.error)}</ErrorBox>}
 
       {q.data && view === 'dia' && (
-        <DayList date={date} items={byDay.get(date) ?? []} tz={tz} onOpen={setOpen} onNew={() => setNewAt({ date })}
-          livres={livresDo(date)} onLivre={(h) => setNewAt({ date, time: h.time, locationId: h.location?.id ?? null })}
-          mostrarLocal={(locais.data ?? []).filter((l) => l.active).length > 1} />
+        <DiaPorBlocos date={date} items={byDay.get(date) ?? []} tz={tz} onOpen={setOpen} onNew={() => setNewAt({ date })}
+          faixas={(horas.data ?? []).filter((h) => h.weekday === weekday(date))} locais={locais.data ?? []}
+          livres={livresDo(date)} onLivre={(h) => setNewAt({ date, time: h.time, locationId: h.location?.id ?? null, minutes: h.minutes })} />
       )}
 
       {q.data && view === 'semana' && (
@@ -153,14 +156,14 @@ export function AgendaPage() {
         Mostrar canceladas
       </label>
 
-      {/* Botão flutuante: novo agendamento */}
-      <button onClick={() => setNewAt({ date: view === 'dia' ? date : hoje })}
+      {/* Botão flutuante: novo agendamento (no dia com blocos, cada horário livre já tem o seu) */}
+      {!(view === 'dia' && (horas.data ?? []).some((h) => h.weekday === weekday(date))) && <button onClick={() => setNewAt({ date: view === 'dia' ? date : hoje })}
         className="btn-degrade pressionar fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 z-30 inline-flex min-h-14 items-center gap-2 rounded-cartao pl-4 pr-5 text-[15px] font-bold shadow-flutuante lg:bottom-8 lg:right-8">
         <IconPlus /> Novo agendamento
-      </button>
+      </button>}
 
       <AppointmentSheet item={open} onClose={() => setOpen(null)} />
-      <NewAppointmentDialog open={!!newAt} onClose={() => setNewAt(null)} initialDate={newAt?.date} initialTime={newAt?.time} initialLocationId={newAt?.locationId ?? null} />
+      <NewAppointmentDialog open={!!newAt} onClose={() => setNewAt(null)} initialDate={newAt?.date} initialTime={newAt?.time} initialLocationId={newAt?.locationId ?? null} initialMinutes={newAt?.minutes} />
     </div>
   );
 }
@@ -218,6 +221,78 @@ function DayList({ date, items, tz, onOpen, onNew, compact, livres = [], onLivre
         </ol>
       )}
     </section>
+  );
+}
+
+/** Dia em cards: um por bloco de atendimento (sala + período), com as sessões e os horários disponíveis. */
+function DiaPorBlocos({ date, items, tz, onOpen, onNew, faixas, locais, livres, onLivre }: {
+  date: string; items: AgendaItem[]; tz: string; onOpen: (i: AgendaItem) => void; onNew: () => void;
+  faixas: WorkingHour[]; locais: Location[]; livres: HorarioLivre[]; onLivre: (h: HorarioLivre) => void;
+}) {
+  const blocos = faixas
+    .map((f) => ({ f, local: locais.find((l) => l.id === f.location_id) ?? null }))
+    .filter((b) => b.local?.active !== false)
+    .sort((a, b) => a.f.start_time.localeCompare(b.f.start_time));
+  if (blocos.length === 0) return <DayList date={date} items={items} tz={tz} onOpen={onOpen} onNew={onNew} livres={livres} onLivre={onLivre} />;
+
+  const usados = new Set<string>();
+  const doBloco = blocos.map(({ f, local }) => {
+    const ini = f.start_time.slice(0, 5); const fim = f.end_time.slice(0, 5);
+    const sessoes = items.filter((it) => {
+      const h = formatTime(it.starts_at, tz);
+      const ok = !usados.has(it.id) && h >= ini && h < fim && (!it.location_id || it.location_id === f.location_id);
+      if (ok) usados.add(it.id);
+      return ok;
+    });
+    const linhas: Linha[] = [
+      ...sessoes.map((item) => ({ tipo: 'sessao' as const, hora: formatTime(item.starts_at, tz), item })),
+      ...livres.filter((l) => l.faixaId === f.id).map((livre) => ({ tipo: 'livre' as const, hora: livre.time, livre })),
+    ].sort((x, y) => x.hora.localeCompare(y.hora));
+    return { f, local, ini, fim, linhas };
+  });
+  const fora = items.filter((it) => !usados.has(it.id));
+
+  return (
+    <div className="flex flex-col gap-4">
+      {fora.length > 0 && (
+        <section aria-label="Outras sessões do dia">
+          <p className="rotulo mb-2">Fora dos horários cadastrados</p>
+          <DayList date={date} items={fora} tz={tz} onOpen={onOpen} onNew={onNew} />
+        </section>
+      )}
+      {doBloco.map(({ f, local, ini, fim, linhas }) => (
+        <section key={f.id} className="cartao overflow-hidden" aria-label={`${local?.name ?? 'Local'}, ${periodoDe(ini).nome}`}>
+          <header className="flex items-center gap-2 border-b border-linha/70 px-4 py-3">
+            <span className="size-2.5 shrink-0 rounded-full" style={{ background: local?.color ?? 'var(--color-anil)' }} aria-hidden />
+            <h3 className="flex-1 font-bold">{local?.name ?? 'Local'} · {periodoDe(ini).nome}</h3>
+            <span className="num text-sm text-tinta-3">{ini}–{fim}</span>
+          </header>
+          {linhas.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-tinta-3">Período encerrado, sem sessões.</p>
+          ) : (
+            <ol className="divide-y divide-linha/60">
+              {linhas.map((l) => l.tipo === 'sessao' ? (
+                <li key={l.item.id}>
+                  <button onClick={() => onOpen(l.item)} className={cx('flex min-h-14 w-full items-center gap-3 border-l-4 py-2 pl-3 pr-3 text-left hover:bg-afundado', STATUS_BAR[l.item.status])}>
+                    <span className="num w-12 shrink-0 font-bold">{l.hora}</span>
+                    <span className={cx('min-w-0 flex-1 truncate font-bold', l.item.status === 'cancelado' && 'text-tinta-3 line-through')}>{l.item.patient_social_name || l.item.patient_name}</span>
+                    <StatusBadge status={l.item.status} />
+                  </button>
+                </li>
+              ) : (
+                <li key={`livre-${l.hora}`} className="flex min-h-14 items-center gap-3 border-l-4 border-l-transparent py-2 pl-3 pr-2">
+                  <span className="num w-12 shrink-0 font-bold text-tinta-3">{l.hora}</span>
+                  <span className="flex-1 text-tinta-3">Disponível</span>
+                  <button onClick={() => onLivre(l.livre)} className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-anil-claro px-3.5 text-sm font-bold text-sobre-anil-claro hover:brightness-95">
+                    <IconPlus className="size-4" /> Novo agendamento
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+      ))}
+    </div>
   );
 }
 

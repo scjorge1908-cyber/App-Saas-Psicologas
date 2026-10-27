@@ -114,13 +114,11 @@ function FaixaDemo() {
   );
 }
 
-/** Marca: símbolo + nome em fonte de título, sobre o degradê. */
+/** Marca: símbolo da logo (versão branca, sobre o degradê) + nome em fonte de título. */
 export function Marca() {
   return (
     <span className="titulo-display flex items-center gap-2 text-[22px] leading-none">
-      <span aria-hidden className="grid size-8 place-items-center rounded-[10px] bg-white/16">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round"><path d="M12 3v18M6 6c0 5 2.5 8 6 8s6-3 6-8" /></svg>
-      </span>
+      <img src={`${import.meta.env.BASE_URL}logo-branca.png`} alt="" width={34} height={34} className="size-[34px] object-contain" />
       PsiConsultório
     </span>
   );

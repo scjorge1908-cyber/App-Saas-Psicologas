@@ -14,25 +14,34 @@ export const CATEGORY_LABEL: Record<AttachmentCategory, string> = {
   autorizacao_responsavel: 'Autorização do responsável',
   nota_fiscal: 'Nota fiscal',
   outro: 'Outro',
+  laudo: 'Laudo',
+  encaminhamento: 'Encaminhamento médico',
+  documento_identidade: 'Documento de identidade',
+  exame: 'Exame',
 };
 const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,image/heic,image/heif,text/xml,application/xml,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel';
-const PROTECTED: AttachmentCategory[] = ['avaliacao', 'documento_emitido'];
+export const PROTECTED: AttachmentCategory[] = ['avaliacao', 'documento_emitido', 'laudo', 'encaminhamento', 'exame'];
+/** Laudos e encaminhamentos médicos: aparecem também na aba Prontuário. */
+export const CATEGORIAS_PRONTUARIO: AttachmentCategory[] = ['laudo', 'encaminhamento'];
+const OPCOES: AttachmentCategory[] = ['laudo', 'encaminhamento', 'outro', 'avaliacao', 'autorizacao_responsavel', 'nota_fiscal'];
 
-export function AttachmentsTab({ patientId }: { patientId: string }) {
+export function AttachmentsTab({ patientId, somente }: { patientId: string; somente?: AttachmentCategory[] }) {
   const { session } = useAuth();
   const { tz } = useProfile();
   const q = useQuery({ queryKey: ['attachments', patientId], queryFn: () => api.listAttachments(patientId) });
   const qc = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
-  const [category, setCategory] = useState<AttachmentCategory>('outro');
+  const opcoes = somente ?? OPCOES;
+  const [category, setCategory] = useState<AttachmentCategory>(opcoes[0]);
+  const lista = somente ? q.data?.filter((a) => somente.includes(a.category)) : q.data;
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) return toast('Arquivo acima do limite de 10 MB.', 'erro');
-    if (PROTECTED.includes(category) && !(await confirm({ title: 'Anexo permanente', body: 'Material de avaliação faz parte do prontuário e não poderá ser excluído depois. Continuar?', confirmLabel: 'Anexar' }))) return;
+    if (PROTECTED.includes(category) && !(await confirm({ title: 'Anexo permanente', body: `${CATEGORY_LABEL[category]} faz parte do prontuário e não poderá ser excluído depois. Continuar?`, confirmLabel: 'Anexar' }))) return;
     setBusy(true);
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
@@ -56,10 +65,10 @@ export function AttachmentsTab({ patientId }: { patientId: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end gap-3 rounded-lg border border-linha bg-papel p-4">
+      <div className="cartao flex flex-wrap items-end gap-3 p-4">
         <Field label="Tipo do arquivo" className="min-w-56 flex-1">{(id) => (
           <Select id={id} value={category} onChange={(e) => setCategory(e.target.value as AttachmentCategory)}>
-            {(['outro', 'avaliacao', 'autorizacao_responsavel', 'nota_fiscal'] as AttachmentCategory[]).map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
+            {opcoes.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
           </Select>
         )}</Field>
         <input ref={input} type="file" accept={ACCEPT} className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
@@ -67,9 +76,9 @@ export function AttachmentsTab({ patientId }: { patientId: string }) {
         <p className="w-full text-sm text-tinta-3">PDF, imagem (inclusive foto de iPhone), Word, Excel, XML ou TXT, até 10 MB. Os arquivos ficam em armazenamento privado, acessível só pela sua conta.</p>
       </div>
       {q.isLoading && <Loading />}
-      {q.data?.length === 0 && <Empty title="Nenhum anexo." />}
-      <ul className="divide-y divide-linha rounded-lg border border-linha bg-papel empty:hidden">
-        {q.data?.map((a) => (
+      {lista?.length === 0 && <Empty title={somente ? 'Nenhum laudo ou encaminhamento.' : 'Nenhum anexo.'} />}
+      <ul className="cartao divide-y divide-linha/70 overflow-hidden empty:hidden">
+        {lista?.map((a) => (
           <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
             <div className="min-w-0">
               <p className="truncate font-bold">{a.file_name}</p>

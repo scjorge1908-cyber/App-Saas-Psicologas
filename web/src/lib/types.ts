@@ -8,7 +8,8 @@ export type AppointmentStatus = 'agendado' | 'confirmado' | 'atendido' | 'faltou
 export type CancelParty = 'paciente' | 'profissional';
 export type SeriesFrequency = 'semanal' | 'quinzenal' | 'mensal';
 export type RecordKind = 'identificacao_demanda' | 'objetivos' | 'evolucao' | 'procedimento' | 'encaminhamento' | 'encerramento' | 'observacao';
-export type AttachmentCategory = 'avaliacao' | 'documento_emitido' | 'autorizacao_responsavel' | 'nota_fiscal' | 'outro';
+export type AttachmentCategory = 'avaliacao' | 'documento_emitido' | 'autorizacao_responsavel' | 'nota_fiscal' | 'outro'
+  | 'laudo' | 'encaminhamento' | 'documento_identidade' | 'exame'; // as duas últimas existem no banco, mas o app não usa
 export type DocumentType = 'declaracao' | 'atestado' | 'relatorio' | 'laudo' | 'parecer' | 'recibo' | 'contrato';
 export type PaymentMethod = 'pix' | 'dinheiro' | 'cartao_credito' | 'cartao_debito' | 'transferencia' | 'boleto' | 'outro';
 export type ReceitaSaudeStatus = 'pendente' | 'emitido' | 'nao_aplicavel';
@@ -46,7 +47,15 @@ export interface Patient {
   cpf: string | null;
   phone: string | null;
   email: string | null;
-  address: string | null;
+  address: string | null; // endereço antigo em texto livre (cadastros anteriores)
+  rg?: string | null;
+  cep?: string | null;
+  street?: string | null;
+  address_number?: string | null;
+  address_complement?: string | null;
+  neighborhood?: string | null;
+  city?: string | null;
+  uf?: string | null;
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   guardian_name: string | null;
@@ -111,6 +120,8 @@ export interface WorkingHour {
   weekday: number;
   start_time: string; // HH:MM ou HH:MM:SS
   end_time: string;
+  session_minutes?: number | null; // vazio = padrão do perfil
+  buffer_minutes?: number | null;
 }
 
 export interface RecordEntry {

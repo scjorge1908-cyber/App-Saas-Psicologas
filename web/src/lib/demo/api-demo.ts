@@ -80,10 +80,10 @@ function montarStore(): Store {
   const online: Location = { id: uid(), name: 'On-line', modality: 'online', address: null, color: '#0B6E8A', active: true };
   s.locations.push(sala, online);
   for (let d = 1; d <= 5; d++) {
-    s.hours.push({ id: uid(), location_id: sala.id, weekday: d, start_time: '08:00:00', end_time: '12:00:00' });
+    s.hours.push({ id: uid(), location_id: sala.id, weekday: d, start_time: '07:00:00', end_time: '12:00:00' });
     s.hours.push({ id: uid(), location_id: sala.id, weekday: d, start_time: '13:00:00', end_time: '17:00:00' });
   }
-  for (const d of [1, 3]) s.hours.push({ id: uid(), location_id: online.id, weekday: d, start_time: '18:00:00', end_time: '21:00:00' });
+  for (const d of [1, 3]) s.hours.push({ id: uid(), location_id: online.id, weekday: d, start_time: '18:00:00', end_time: '22:00:00' });
 
   // séries semanais: cada paciente ativo no mesmo dia/horário, de 4 semanas atrás até 8 à frente
   const plano: Array<[Patient, number, string]> = [
@@ -412,8 +412,8 @@ export async function downloadAttachment(a: Pick<Attachment, 'storage_path'>): P
 }
 export async function deleteAttachment(a: Attachment) {
   await atraso();
-  if (a.category === 'avaliacao' || a.category === 'documento_emitido') {
-    throw new Error('Anexos de avaliação e documentos emitidos fazem parte do prontuário e não podem ser excluídos.');
+  if (['avaliacao', 'documento_emitido', 'laudo', 'encaminhamento', 'exame'].includes(a.category)) {
+    throw new Error('Avaliações, laudos, encaminhamentos e documentos emitidos fazem parte do prontuário e não podem ser excluídos.');
   }
   db().attachments = db().attachments.filter((x) => x.id !== a.id);
   db().blobs.delete(a.storage_path);

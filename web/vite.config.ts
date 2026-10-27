@@ -17,7 +17,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
-      includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
+      includeAssets: ['favicon.png', 'icon-192.png', 'icon-512.png', 'logo-branca.png', 'logo-simbolo.png', 'logo-completa.png'],
       manifest: {
         name: 'PsiConsultório',
         short_name: 'PsiConsultório',

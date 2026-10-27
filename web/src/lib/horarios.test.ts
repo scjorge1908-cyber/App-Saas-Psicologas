@@ -26,4 +26,9 @@ describe('horariosLivres', () => {
     expect(horariosLivres({ ...base, items: [] })[0].location?.name).toBe('Sala 1');
     expect(horariosLivres({ ...base, locations: [{ ...sala, active: false }], items: [] })).toEqual([]);
   });
+  it('usa a duração e o intervalo próprios da faixa quando definidos', () => {
+    const r = horariosLivres({ ...base, hours: [{ ...faixa, start_time: '07:00', end_time: '12:00', session_minutes: 60, buffer_minutes: 10 }], items: [] });
+    expect(r.map((h) => h.time)).toEqual(['07:00', '08:10', '09:20', '10:30']);
+    expect(r[0].minutes).toBe(60);
+  });
 });

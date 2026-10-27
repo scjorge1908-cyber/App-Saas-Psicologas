@@ -48,8 +48,14 @@ export function WelcomePage() {
   return (
     <div className="boas-vindas-app flex min-h-dvh flex-col">
       <header className="cabecalho-marca px-6 pb-10 pt-[calc(2.5rem+var(--sat,0px))]">
-        <p className="text-sm font-semibold uppercase tracking-[.14em] opacity-80">PsiConsultório</p>
-        <h1 className="mt-3 max-w-md text-[30px] font-bold leading-tight">Seu consultório inteiro no celular.</h1>
+        <div className="flex items-center gap-3">
+          <img src={`${import.meta.env.BASE_URL}logo-branca.png`} alt="" width={52} height={52} className="size-[52px] object-contain" />
+          <div>
+            <p className="titulo-display text-[24px] leading-none">PsiConsultório</p>
+            <p className="mt-1 text-[12px] font-semibold uppercase tracking-[.14em] opacity-85">Psicologia e bem-estar</p>
+          </div>
+        </div>
+        <h1 className="titulo-display mt-6 max-w-md text-[30px] leading-tight">Seu consultório inteiro no celular.</h1>
         <p className="mt-3 max-w-md text-[17px] opacity-90">Agenda, prontuário, documentos e financeiro — feito para psicólogas.</p>
       </header>
 

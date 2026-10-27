@@ -6,6 +6,8 @@ import { weekday, zonedToUtc } from './format';
 export interface HorarioLivre {
   time: string;          // HH:MM de início
   location: Location | null;
+  minutes?: number;      // duração da sessão nesta faixa
+  faixaId?: string;      // faixa (bloco sala + período) de onde saiu
 }
 
 const hm = (t: string) => t.slice(0, 5);
@@ -30,18 +32,19 @@ export function horariosLivres(args: {
   const agoraMs = (args.agora ?? new Date()).getTime();
   const dia = weekday(date);
   const ocupadas = items.filter((i) => i.status !== 'cancelado').map((i) => [new Date(i.starts_at).getTime(), new Date(i.ends_at).getTime()] as const);
-  const passo = Math.max(10, sessionMinutes + bufferMinutes);
   const livres: HorarioLivre[] = [];
   const faixas = hours.filter((h) => h.weekday === dia).sort((a, b) => minutos(a.start_time) - minutos(b.start_time));
   for (const f of faixas) {
     const local = locations.find((l) => l.id === f.location_id) ?? null;
     if (local && !local.active) continue;
-    for (let m = minutos(f.start_time); m + sessionMinutes <= minutos(f.end_time); m += passo) {
+    const dur = f.session_minutes ?? sessionMinutes;               // duração própria da faixa, se houver
+    const passo = Math.max(10, dur + (f.buffer_minutes ?? bufferMinutes));
+    for (let m = minutos(f.start_time); m + dur <= minutos(f.end_time); m += passo) {
       const ini = new Date(zonedToUtc(date, texto(m), tz)).getTime();
-      const fim = ini + sessionMinutes * 60000;
+      const fim = ini + dur * 60000;
       if (ini < agoraMs) continue;
       if (ocupadas.some(([a, b]) => a < fim && b > ini)) continue;
-      livres.push({ time: texto(m), location: local });
+      livres.push({ time: texto(m), location: local, minutes: dur, faixaId: f.id });
     }
   }
   return livres;

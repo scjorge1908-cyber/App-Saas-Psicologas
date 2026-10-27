@@ -29,7 +29,7 @@ permissions:
   contents: read
 env:
   # último versionCode enviado à Google Play: 0.1.0 (7), teste interno, 26/10/2026 (1º envio, à mão). Atualizar a cada envio.
-  ULTIMO_VERSION_CODE_ENVIADO: 13
+  ULTIMO_VERSION_CODE_ENVIADO: 14
 concurrency:
   group: play-teste-interno
   cancel-in-progress: false

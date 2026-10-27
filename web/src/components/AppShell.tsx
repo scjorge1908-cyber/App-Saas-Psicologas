@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
 import { cx } from './ui';
-import { IconCalendar, IconClock, IconDoc, IconLogout, IconMoney, IconMore, IconPeople, IconReceipt, IconHelp, IconSettings, IconToday } from './icons';
+import { IconCalendar, IconChevronLeft, IconClock, IconDoc, IconLogout, IconMoney, IconMore, IconPeople, IconReceipt, IconHelp, IconSettings, IconToday } from './icons';
 import { signOut, useProfile } from '../auth/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../lib/demo/modo';
@@ -9,16 +9,20 @@ import { Versao } from './Versao';
 import { BotaoAjuda, Passeio } from './ajuda/Ajuda';
 import { BotaoAvisos, JanelaAvisos, JanelaAvulsosGlobal } from './AvisosHoje';
 
+/** Marca de que esta abertura do app já começou no Resumo (só na primeira tela). */
+let abriuNoResumo = false;
+
 type NavItem = { to: string; label: string; icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement; end?: boolean };
 const MAIN: NavItem[] = [
   { to: '/', label: 'Agenda', icon: IconCalendar, end: true },
   { to: '/pacientes', label: 'Pacientes', icon: IconPeople },
-  { to: '/prontuario', label: 'Prontuário', icon: IconDoc },
+  // Grade no rodapé no lugar do Prontuário (pedido do Jorge, 27/10); o Prontuário fica na agenda e em Mais
+  { to: '/agenda/horarios', label: 'Grade', icon: IconClock },
   { to: '/financeiro', label: 'Financeiro', icon: IconMoney },
 ];
 const EXTRA: NavItem[] = [
   { to: '/resumo', label: 'Resumo do dia', icon: IconToday },
-  { to: '/agenda/horarios', label: 'Meus horários', icon: IconClock },
+  { to: '/prontuario', label: 'Prontuário', icon: IconDoc },
   { to: '/notas-fiscais', label: 'Notas fiscais', icon: IconReceipt },
   { to: '/configuracoes', label: 'Configurações', icon: IconSettings },
   { to: '/ajuda', label: 'Ajuda e tutoriais', icon: IconHelp },
@@ -28,6 +32,13 @@ export function AppShell() {
   const { profile } = useProfile();
   const loc = useLocation();
   const mainRef = useRef<HTMLElement>(null);
+
+  const nav = useNavigate();
+  // O app abre sempre no Resumo do dia (pedido do Jorge, 27/10): uma vez por abertura do app
+  useEffect(() => {
+    if (!abriuNoResumo) { abriuNoResumo = true; if (loc.pathname === '/') nav('/resumo', { replace: true }); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Leva o foco ao conteúdo ao trocar de página (leitores de tela)
   useEffect(() => { mainRef.current?.focus(); window.scrollTo(0, 0); }, [loc.pathname]);
@@ -72,6 +83,12 @@ export function AppShell() {
       </header>
       <div className="hidden justify-end px-6 pt-4 text-anil-escuro lg:flex"><BotaoAjuda className="hover:bg-anil-claro/60" /><BotaoAvisos className="hover:bg-anil-claro/60" /></div>
       <main id="conteudo" ref={mainRef} tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-5 outline-none sm:px-6 lg:pb-12 lg:pt-2">
+        {/* Em toda tela: voltar ao Resumo do dia (pedido do Jorge, 27/10) */}
+        {loc.pathname !== '/resumo' && (
+          <NavLink to="/resumo" className="mb-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-linha bg-papel px-3.5 text-[0.875rem] font-bold text-anil-escuro shadow-cartao hover:bg-anil-claro/50">
+            <IconChevronLeft className="size-4" /> Voltar ao Resumo
+          </NavLink>
+        )}
         <Outlet />
         <Versao className="mt-10" />
       </main>

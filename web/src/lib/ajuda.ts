@@ -13,7 +13,7 @@ export const PASSEIOS: Record<PasseioId, PassoPasseio[]> = {
     { alvo: 'livre', titulo: 'Horário livre', texto: 'Linha verde é horário livre. Toque nela para marcar um paciente neste horário; dá para cadastrar o paciente na hora.' },
     { alvo: 'whats', titulo: 'Lembrete pelo WhatsApp', texto: 'Abre as mensagens prontas: confirmar presença, avisar que não vai atender ou mensagem livre. Também leva para mover a sessão.' },
     { alvo: 'nav-pacientes', titulo: 'Pacientes', texto: 'Cadastro, sessões, documentos e financeiro de cada paciente.' },
-    { alvo: 'nav-mais', titulo: 'Mais opções', texto: 'Resumo do dia, notas fiscais, configurações e esta ajuda ficam em Mais.' },
+    { alvo: 'nav-mais', titulo: 'Mais opções', texto: 'Prontuário, notas fiscais, configurações e esta ajuda ficam em Mais. O Resumo do dia é a tela inicial e toda tela tem “Voltar ao Resumo”.' },
   ],
 };
 
@@ -26,10 +26,11 @@ const AGENDA: AjudaTela = {
     'Linha azul é paciente: ⇄ move (dia, horário ou sala) e o botão verde abre o WhatsApp. Toque no nome para registrar atendida, falta ou cancelamento; depois de registrada, a sessão sai da agenda e fica no histórico do paciente.',
   ],
   duvidas: [
-    { p: 'Como configuro meus horários?', r: 'Toque em “Editar grade”, escolha a sala, os dias, o turno, a duração e o intervalo, e salve. Os horários aparecem na agenda como livres.' },
+    { p: 'Como configuro meus horários?', r: 'Toque em “Grade”, no rodapé, escolha a sala, os dias, o turno, a duração e o intervalo, e salve. Os horários aparecem na agenda como livres.' },
     { p: 'Como agendo um paciente?', r: 'Toque numa linha verde “LIVRE”. Escolha um paciente cadastrado ou cadastre um novo no mesmo formulário.' },
     { p: 'Como envio a confirmação?', r: 'Toque no botão verde do WhatsApp na sessão e escolha "Confirmar presença". O app abre o WhatsApp com o lembrete e o link; o paciente confirma por ali.' },
-    { p: 'O que é o Encaixe?', r: 'É uma sessão num horário que não está na sua grade (ex.: 12:30, 21:00 ou um dia em que você não atende). Toque em “Encaixe”, escolha o paciente, o dia e o horário. O app só não deixa coincidir com outra sessão. O encaixe aparece no cartão do dia, no turno do horário, ou em “Outros horários”.' },
+    { p: 'O que é o Encaixe?', r: 'É uma sessão num horário que não está na sua grade (ex.: 12:30 ou um dia em que você não atende). Fica no Resumo do dia: toque em “Encaixe”, escolha o paciente (ou cadastre um novo), o dia e o horário. Regras: dentro do seu horário de atendimento (Configurações), nunca num horário que já passou e nunca coincidindo com outra sessão.' },
+    { p: 'Como dou alta a um paciente?', r: 'Na agenda, toque em “Dar alta” e escolha o paciente. As sessões futuras saem da agenda, o horário fica livre e o paciente vai para a aba Inativos. Histórico, prontuário, documentos e financeiro continuam guardados.' },
     { p: 'Por que uma sessão aparece em “Outros horários”?', r: 'Ela foi marcada num turno sem grade naquele dia. Ela continua valendo; só não pertence a nenhum bloco da grade.' },
   ],
 };

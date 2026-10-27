@@ -1,4 +1,13 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+/** O app abre no Resumo do dia; a agenda fica no rodapé (link "Agenda"). */
+async function irParaAgenda(p: Page) {
+  await p.goto('/');
+  await p.waitForURL(/\/resumo$/);
+  await p.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Agenda', exact: true }).click();
+  await p.waitForURL(/\/$/);
+}
+
 
 const RUN = Date.now().toString(36);
 const SHOTS = '../docs/evidencias/telas';
@@ -34,7 +43,7 @@ test('desktop: agenda semanal em grade e ficha do paciente', async ({ page }) =>
     await a.getByRole('button', { name: /Agendar 6 sessões/ }).click();
     await expect(a).toBeHidden();
   }
-  await page.goto('/');
+  await irParaAgenda(page);
   await expect(page.getByText('Helena Fictícia').filter({ visible: true }).first()).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/20-desktop-agenda.png`, fullPage: true });
   await page.goto('/resumo');

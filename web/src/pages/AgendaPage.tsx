@@ -19,11 +19,12 @@ import { errorMessage } from '../lib/errors';
 import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
 import { WhatsAppCard } from '../components/appointments/WhatsAppCard';
+import { DarAltaDialog } from '../components/patients/DarAltaDialog';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
 import { ErrorBox, Loading, cx } from '../components/ui';
 import { PrimeirosPassos, iniciarPasseio } from '../components/ajuda/Ajuda';
 import { FLAG_PASSEIO_OFERECIDO, FLAG_WHATS_ENVIADO, gravarFlag, lerFlag } from '../lib/ajuda';
-import { IconCake, IconCheck, IconChevronLeft, IconChevronRight, IconClock, IconPlus, IconSwap, IconVideo, IconWhats } from '../components/icons';
+import { IconCake, IconCheck, IconChevronLeft, IconChevronRight, IconClock, IconDoc, IconPlus, IconSwap, IconVideo, IconWhats } from '../components/icons';
 
 type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente'; repeat?: 'quinzenal'; encaixe?: boolean };
 type Visao = 'semana' | 'dia';
@@ -58,6 +59,7 @@ export function AgendaPage() {
   const [open, setOpen] = useState<{ item: AgendaItem; mover?: boolean } | null>(null);
   const [novoEm, setNovoEm] = useState<NovoEm | null>(null);
   const [whats, setWhats] = useState<AgendaItem | null>(null);
+  const [alta, setAlta] = useState(false);
   const [passeioPerguntado, setPasseioPerguntado] = useState(() => lerFlag(FLAG_PASSEIO_OFERECIDO));
 
   // "Semana" = 7 dias a partir de hoje (ex.: hoje terça → terça a segunda). As setas andam de 7 em 7 dias
@@ -305,19 +307,21 @@ export function AgendaPage() {
         </section>
       )}
 
-      {/* Ações da agenda: grade (horários fixos) e encaixe (sessão fora da grade). Texto em uma linha só (pedido do Jorge, 27/10) */}
+      {/* Ações da agenda (pedido do Jorge, 27/10): Prontuário no lugar de Editar grade (a Grade foi para o rodapé)
+          e Dar alta no lugar do Encaixe (o Encaixe foi para o Resumo do dia) */}
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/agenda/horarios" data-ajuda="grade" title="Dias, salas e horários da sua grade"
+        <Link to="/prontuario"
           className="pressionar flex min-h-14 items-center justify-center gap-2 whitespace-nowrap rounded-cartao border border-linha bg-papel px-3 text-[0.9375rem] font-extrabold text-tinta shadow-cartao hover:border-anil">
-          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-anil-claro text-sobre-anil-claro"><IconClock className="size-[1.125rem]" /></span>
-          Editar grade
+          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-anil-claro text-sobre-anil-claro"><IconDoc className="size-[1.125rem]" /></span>
+          Prontuário
         </Link>
-        <button onClick={() => setNovoEm({ date, modo: 'existente', encaixe: true })} title="Sessão em horário fora da grade"
+        <button onClick={() => setAlta(true)}
           className="pressionar flex min-h-14 items-center justify-center gap-2 whitespace-nowrap rounded-cartao border border-anil/30 bg-anil px-3 text-[0.9375rem] font-extrabold text-sobre-anil shadow-elevado hover:brightness-110">
-          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-sobre-anil/15"><IconPlus className="size-[1.125rem]" strokeWidth={2.4} /></span>
-          Encaixe
+          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-sobre-anil/15"><IconCheck className="size-[1.125rem]" strokeWidth={2.4} /></span>
+          Dar alta
         </button>
       </div>
+      <DarAltaDialog open={alta} onClose={() => setAlta(false)} />
 
       <AppointmentSheet item={open?.item ?? null} mover={open?.mover} onClose={() => setOpen(null)} />
       <WhatsAppCard key={whats?.id ?? 'nenhum'} item={whats} onClose={() => setWhats(null)} onMover={(item) => setOpen({ item, mover: true })} />

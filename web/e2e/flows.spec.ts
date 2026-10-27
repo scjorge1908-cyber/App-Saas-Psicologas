@@ -46,7 +46,7 @@ let backupPath = '';
 test.beforeAll(async ({ browser }) => {
   page = await browser.newPage();
   // A janela de avisos abre sozinha ao abrir o app quando há pendências; nos fluxos ela é testada à parte (sininho)
-  await page.addInitScript(() => { try { sessionStorage.setItem('psi.avisos.mostrados', '1'); } catch { /* sem armazenamento */ } });
+  await page.addInitScript(() => { try { sessionStorage.setItem('psi.avisos.mostrados', '1'); sessionStorage.setItem('psi.pendencias.mostradas', '1'); } catch { /* sem armazenamento */ } });
 });
 
 test('cadastro, perfil e tela inicial', async () => {
@@ -108,12 +108,19 @@ test('agenda: série semanal e sessão passada', async () => {
 });
 
 test('registro de presença gera cobrança; recebimento quita', async () => {
+  // Pendências de registro: saíram do Resumo e ficam na Agenda (janela + botão com o número)
   await page.goto('/resumo');
-  const pending = page.locator('#registrar');
+  await expect(page.getByText('Aguardando registro')).toHaveCount(0);
+  await irParaAgenda(page);
+  const pending = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Aguardando registro' }) });
+  if (!(await pending.isVisible())) await page.getByRole('button', { name: /^Pendências de registro: \d+/ }).click();
   await expect(pending.getByText('Carlos Fictício da Silva')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/04-hoje-pendencias.png`, fullPage: true });
   await pending.getByRole('button', { name: 'Atendida' }).click();
   await expect(page.getByText('Sessão registrada como atendida')).toBeVisible();
+  await expect(pending.getByText('Nenhuma pendência de registro.')).toBeVisible();
+  await pending.getByRole('button', { name: 'Fechar' }).last().click();
+  await expect(page.getByRole('button', { name: 'Pendências de registro: nenhuma' })).toBeVisible();
 
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Financeiro' }).click();
   await expect(page.getByText(/^Sessão de /)).toBeVisible();

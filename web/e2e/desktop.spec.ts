@@ -14,7 +14,7 @@ const SHOTS = '../docs/evidencias/telas';
 const tzDate = (o: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + o * 86400e3));
 
 test('desktop: agenda semanal em grade e ficha do paciente', async ({ page }) => {
-  await page.addInitScript(() => { try { sessionStorage.setItem('psi.avisos.mostrados', '1'); } catch { /* sem armazenamento */ } });
+  await page.addInitScript(() => { try { sessionStorage.setItem('psi.avisos.mostrados', '1'); sessionStorage.setItem('psi.pendencias.mostradas', '1'); } catch { /* sem armazenamento */ } });
   await page.goto('/cadastro');
   await page.getByLabel('Nome completo').fill('Dora Fictícia Desktop');
   await page.getByLabel('E-mail').fill(`dora.${RUN}@exemplo.invalid`);

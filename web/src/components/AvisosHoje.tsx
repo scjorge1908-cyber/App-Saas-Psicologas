@@ -45,7 +45,7 @@ function useAvisos() {
   const itens = (d ? [
     avulsos.length > 0 && { n: String(avulsos.length), t: avulsos.length === 1 ? 'paciente avulso sem próxima sessão: manter ou dar alta?' : 'pacientes avulsos sem próxima sessão: manter ou dar alta?',
       acao: () => { definir(false); definirAvulsos(true); }, tom: 'bg-anil-claro text-sobre-anil-claro' },
-    d.to_register > 0 && { n: String(d.to_register), t: d.to_register === 1 ? 'sessão aguarda registro' : 'sessões aguardam registro', para: '/resumo#registrar', tom: 'bg-ocre-fundo text-ocre' },
+    d.to_register > 0 && { n: String(d.to_register), t: d.to_register === 1 ? 'sessão aguarda registro' : 'sessões aguardam registro', para: '/?pendencias=1', tom: 'bg-ocre-fundo text-ocre' },
     d.to_confirm_48h > 0 && { n: String(d.to_confirm_48h), t: 'sem confirmação nas próximas 48 h', para: '/resumo', tom: 'bg-azul-fundo text-azul' },
     d.overdue > 0 && { n: 'R$', t: `${valoresVisiveis ? money(d.overdue) : VALOR_OCULTO} em atraso`, para: '/financeiro', tom: 'bg-vermelho-fundo text-vermelho' },
     d.receita_saude_pending > 0 && { n: String(d.receita_saude_pending), t: 'sem recibo no Receita Saúde', para: '/financeiro?aba=receita', tom: 'bg-ocre-fundo text-ocre' },

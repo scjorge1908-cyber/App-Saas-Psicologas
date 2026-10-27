@@ -6,7 +6,7 @@
 //     todas as opções da sessão.
 // A agenda nasce da grade (tela Grade e horários). Regras de conflito, recorrência e remarcação
 // continuam nos diálogos de sempre (NewAppointmentDialog e AppointmentSheet).
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
@@ -20,6 +20,7 @@ import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
 import { WhatsAppCard } from '../components/appointments/WhatsAppCard';
 import { DarAltaDialog } from '../components/patients/DarAltaDialog';
+import { JanelaPendencias, usePendenciasRegistro } from '../components/appointments/PendenciasRegistro';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
 import { ErrorBox, Loading, cx } from '../components/ui';
 import { PrimeirosPassos, iniciarPasseio } from '../components/ajuda/Ajuda';
@@ -48,6 +49,12 @@ const SITUACAO: Record<AppointmentStatus, { rotulo: string; linha: string; texto
   cancelado: { rotulo: 'Cancelada', linha: 'bg-cinza-fundo border-l-linha-forte', texto: 'text-tinta-2' },
 };
 
+/** A janela de pendências abre sozinha uma vez por abertura do app (marca em sessionStorage, como a dos avisos). */
+const CHAVE_PEND = 'psi.pendencias.mostradas';
+let pendenciasMostradas = false;
+const pendJaMostradas = () => { if (pendenciasMostradas) return true; try { return sessionStorage.getItem(CHAVE_PEND) === '1'; } catch { return false; } };
+const marcarPendMostradas = () => { pendenciasMostradas = true; try { sessionStorage.setItem(CHAVE_PEND, '1'); } catch { /* sem armazenamento */ } };
+
 const registrada = (it: AgendaItem) => it.status === 'atendido' || it.status === 'faltou';
 
 export function AgendaPage() {
@@ -60,6 +67,13 @@ export function AgendaPage() {
   const [novoEm, setNovoEm] = useState<NovoEm | null>(null);
   const [whats, setWhats] = useState<AgendaItem | null>(null);
   const [alta, setAlta] = useState(false);
+  const pend = usePendenciasRegistro();
+  const nPend = pend.data?.length ?? 0;
+  const [pendAberta, setPendAberta] = useState(() => params.get('pendencias') === '1');
+  // Abre sozinha uma vez por abertura do app, se houver pendências
+  useEffect(() => {
+    if (nPend > 0 && !pendJaMostradas()) { marcarPendMostradas(); setPendAberta(true); }
+  }, [nPend]);
   const [passeioPerguntado, setPasseioPerguntado] = useState(() => lerFlag(FLAG_PASSEIO_OFERECIDO));
 
   // "Semana" = 7 dias a partir de hoje (ex.: hoje terça → terça a segunda). As setas andam de 7 em 7 dias
@@ -306,6 +320,16 @@ export function AgendaPage() {
           </div>
         </section>
       )}
+
+      {/* Pendências de registro (27/10): botão com o número; a janela abre sozinha ao entrar na agenda quando há pendências */}
+      <button onClick={() => setPendAberta(true)}
+        className={cx('pressionar flex min-h-14 w-full items-center justify-center gap-2 rounded-cartao border px-3 text-[0.9375rem] font-extrabold shadow-cartao',
+          nPend > 0 ? 'border-ocre-forte/40 bg-ocre-fundo text-ocre' : 'border-linha bg-papel text-tinta-3')}
+        aria-label={nPend > 0 ? `Pendências de registro: ${nPend}` : 'Pendências de registro: nenhuma'}>
+        Pendências de registro
+        <span aria-hidden className={cx('grid min-w-7 place-items-center rounded-full px-2 text-[0.8125rem] font-extrabold leading-7', nPend > 0 ? 'bg-vermelho-forte text-white' : 'bg-afundado text-tinta-3')}>{nPend}</span>
+      </button>
+      <JanelaPendencias open={pendAberta} onClose={() => { setPendAberta(false); if (params.get('pendencias')) { params.delete('pendencias'); setParams(params, { replace: true }); } }} />
 
       {/* Ações da agenda (pedido do Jorge, 27/10): Prontuário no lugar de Editar grade (a Grade foi para o rodapé)
           e Dar alta no lugar do Encaixe (o Encaixe foi para o Resumo do dia) */}

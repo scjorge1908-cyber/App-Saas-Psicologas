@@ -43,6 +43,25 @@ export function isValidCpf(cpf: string): boolean {
   return calc(9) === Number(d[9]) && calc(10) === Number(d[10]);
 }
 
+/** Valida CNPJ pelos dígitos verificadores (só números, 14 dígitos). */
+export function isValidCnpj(cnpj: string): boolean {
+  const d = onlyDigits(cnpj);
+  if (d.length !== 14 || /^(\d)\1{13}$/.test(d)) return false;
+  const calc = (len: number) => {
+    const pesos = len === 12 ? [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2] : [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const soma = pesos.reduce((s, p, i) => s + Number(d[i]) * p, 0);
+    const r = soma % 11;
+    return r < 2 ? 0 : 11 - r;
+  };
+  return calc(12) === Number(d[12]) && calc(13) === Number(d[13]);
+}
+
+export function formatCnpj(cnpj: string | null | undefined): string {
+  const d = onlyDigits(cnpj);
+  if (d.length !== 14) return cnpj ?? '';
+  return `${d.slice(0, 2)}.${d.slice(2, 5)}.${d.slice(5, 8)}/${d.slice(8, 12)}-${d.slice(12)}`;
+}
+
 export function formatPhone(p: string | null | undefined): string {
   const d = onlyDigits(p);
   if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;

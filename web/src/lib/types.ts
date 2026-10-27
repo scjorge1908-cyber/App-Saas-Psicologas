@@ -67,6 +67,10 @@ export interface Patient {
   payer_cpf: string | null;
   /** Nota fiscal no nome de: o próprio paciente ou outra pessoa (payer_*). Vazio = não emite / não definido. */
   nf_tomador?: 'paciente' | 'outro' | null;
+  /** Quem paga: pf (CPF) ou pj (empresa, CNPJ). Vazio = o próprio paciente. */
+  payer_tipo?: 'pf' | 'pj' | null;
+  payer_cnpj?: string | null;
+  payer_im?: string | null;
   payer_email?: string | null;
   payer_phone?: string | null;
   payer_cep?: string | null;

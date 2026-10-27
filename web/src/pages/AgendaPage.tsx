@@ -369,10 +369,9 @@ function LinhaPaciente({ item, date, tz, onOpen, onMover, onWhats, foraDaSala, m
           <button onClick={onMover} aria-label={`Mover ${nome}`} title="Mover (dia, horário ou sala)"
             className="pressionar grid size-11 place-items-center rounded-full border-[1.5px] border-ag-pac-borda bg-papel text-ag-pac"><IconSwap className="size-5" /></button>
         )}
-        {item.patient_phone && (
-          <button onClick={onWhats} {...(marcarWhats ? { 'data-ajuda': 'whats' } : {})} aria-label={`Enviar WhatsApp para ${nome}`} title={aniversario ? 'WhatsApp: parabéns + lembrete' : 'Enviar WhatsApp'}
-            className="pressionar grid size-11 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
-        )}
+        {/* WhatsApp sempre visível (pedido do Jorge, 27/10): sem celular, o cartão oferece copiar a mensagem */}
+        <button onClick={onWhats} {...(marcarWhats ? { 'data-ajuda': 'whats' } : {})} aria-label={`Enviar WhatsApp para ${nome}`} title={aniversario ? 'WhatsApp: parabéns + lembrete' : 'Enviar WhatsApp'}
+          className="pressionar grid size-11 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
       </span>
     </li>
   );

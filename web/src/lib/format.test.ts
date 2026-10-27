@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   avisoNascimento,
-  addDays, ageOn, formatCpf, formatDate, formatLongDate, formatPhone, isMinor, isValidCpf,
+  addDays, ageOn, formatCnpj, formatCpf, isValidCnpj, formatDate, formatLongDate, formatPhone, isMinor, isValidCpf,
   money, normalizeCrp, parseMoney, startOfWeek, sumMoney, zonedParts, zonedToUtc,
 } from './format';
 import { chargeText, confirmationUrl, reminderText, whatsappLink } from './messages';
@@ -98,5 +98,14 @@ describe('aviso de data de nascimento', () => {
     expect(avisoNascimento('2023-01-01', '2026-10-27')).toBeNull();
     expect(avisoNascimento('1985-02-08', '2026-10-27')).toBeNull();
     expect(avisoNascimento(null, '2026-10-27')).toBeNull();
+  });
+});
+
+describe('CNPJ', () => {
+  it('valida pelos dígitos verificadores e formata', () => {
+    expect(isValidCnpj('11.222.333/0001-81')).toBe(true);
+    expect(isValidCnpj('11222333000182')).toBe(false);
+    expect(isValidCnpj('11111111111111')).toBe(false);
+    expect(formatCnpj('11222333000181')).toBe('11.222.333/0001-81');
   });
 });

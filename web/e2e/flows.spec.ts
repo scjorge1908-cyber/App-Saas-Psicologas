@@ -270,6 +270,7 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   if (await livre.count() === 0) await page.getByRole('button', { name: 'Próxima semana' }).click();
   await page.getByRole('button', { name: /^Horário livre às/ }).first().click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'Cadastrar paciente' })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('group', { name: 'Nota fiscal' })).toBeVisible();
   await page.getByRole('dialog').getByRole('button', { name: 'Voltar' }).click();
   // Semana | Dia: Dia mostra só o dia escolhido, com os 7 dias para trocar
   await page.goto('/');
@@ -315,8 +316,8 @@ test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
   await dlg.getByLabel('Emitir nota fiscal para este paciente').check();
   await expect(dlg.getByText(/Para emitir a nota, falta: .*e-mail do paciente/)).toBeVisible();
   await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
-  await expect(dlg.getByRole('alert')).toContainText('Para emitir a nota fiscal, falta');
-  await dlg.getByRole('radio', { name: 'Outra pessoa' }).click();
+  await expect(dlg.getByRole('alert')).toContainText('Nota fiscal: falta');
+  await dlg.getByRole('radio', { name: /^Outra pessoa/ }).click();
   await dlg.getByLabel('Nome completo de quem paga').fill('Maria Fictícia da Silva');
   await dlg.getByLabel('CPF de quem paga').fill('529.982.247-25');
   await dlg.getByRole('button', { name: /Repetir celular, e-mail e endereço/ }).click();
@@ -328,10 +329,23 @@ test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
   await dlg.getByRole('textbox', { name: 'Bairro', exact: true }).last().fill('Centro');
   await dlg.getByRole('textbox', { name: 'Cidade', exact: true }).last().fill('Palhoça');
   await dlg.getByRole('textbox', { name: 'UF', exact: true }).last().fill('SC');
-  await expect(dlg.getByText('Dados completos para a nota fiscal.')).toBeVisible();
+  await expect(dlg.getByText('Dados completos para a nota fiscal (PF).')).toBeVisible();
   await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
   await expect(dlg).toBeHidden();
-  await expect(page.getByText(/no nome de Maria Fictícia da Silva, maria@exemplo\.invalid, Palhoça\/SC/)).toBeVisible();
+  await expect(page.getByText(/PF, no nome de Maria Fictícia da Silva, maria@exemplo\.invalid, Palhoça\/SC/)).toBeVisible();
+
+  // Empresa (PJ): razão social e CNPJ válidos
+  await page.getByRole('button', { name: 'Editar cadastro' }).click();
+  await dlg.getByRole('radio', { name: /^Empresa/ }).click();
+  await dlg.getByLabel('Razão social').fill('Empresa Fictícia Ltda');
+  await dlg.getByLabel('CNPJ').fill('11.222.333/0001-82');
+  await expect(dlg.getByText(/falta: CNPJ válido/)).toBeVisible();
+  await dlg.getByLabel('CNPJ').fill('11.222.333/0001-81');
+  await expect(dlg.getByText('Dados completos para a nota fiscal (PJ).')).toBeVisible();
+  await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
+  await expect(dlg).toBeHidden();
+  await expect(page.getByText(/PJ, no nome de Empresa Fictícia Ltda/)).toBeVisible();
+  await expect(page.getByText(/CNPJ 11\.222\.333\/0001-81/)).toBeVisible();
 });
 
 test('ajuda: botão ?, passeio opcional (uma vez) e página de tutoriais', async () => {

@@ -8,10 +8,16 @@ const base = process.env.VITE_BASE || '/';
 
 import { readFileSync } from 'node:fs';
 const versaoPacote = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version as string;
+// Número do último envio à Play (mesmo número que o celular mostra entre parênteses). Fica no workflow de envio.
+let numeroPlay = '';
+try {
+  const wf = readFileSync(new URL('../.github/workflows/play-teste-interno.yml', import.meta.url), 'utf8');
+  numeroPlay = wf.match(/ULTIMO_VERSION_CODE_ENVIADO:\s*(\d+)/)?.[1] ?? '';
+} catch { /* fora do repositório: sem número */ }
 
 export default defineConfig({
   base,
-  define: { __VERSAO_APP__: JSON.stringify(versaoPacote) },
+  define: { __VERSAO_APP__: JSON.stringify(versaoPacote), __NUMERO_PLAY__: JSON.stringify(numeroPlay) },
   plugins: [
     react(),
     tailwindcss(),

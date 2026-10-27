@@ -255,15 +255,22 @@ export function AgendaPage() {
                       </li>
                     ) : l.tipo === 'fantasma' ? (
                       // Paciente quinzenal na semana em que não tem sessão: lembrete apagado com a próxima data
-                      <li key={`q-${l.item.id}`}>
+                      // Mover e WhatsApp valem para a próxima sessão (sempre disponíveis, como na linha do paciente)
+                      <li key={`q-${l.item.id}`} className="flex items-center gap-1 rounded-campo border border-dashed border-ag-pac-borda/40 py-1 pl-2.5 pr-1.5">
                         <button onClick={() => setOpen({ item: l.item })} aria-label={`${l.hora}, ${nomeCurto(l.item.patient_social_name || l.item.patient_name)}, quinzenal, próxima sessão em ${ddmm(l.proxima)}`}
-                          className="flex min-h-11 w-full items-center gap-2 rounded-campo border border-dashed border-ag-pac-borda/40 py-1 pl-2.5 pr-3 text-left opacity-80">
+                          className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left opacity-80">
                           <span className="num shrink-0 px-1 text-[1rem] font-extrabold text-tinta-2">{l.hora}</span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate font-bold text-tinta-2">{nomeCurto(l.item.patient_social_name || l.item.patient_name)}</span>
                             <span className="block text-[0.8125rem] text-tinta-3">Quinzenal · próxima <span className="num">{ddmm(l.proxima)}</span></span>
                           </span>
                         </button>
+                        {(l.item.status === 'agendado' || l.item.status === 'confirmado') && (
+                          <button onClick={() => setOpen({ item: l.item, mover: true })} aria-label={`Mover ${nomeCurto(l.item.patient_social_name || l.item.patient_name)} (sessão de ${ddmm(l.proxima)})`} title="Mover (dia, horário ou sala)"
+                            className="pressionar grid size-11 shrink-0 place-items-center rounded-full border-[1.5px] border-ag-pac-borda bg-papel text-ag-pac"><IconSwap className="size-5" /></button>
+                        )}
+                        <button onClick={() => setWhats(l.item)} aria-label={`Enviar WhatsApp para ${nomeCurto(l.item.patient_social_name || l.item.patient_name)} (sessão de ${ddmm(l.proxima)})`} title="Enviar WhatsApp"
+                          className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
                       </li>
                     ) : (
                       <LinhaPaciente key={l.item.id} item={l.item} date={c.date} tz={tz}

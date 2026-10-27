@@ -1,0 +1,1164 @@
+{
+ "320/boas-vindas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 2,
+  "alvosPequenosEx": [
+   "Entrar com e-mail 128x23",
+   "Criar conta 81x23"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 4
+ },
+ "320/agenda": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 45,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 33,
+  "totalInterativos": 80
+ },
+ "320/grade": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 10,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Voltar para a agenda 22x44",
+   "Seg 36x48",
+   "Ter 36x48",
+   "Qua 36x48",
+   "Qui 36x48"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 51
+ },
+ "320/pacientes": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 18
+ },
+ "320/paciente": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 7
+ },
+ "320/prontuarios": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 6,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Todos (6) 95x40",
+   "Em atendimento (5) 164x40",
+   "Alta (1) 79x40",
+   "Inativos (0) 109x40",
+   "Ocultar resumos 130x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 29
+ },
+ "320/financeiro": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 7,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 19
+ },
+ "320/notas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 13
+ },
+ "320/config": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 3,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Salvar perfil 105x40",
+   "Salvar 70x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 33
+ },
+ "320/mais": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 12
+ },
+ "320/resumo": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 15,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Atendida 113x40",
+   "Falta ou outro 124x40",
+   "Abrir sala on-line 190x20",
+   "Lembrar e confirmar 167x40",
+   "Atendida 89x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 44
+ },
+ "320/dialogo-agendar": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 50,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 33,
+  "totalInterativos": 107
+ },
+ "360/boas-vindas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 2,
+  "alvosPequenosEx": [
+   "Entrar com e-mail 128x23",
+   "Criar conta 81x23"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 4
+ },
+ "360/agenda": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 45,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 33,
+  "totalInterativos": 80,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5.flex[aria-label=\"PsiConsultório\"]"
+    ]
+   },
+   {
+    "id": "color-contrast",
+    "impacto": "serious",
+    "n": 2,
+    "ex": [
+     ".opacity-55.min-w-\\[54px\\].rounded-cartao:nth-child(1) > .uppercase.text-\\[12px\\].font-bold",
+     ".opacity-55.min-w-\\[54px\\].rounded-cartao:nth-child(1) > .capitalize.text-\\[12px\\]"
+    ]
+   }
+  ]
+ },
+ "360/grade": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 10,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Voltar para a agenda 23x44",
+   "Seg 42x48",
+   "Ter 42x48",
+   "Qua 42x48",
+   "Qui 42x48"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 51,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5.items-center[aria-label=\"PsiConsultório\"]"
+    ]
+   }
+  ]
+ },
+ "360/pacientes": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 18,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5.items-center[aria-label=\"PsiConsultório\"]"
+    ]
+   }
+  ]
+ },
+ "360/paciente": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 7,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5[aria-label=\"PsiConsultório\"]"
+    ]
+   }
+  ]
+ },
+ "360/prontuarios": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 6,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Todos (6) 95x40",
+   "Em atendimento (5) 164x40",
+   "Alta (1) 79x40",
+   "Inativos (0) 109x40",
+   "Ocultar resumos 134x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 29,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5.items-center[aria-label=\"PsiConsultório\"]"
+    ]
+   }
+  ]
+ },
+ "360/financeiro": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 7,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 19,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5[aria-label=\"PsiConsultório\"]"
+    ]
+   }
+  ]
+ },
+ "360/notas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 13,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5[aria-label=\"PsiConsultório\"]"
+    ]
+   }
+  ]
+ },
+ "360/config": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 3,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Salvar perfil 109x40",
+   "Salvar 70x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 33,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5.items-center[aria-label=\"PsiConsultório\"]"
+    ]
+   }
+  ]
+ },
+ "360/mais": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 12,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5[aria-label=\"PsiConsultório\"]"
+    ]
+   }
+  ]
+ },
+ "360/resumo": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 15,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Atendida 113x40",
+   "Falta ou outro 124x40",
+   "Abrir sala on-line 230x20",
+   "Lembrar e confirmar 167x40",
+   "Atendida 89x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 44,
+  "axe": [
+   {
+    "id": "aria-prohibited-attr",
+    "impacto": "serious",
+    "n": 1,
+    "ex": [
+     ".flex-1 > .gap-2\\.5.flex[aria-label=\"PsiConsultório\"]"
+    ]
+   }
+  ]
+ },
+ "360/dialogo-agendar": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 50,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 33,
+  "totalInterativos": 107
+ },
+ "412/boas-vindas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 2,
+  "alvosPequenosEx": [
+   "Entrar com e-mail 128x23",
+   "Criar conta 81x23"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 4
+ },
+ "412/agenda": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 45,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 80
+ },
+ "412/grade": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 3,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Voltar para a agenda 27x44",
+   "Sala 87x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 51
+ },
+ "412/pacientes": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 18
+ },
+ "412/paciente": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 7
+ },
+ "412/prontuarios": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 6,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Todos (6) 95x40",
+   "Em atendimento (5) 164x40",
+   "Alta (1) 79x40",
+   "Inativos (0) 109x40",
+   "Ocultar resumos 134x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 29
+ },
+ "412/financeiro": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 7,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 19
+ },
+ "412/notas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 13
+ },
+ "412/config": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 3,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Salvar perfil 109x40",
+   "Salvar 70x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 33
+ },
+ "412/mais": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 12
+ },
+ "412/resumo": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 15,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Atendida 113x40",
+   "Falta ou outro 124x40",
+   "Abrir sala on-line 282x20",
+   "Lembrar e confirmar 167x40",
+   "Atendida 89x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 44
+ },
+ "412/dialogo-agendar": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 50,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 107
+ },
+ "768/boas-vindas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 2,
+  "alvosPequenosEx": [
+   "Entrar com e-mail 128x23",
+   "Criar conta 81x23"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 4
+ },
+ "768/agenda": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 45,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 80
+ },
+ "768/grade": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 2,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Sala 87x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 51
+ },
+ "768/pacientes": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 18
+ },
+ "768/paciente": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 7
+ },
+ "768/prontuarios": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 6,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Todos (6) 95x40",
+   "Em atendimento (5) 164x40",
+   "Alta (1) 79x40",
+   "Inativos (0) 109x40",
+   "Ocultar resumos 134x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 29
+ },
+ "768/financeiro": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 7,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 19
+ },
+ "768/notas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 13
+ },
+ "768/config": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 3,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Salvar perfil 109x40",
+   "Salvar 70x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 33
+ },
+ "768/mais": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 12
+ },
+ "768/resumo": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 15,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Atendida 113x40",
+   "Falta ou outro 124x40",
+   "Abrir sala on-line 622x20",
+   "Lembrar e confirmar 167x40",
+   "Atendida 89x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 44
+ },
+ "768/dialogo-agendar": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 50,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 107
+ },
+ "1280/boas-vindas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 2,
+  "alvosPequenosEx": [
+   "Entrar com e-mail 128x23",
+   "Criar conta 81x23"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 4
+ },
+ "1280/agenda": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 45,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 83
+ },
+ "1280/grade": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 2,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Sala 87x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 54
+ },
+ "1280/pacientes": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 21
+ },
+ "1280/paciente": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 10
+ },
+ "1280/prontuarios": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 6,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Todos (6) 95x40",
+   "Em atendimento (5) 164x40",
+   "Alta (1) 79x40",
+   "Inativos (0) 109x40",
+   "Ocultar resumos 134x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 32
+ },
+ "1280/financeiro": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 7,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 22
+ },
+ "1280/notas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 16
+ },
+ "1280/config": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 3,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Salvar perfil 109x40",
+   "Salvar 70x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 36
+ },
+ "1280/mais": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 15
+ },
+ "1280/resumo": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 15,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Atendida 113x40",
+   "Falta ou outro 124x40",
+   "Abrir sala on-line 878x20",
+   "Lembrar e confirmar 167x40",
+   "Atendida 89x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 47
+ },
+ "1280/dialogo-agendar": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 50,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40",
+   "Só agendados (6) 150x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 110
+ },
+ "zoom200-360/boas-vindas": {
+  "overflowX": 28,
+  "cortados": [],
+  "foraDaTela": [],
+  "alvosPequenos": 1,
+  "alvosPequenosEx": [
+   "Criar conta 42x45"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 4
+ },
+ "zoom200-360/agenda": {
+  "overflowX": 2,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta",
+   "Mover",
+   "Mais opções",
+   "Agendar paciente"
+  ],
+  "alvosPequenos": 51,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40"
+  ],
+  "duracaoQuebrada": 39,
+  "totalInterativos": 80
+ },
+ "zoom200-360/grade": {
+  "overflowX": 3,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta",
+   "On-line\nOn-line",
+   "Sala 1 · Centro\nRua Fictícia, 100, sala "
+  ],
+  "alvosPequenos": 19,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Voltar para a agenda 22x44",
+   "Seg 16x48",
+   "Ter 16x48",
+   "Qua 16x48"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 51
+ },
+ "zoom200-360/pacientes": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta"
+  ],
+  "alvosPequenos": 7,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Agenda 34x56",
+   "Pacientes 34x56",
+   "Prontuário 34x56",
+   "Financeiro 34x56"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 18
+ },
+ "zoom200-360/paciente": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta"
+  ],
+  "alvosPequenos": 7,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Agenda 34x56",
+   "Pacientes 34x56",
+   "Prontuário 34x56",
+   "Financeiro 34x56"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 7
+ },
+ "zoom200-360/prontuarios": {
+  "overflowX": 52,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta",
+   "Ocultar resumos",
+   "Evoluir sessão",
+   "Abrir prontuário"
+  ],
+  "alvosPequenos": 16,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Todos (6) 95x40",
+   "Em atendimento (5) 164x40",
+   "Alta (1) 79x40",
+   "Inativos (0) 109x40"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 29
+ },
+ "zoom200-360/financeiro": {
+  "overflowX": 80,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta",
+   "Receber",
+   "Lembrar Juliana Rocha Fictícia pelo What"
+  ],
+  "alvosPequenos": 13,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36",
+   "Receber 85x40",
+   "Lembrar Juliana Rocha Fictícia 38x36"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 19
+ },
+ "zoom200-360/notas": {
+  "overflowX": 0,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta"
+  ],
+  "alvosPequenos": 7,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Agenda 34x56",
+   "Pacientes 34x56",
+   "Prontuário 34x56",
+   "Financeiro 34x56"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 13
+ },
+ "zoom200-360/config": {
+  "overflowX": 128,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta",
+   "Salvar perfil",
+   "Salvar"
+  ],
+  "alvosPequenos": 9,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Salvar perfil 70x40",
+   "Salvar 70x40",
+   "Agenda 34x56",
+   "Pacientes 34x56"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 33
+ },
+ "zoom200-360/mais": {
+  "overflowX": 2,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta"
+  ],
+  "alvosPequenos": 7,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Agenda 34x56",
+   "Pacientes 34x56",
+   "Prontuário 34x56",
+   "Financeiro 34x56"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 12
+ },
+ "zoom200-360/resumo": {
+  "overflowX": 62,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta",
+   "5\nSessões aguardam registro\nMarque prese",
+   "1\nSem confirmação\nNas próximas 48 horas",
+   "R$\nR$ ••• vencidos\nCobranças em atraso",
+   "3\nSem recibo no Receita Saúde\nRecebiment",
+   "1\nNota fiscal a emitir\nAbrir notas fisca",
+   "Atendida",
+   "Lembrar e confirmar"
+  ],
+  "alvosPequenos": 15,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Agenda 41x90",
+   "Pacientes 41x90",
+   "Prontuário 41x90",
+   "Financeiro 41x90"
+  ],
+  "duracaoQuebrada": 0,
+  "totalInterativos": 44
+ },
+ "zoom200-360/dialogo-agendar": {
+  "overflowX": 2,
+  "cortados": [],
+  "foraDaTela": [
+   "Criar minha conta",
+   "Agendar paciente",
+   "Mover",
+   "Mais opções",
+   "Paciente novo",
+   "INPUT",
+   "Anexar encaminhamento"
+  ],
+  "alvosPequenos": 58,
+  "alvosPequenosEx": [
+   "Criar minha conta 149x33",
+   "Configurações 36x48",
+   "Semana anterior 40x40",
+   "Próxima semana 40x40",
+   "Tudo 64x40",
+   "Só horários livres (33) 179x40"
+  ],
+  "duracaoQuebrada": 39,
+  "totalInterativos": 107
+ },
+ "fonte200/agenda": {
+  "elementosComTamanhoFixoPx": 107,
+  "elementosEmRem": 103,
+  "fonteRaiz": "32px"
+ }
+}

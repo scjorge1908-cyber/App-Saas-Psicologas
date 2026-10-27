@@ -293,6 +293,9 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.getByRole('button', { name: /^Enviar WhatsApp para / }).first().click();
   const wz = page.getByRole('dialog');
   await expect(wz.getByRole('button', { name: /Mover a sessão/ })).toBeVisible();
+  // Os 3 modelos de texto aparecem sempre
+  await expect(wz.getByRole('button', { name: /Confirmar presença/ })).toBeVisible();
+  await expect(wz.getByRole('button', { name: /Mensagem livre/ })).toBeVisible();
   await wz.getByRole('button', { name: /Avisar que não vou atender/ }).click();
   await expect(wz.getByRole('textbox')).toHaveValue(/não vou poder atender/);
   await expect(wz.getByRole('button', { name: 'Abrir no WhatsApp' })).toBeVisible();

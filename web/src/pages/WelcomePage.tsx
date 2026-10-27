@@ -1,5 +1,6 @@
 // Primeira tela do app: a pessoa conhece o app antes de qualquer cadastro.
 // "Conhecer o app" abre a demonstração (dados fictícios, no aparelho). Entrar/criar conta só quando ela quiser.
+import { Versao } from '../components/Versao';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { entrarNaDemo } from '../lib/demo/modo';
@@ -83,6 +84,7 @@ export function WelcomePage() {
             <Link to="/cadastro" className="font-bold text-anil">Criar conta</Link>
           </div>
         </div>
+        <Versao className="mt-8 pb-safe" />
       </main>
     </div>
   );

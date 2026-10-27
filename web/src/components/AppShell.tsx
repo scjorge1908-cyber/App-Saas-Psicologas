@@ -5,6 +5,7 @@ import { IconCalendar, IconClock, IconDoc, IconLogout, IconMoney, IconMore, Icon
 import { signOut, useProfile } from '../auth/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../lib/demo/modo';
+import { Versao } from './Versao';
 
 type NavItem = { to: string; label: string; icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement; end?: boolean };
 const MAIN: NavItem[] = [
@@ -62,6 +63,7 @@ export function AppShell() {
       </header>
       <main id="conteudo" ref={mainRef} tabIndex={-1} className={cx('mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-5 outline-none sm:px-6 lg:pb-12 lg:pt-8', demo && 'lg:mt-11')}>
         <Outlet />
+        <Versao className="mt-10" />
       </main>
       </div>
 

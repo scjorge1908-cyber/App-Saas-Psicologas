@@ -6,8 +6,12 @@ import { VitePWA } from 'vite-plugin-pwa';
 // VITE_BASE: subcaminho de publicação (ex.: /psi-gestao-facil-ideia-jorge/ no GitHub Pages)
 const base = process.env.VITE_BASE || '/';
 
+import { readFileSync } from 'node:fs';
+const versaoPacote = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version as string;
+
 export default defineConfig({
   base,
+  define: { __VERSAO_APP__: JSON.stringify(versaoPacote) },
   plugins: [
     react(),
     tailwindcss(),

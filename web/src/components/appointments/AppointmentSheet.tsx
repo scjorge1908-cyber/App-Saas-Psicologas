@@ -26,6 +26,7 @@ export function useInvalidateAgenda() {
     qc.invalidateQueries({ queryKey: ['to-register'] }),
     qc.invalidateQueries({ queryKey: ['patient-agenda'] }),
     qc.invalidateQueries({ queryKey: ['charges'] }),
+    qc.invalidateQueries({ queryKey: ['patients'] }), // situação do paciente (ex.: alta) muda o que a agenda mostra
   ]);
 }
 

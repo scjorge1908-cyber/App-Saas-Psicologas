@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { PatientStatus } from '../lib/types';
 import { errorMessage } from '../lib/errors';
 import { formatPhone, money } from '../lib/format';
-import { Badge, Button, Empty, ErrorBox, Input, Loading, PageHeader, Tabs } from '../components/ui';
+import { Badge, Empty, ErrorBox, Input, Loading, PageHeader, Tabs } from '../components/ui';
 import { IconPlus, IconSearch } from '../components/icons';
-import { PatientForm } from '../components/patients/PatientForm';
 
 const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
@@ -15,8 +14,6 @@ export function PatientsPage() {
   const q = useQuery({ queryKey: ['patients'], queryFn: api.listPatients });
   const [term, setTerm] = useState('');
   const [status, setStatus] = useState<PatientStatus | 'todos'>('ativo');
-  const [creating, setCreating] = useState(false);
-  const nav = useNavigate();
 
   const list = useMemo(() => {
     const t = norm(term.trim());
@@ -33,7 +30,9 @@ export function PatientsPage() {
 
   return (
     <div>
-      <PageHeader title="Pacientes" actions={<Button onClick={() => setCreating(true)}><IconPlus /> Novo paciente</Button>} />
+      {/* O paciente nasce pelo agendamento (regra do Jorge, 27/10): não há cadastro solto aqui */}
+      <PageHeader title="Pacientes" subtitle={<>Paciente novo entra pela agenda: <b>+ Agendar</b> num horário LIVRE ou <b>Encaixe</b>.</>}
+        actions={<Link to="/" className="inline-flex min-h-11 items-center gap-1.5 rounded-botao border border-linha-forte bg-papel px-3.5 font-bold text-anil-escuro hover:bg-anil-claro/50"><IconPlus /> Agendar paciente</Link>} />
       <div className="relative mb-3">
         <IconSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-tinta-3" />
         <Input aria-label="Buscar paciente" placeholder="Buscar por nome ou telefone" value={term} onChange={(e) => setTerm(e.target.value)} className="pl-10" />
@@ -48,8 +47,8 @@ export function PatientsPage() {
       {q.isLoading && <Loading />}
       {q.error && <ErrorBox>{errorMessage(q.error)}</ErrorBox>}
       {q.data && q.data.length === 0 && (
-        <Empty title="Nenhum paciente cadastrado." action={<Button variant="secondary" onClick={() => setCreating(true)}>Cadastrar o primeiro paciente</Button>}>
-          Cadastre o paciente com nome e celular; o restante pode ser completado depois.
+        <Empty title="Nenhum paciente cadastrado." action={<Link to="/" className="inline-flex min-h-11 items-center rounded-botao border border-linha-forte px-3.5 font-bold text-anil-escuro">Ir para a agenda</Link>}>
+          O paciente é cadastrado no próprio agendamento: na agenda, toque em + Agendar num horário LIVRE.
         </Empty>
       )}
       {q.data && q.data.length > 0 && list.length === 0 && <p className="py-6 text-tinta-2">Nenhum paciente encontrado com esse filtro.</p>}
@@ -71,7 +70,6 @@ export function PatientsPage() {
           ))}
         </ul>
       )}
-      <PatientForm open={creating} onClose={() => setCreating(false)} onSaved={(p) => nav(`/pacientes/${p.id}`)} />
     </div>
   );
 }

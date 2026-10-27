@@ -9,6 +9,22 @@ async function irParaAgenda(p: Page) {
 }
 
 
+/** Paciente novo nasce pelo agendamento (27/10): cadastra pelo Encaixe do Resumo do dia. */
+async function novoPacienteNoEncaixe(p: Page, o: { nome: string; celular: string; data: string; hora: string; freq: 'nao' | 'semanal' | 'quinzenal'; n?: number; valor?: string }) {
+  await p.goto('/resumo');
+  await p.getByRole('button', { name: 'Encaixe', exact: true }).click();
+  const d = p.getByRole('dialog');
+  await d.getByRole('tab', { name: 'Paciente novo' }).click();
+  await d.getByRole('textbox', { name: 'Nome completo', exact: true }).fill(o.nome);
+  await d.getByLabel('Celular (WhatsApp)').fill(o.celular);
+  await d.getByLabel('Data').fill(o.data);
+  await d.getByLabel('Horário').fill(o.hora);
+  if (o.valor) await d.getByLabel('Valor sessão').fill(o.valor);
+  await d.getByLabel('Modalidade').selectOption(o.freq);
+  if (o.n) await d.getByLabel('Número de sessões').fill(String(o.n));
+  return d;
+}
+
 const RUN = Date.now().toString(36);
 const SHOTS = '../docs/evidencias/telas';
 const tzDate = (o: number) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(Date.now() + o * 86400e3));
@@ -27,20 +43,10 @@ test('desktop: agenda semanal em grade e ficha do paciente', async ({ page }) =>
   await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeAttached();
 
   for (const [name, time, freq] of [['Helena Fictícia', '09:00', 'semanal'], ['Rafael Fictício', '11:00', 'quinzenal'], ['Júlia Fictícia', '16:30', 'semanal']] as const) {
-    await page.goto('/pacientes');
-    await page.getByRole('button', { name: 'Novo paciente' }).click();
-    const d = page.getByRole('dialog');
-    await d.getByLabel('Nome completo').fill(name);
-    await d.getByLabel('Valor da sessão (R$)').fill('180,00');
-    await d.getByRole('button', { name: 'Cadastrar paciente' }).click();
-    await expect(page.getByRole('heading', { name })).toBeVisible();
-    await page.getByRole('button', { name: 'Agendar' }).click();
-    const a = page.getByRole('dialog');
-    await a.getByLabel('Data').fill(tzDate(0));
-    await a.getByLabel('Horário').fill(time);
-    await a.getByLabel('Modalidade').selectOption(freq);
-    await a.getByLabel('Número de sessões').fill('6');
+    const a = await novoPacienteNoEncaixe(page, { nome: name, celular: '(48) 98888-0000', data: tzDate(1), hora: time, freq, n: 6, valor: '180,00' });
     await a.getByRole('button', { name: /Agendar 6 sessões/ }).click();
+    await expect(a.getByRole('heading', { name: 'Paciente cadastrado' })).toBeVisible();
+    await a.getByRole('button', { name: 'Concluir' }).click();
     await expect(a).toBeHidden();
   }
   await irParaAgenda(page);

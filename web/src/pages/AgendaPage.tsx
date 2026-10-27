@@ -14,12 +14,14 @@ import type { AgendaItem, AppointmentStatus, WorkingHour } from '../lib/types';
 import { horariosLivres } from '../lib/horarios';
 import { periodoDe } from '../lib/periodos';
 import { agruparColunas, type Bloco, type Coluna, type Linha } from '../lib/agenda-colunas';
+import { linhaDoDia, referenciasDosAtivos } from '../lib/agenda-ativos';
 import { addDays, ageOn, formatDate, formatTime, minutesBetween, monthName, todayIn, weekday, weekdayName, weekdayShort, zonedParts, zonedToUtc } from '../lib/format';
 import { errorMessage } from '../lib/errors';
 import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
 import { WhatsAppCard } from '../components/appointments/WhatsAppCard';
 import { DarAltaDialog } from '../components/patients/DarAltaDialog';
+import { AjustarSemHorario, proximaData } from '../components/patients/AjustarSemHorario';
 import { JanelaPendencias, usePendenciasRegistro } from '../components/appointments/PendenciasRegistro';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
 import { ErrorBox, Loading, cx } from '../components/ui';
@@ -27,7 +29,7 @@ import { PrimeirosPassos, iniciarPasseio } from '../components/ajuda/Ajuda';
 import { FLAG_PASSEIO_OFERECIDO, FLAG_WHATS_ENVIADO, gravarFlag, lerFlag } from '../lib/ajuda';
 import { IconCake, IconCheck, IconChevronLeft, IconChevronRight, IconClock, IconDoc, IconPlus, IconSwap, IconVideo, IconWhats } from '../components/icons';
 
-type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente'; repeat?: 'quinzenal'; encaixe?: boolean };
+type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente'; repeat?: 'quinzenal'; encaixe?: boolean; livreAte?: string; patientId?: string };
 type Visao = 'semana' | 'dia';
 
 const diaNome = (d: string) => { const n = weekdayName(d).replace('-feira', ''); return n[0].toUpperCase() + n.slice(1); };
@@ -67,6 +69,7 @@ export function AgendaPage() {
   const [novoEm, setNovoEm] = useState<NovoEm | null>(null);
   const [whats, setWhats] = useState<AgendaItem | null>(null);
   const [alta, setAlta] = useState(false);
+  const [ajustar, setAjustar] = useState<AgendaItem | null>(null);
   const pend = usePendenciasRegistro();
   const nPend = pend.data?.length ?? 0;
   const [pendAberta, setPendAberta] = useState(() => params.get('pendencias') === '1');
@@ -88,6 +91,11 @@ export function AgendaPage() {
   const fromX = zonedToUtc(addDays(semana, -7), '00:00', tz);
   const toX = zonedToUtc(addDays(semana, 14), '00:00', tz);
   const qx = useQuery({ queryKey: ['agenda', fromX, toX], queryFn: () => api.listAgenda(fromX, toX) });
+  // Todo paciente ativo na agenda (27/10): sessões de ~6 meses atrás a ~13 meses à frente, para achar a última e a próxima
+  const fromA = zonedToUtc(addDays(hoje, -183), '00:00', tz);
+  const toA = zonedToUtc(addDays(hoje, 400), '00:00', tz);
+  const qa = useQuery({ queryKey: ['agenda', fromA, toA], queryFn: () => api.listAgenda(fromA, toA) });
+  const pacientes = useQuery({ queryKey: ['patients'], queryFn: api.listPatients });
   const locais = useQuery({ queryKey: ['locations'], queryFn: api.listLocations });
   const horas = useQuery({ queryKey: ['working-hours'], queryFn: api.listWorkingHours });
   const dash = useQuery({ queryKey: ['dashboard'], queryFn: api.dashboard });
@@ -97,6 +105,7 @@ export function AgendaPage() {
   const blocos = useMemo<Bloco[]>(() => {
     if (!q.data || !horas.data || !profile) return [];
     const out: Bloco[] = [];
+    const refs = referenciasDosAtivos((pacientes.data ?? []).filter((p) => p.status === 'ativo').map((p) => p.id), qa.data ?? [], Date.now(), tz);
     for (const d of dias) {
       const itens = q.data.filter((it) => it.status !== 'cancelado' && zonedParts(it.starts_at, tz).date === d);
       const faixas: WorkingHour[] = horas.data.filter((h) => h.weekday === weekday(d))
@@ -139,8 +148,25 @@ export function AgendaPage() {
         linhas.sort((a, b) => a.hora.localeCompare(b.hora) || (a.tipo === 'livre' ? 1 : 0) - (b.tipo === 'livre' ? 1 : 0));
         doDia.push({ chave: `${d}-${f.id}`, date: d, titulo: periodoDe(ini).nome, sala: (locais.data ?? []).find((l) => l.id === f.location_id) ?? null, faixa: `${ini}–${fim}`, linhas });
       }
-      // Sessão de outra sala ou on-line sem bloco próprio: entra no mesmo período do dia (com selo); sem período, "Outros horários"
+      // Paciente ativo sem sessão neste dia: "Começa dd/mm" (livre até a véspera) ou avulso sem próximo horário (alerta)
       const outros: Linha[] = [];
+      for (const ref of refs.values()) {
+        if (itens.some((it) => it.patient_id === ref.item.patient_id && !registrada(it))) continue;
+        const v = linhaDoDia(d, ref, tz);
+        if (!v) continue;
+        const bloco = doDia.find((b) => {
+          const [ini, fim] = (b.faixa ?? '').split('–');
+          return b.faixa && v.hora >= ini && v.hora < fim && (!v.item.location_id || v.item.location_id === b.sala?.id);
+        }) ?? doDia.find((b) => b.titulo === periodoDe(v.hora).nome);
+        if (bloco?.linhas.some((l) => l.tipo === 'fantasma' && l.item.patient_id === v.item.patient_id)) continue; // quinzenal já aparece
+        if (v.tipo === 'futuro') {
+          const vaga = bloco?.linhas.find((l) => l.tipo === 'livre' && l.hora === v.hora);
+          if (vaga && vaga.tipo === 'livre' && !vaga.quinzenal) vaga.ate = v.livreAte;
+        }
+        if (bloco) bloco.linhas = [...bloco.linhas, v].sort((a, b) => a.hora.localeCompare(b.hora) || (a.tipo === 'livre' ? 1 : 0) - (b.tipo === 'livre' ? 1 : 0));
+        else outros.push(v);
+      }
+      // Sessão de outra sala ou on-line sem bloco próprio: entra no mesmo período do dia (com selo); sem período, "Outros horários"
       for (const it of itens.filter((x) => !usados.has(x.id) && !registrada(x))) {
         const hora = formatTime(it.starts_at, tz);
         const alvo = doDia.find((b) => b.titulo === periodoDe(hora).nome);
@@ -152,7 +178,7 @@ export function AgendaPage() {
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q.data, qx.data, horas.data, locais.data, profile, tz, semana]);
+  }, [q.data, qx.data, qa.data, pacientes.data, horas.data, locais.data, profile, tz, semana]);
 
   // Semana: dias de hoje em diante (e dias passados que tiveram sessão). Dia: só o dia escolhido.
   const colunasBase = agruparColunas(blocos.filter((b) => (visao === 'dia' ? b.date === date : b.date >= hoje || b.linhas.some((l) => l.tipo === 'sessao'))));
@@ -260,12 +286,12 @@ export function AgendaPage() {
                     {p.linhas.map((l) => l.tipo === 'livre' ? (
                       <li key={`livre-${l.hora}-${l.livre.faixaId ?? ''}-${l.quinzenal ? 'q' : ''}`}>
                         <button {...(primeiroLivre?.l === l ? { 'data-ajuda': 'livre' } : {})}
-                          onClick={() => setNovoEm({ date: l.dataAlvo ?? c.date, time: l.hora, locationId: l.livre.location?.id ?? c.sala?.id ?? null, minutes: l.livre.minutes, modo: 'novo', repeat: l.quinzenal ? 'quinzenal' : undefined })}
+                          onClick={() => setNovoEm({ date: l.dataAlvo ?? c.date, time: l.hora, locationId: l.livre.location?.id ?? c.sala?.id ?? null, minutes: l.livre.minutes, modo: 'novo', repeat: l.quinzenal ? 'quinzenal' : undefined, livreAte: l.ate })}
                           aria-label={`Horário livre${l.quinzenal ? ' para quinzenal' : ''} às ${l.hora}${c.sala ? `, ${c.sala.name}` : ''}: toque para agendar`}
                           className="pressionar flex min-h-12 w-full items-center gap-3 rounded-campo border-l-4 border-l-ag-livre-borda bg-ag-livre-fundo pl-2.5 pr-3 text-left text-ag-livre hover:brightness-[.97]">
                           <span className="num whitespace-nowrap text-[1.0625rem] font-extrabold">{l.hora}</span>
                           {/* hora à esquerda · LIVRE no meio · botão Agendar à direita (a linha inteira também abre) */}
-                          <span className="flex-1 text-center text-[0.8125rem] font-extrabold uppercase tracking-wide">{l.quinzenal ? 'Livre · quinzenal' : 'Livre'}</span>
+                          <span className="flex-1 text-center text-[0.8125rem] font-extrabold uppercase tracking-wide">{l.quinzenal ? 'Livre · quinzenal' : l.ate ? `Livre até ${ddmm(l.ate)}` : 'Livre'}</span>
                           <span aria-hidden className="inline-flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-full border border-ag-livre-borda/45 bg-papel px-3.5 text-[0.875rem] font-bold tracking-[.01em] text-ag-livre shadow-[0_1px_2px_rgb(0_0_0/0.08)]"><IconPlus className="size-3.5" strokeWidth={2.4} />Agendar</span>
                         </button>
                       </li>
@@ -286,6 +312,38 @@ export function AgendaPage() {
                             className="pressionar grid size-11 shrink-0 place-items-center rounded-full border-[1.5px] border-ag-pac-borda bg-papel text-ag-pac"><IconSwap className="size-5" /></button>
                         )}
                         <button onClick={() => setWhats(l.item)} aria-label={`Enviar WhatsApp para ${nomeCurto(l.item.patient_social_name || l.item.patient_name)} (sessão de ${ddmm(l.proxima)})`} title="Enviar WhatsApp"
+                          className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
+                      </li>
+                    ) : l.tipo === 'futuro' ? (
+                      // Paciente que só começa mais à frente: aparece desde já no horário dele (27/10)
+                      <li key={`f-${l.item.id}-${c.date}`} className="flex items-center gap-1 rounded-campo border border-dashed border-ag-pac-borda/40 py-1 pl-2.5 pr-1.5">
+                        <button onClick={() => setOpen({ item: l.item })} aria-label={`${l.hora}, ${nomeCurto(l.item.patient_social_name || l.item.patient_name)}, começa em ${ddmm(l.inicio)}`}
+                          className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left opacity-80">
+                          <span className="num shrink-0 px-1 text-[1rem] font-extrabold text-tinta-2">{l.hora}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-bold text-tinta-2">{nomeCurto(l.item.patient_social_name || l.item.patient_name)}</span>
+                            <span className="block text-[0.8125rem] text-tinta-3">Começa <span className="num">{ddmm(l.inicio)}</span></span>
+                          </span>
+                        </button>
+                        <button onClick={() => setOpen({ item: l.item, mover: true })} aria-label={`Mover ${nomeCurto(l.item.patient_social_name || l.item.patient_name)} (começa em ${ddmm(l.inicio)})`} title="Mover (dia, horário ou sala)"
+                          className="pressionar grid size-11 shrink-0 place-items-center rounded-full border-[1.5px] border-ag-pac-borda bg-papel text-ag-pac"><IconSwap className="size-5" /></button>
+                        <button onClick={() => setWhats(l.item)} aria-label={`Enviar WhatsApp para ${nomeCurto(l.item.patient_social_name || l.item.patient_name)}`} title="Enviar WhatsApp"
+                          className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
+                      </li>
+                    ) : l.tipo === 'semHorario' ? (
+                      // Avulso sem próximo horário: continua no horário dele, com alerta piscando de leve até ajustar (27/10)
+                      <li key={`s-${l.item.patient_id}-${c.date}`} className="flex items-center gap-1 rounded-campo border border-dashed border-ocre-forte/60 bg-ocre-fundo/40 py-1 pl-2.5 pr-1.5">
+                        <button onClick={() => setAjustar(l.item)} aria-label={`${l.hora}, ${nomeCurto(l.item.patient_social_name || l.item.patient_name)}, sem próximo horário: ajustar`}
+                          className="flex min-h-11 min-w-0 flex-1 items-center gap-2 text-left">
+                          <span className="num shrink-0 px-1 text-[1rem] font-extrabold text-tinta-2">{l.hora}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-bold text-tinta">{nomeCurto(l.item.patient_social_name || l.item.patient_name)}</span>
+                            <span className="flex items-center gap-1.5 text-[0.8125rem] font-bold text-ocre">
+                              <span aria-hidden className="size-2 shrink-0 animate-pulse rounded-full bg-ocre-forte" />Sem próximo horário · ajustar
+                            </span>
+                          </span>
+                        </button>
+                        <button onClick={() => setWhats(l.item)} aria-label={`Enviar WhatsApp para ${nomeCurto(l.item.patient_social_name || l.item.patient_name)}`} title="Enviar WhatsApp"
                           className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
                       </li>
                     ) : (
@@ -346,11 +404,12 @@ export function AgendaPage() {
         </button>
       </div>
       <DarAltaDialog open={alta} onClose={() => setAlta(false)} />
+      <AjustarSemHorario item={ajustar} onClose={() => setAjustar(null)} onAgendar={(it) => { setAjustar(null); setNovoEm({ date: proximaData(it, hoje, tz), time: formatTime(it.starts_at, tz), locationId: it.location_id, minutes: minutesBetween(it.starts_at, it.ends_at), modo: 'existente', patientId: it.patient_id }); }} />
 
       <AppointmentSheet item={open?.item ?? null} mover={open?.mover} onClose={() => setOpen(null)} />
       <WhatsAppCard key={whats?.id ?? 'nenhum'} item={whats} onClose={() => setWhats(null)} onMover={(item) => setOpen({ item, mover: true })} />
       <NewAppointmentDialog open={!!novoEm} onClose={() => setNovoEm(null)} initialDate={novoEm?.date} initialTime={novoEm?.time}
-        initialLocationId={novoEm?.locationId ?? null} initialMinutes={novoEm?.minutes} initialModo={novoEm?.modo} initialRepeat={novoEm?.repeat} encaixe={novoEm?.encaixe} />
+        initialLocationId={novoEm?.locationId ?? null} initialMinutes={novoEm?.minutes} initialModo={novoEm?.modo} initialRepeat={novoEm?.repeat} encaixe={novoEm?.encaixe} livreAte={novoEm?.livreAte} patientId={novoEm?.patientId} />
     </div>
   );
 }

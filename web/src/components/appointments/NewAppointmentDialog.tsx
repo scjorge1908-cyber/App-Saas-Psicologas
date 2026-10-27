@@ -25,11 +25,13 @@ type NovoPaciente = { full_name: string; phone: string; cpf: string; rg: string;
 const NOVO_VAZIO: NovoPaciente = { full_name: '', phone: '', cpf: '', rg: '', birth_date: '', nasc_texto: '', email: '', ...ENDERECO_VAZIO };
 type ArquivoPendente = { file: File; category: AttachmentCategory };
 
-export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, patientId, initialLocationId, initialMinutes, initialModo, initialRepeat, encaixe }: {
+export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, patientId, initialLocationId, initialMinutes, initialModo, initialRepeat, encaixe, livreAte }: {
   open: boolean; onClose: () => void; initialDate?: string; initialTime?: string; patientId?: string; initialLocationId?: string | null; initialMinutes?: number;
   initialModo?: 'novo' | 'existente'; initialRepeat?: SeriesFrequency;
   /** Encaixe: sessão em qualquer dia e horário, mesmo fora da grade (só não pode bater com outra sessão). */
   encaixe?: boolean;
+  /** Horário reservado para um paciente que começa mais à frente: livre só até esta data. */
+  livreAte?: string;
 }) {
   const { profile, tz } = useProfile();
   const { session } = useAuth();
@@ -159,6 +161,7 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
         const p = await api.savePatient({
           full_name: novo.full_name.trim(), phone: nn(onlyDigits(novo.phone)), cpf: nn(onlyDigits(novo.cpf)), rg: nn(novo.rg),
           birth_date: nn(novo.birth_date), email: nn(novo.email), modality, ...enderecoParaPaciente(novo), ...notaParaPaciente(nota),
+          session_price: pr, session_minutes: dur, // o valor e a duração deste agendamento viram o padrão do paciente
         });
         pacienteId = p.id;
         // Paciente já existe a partir daqui: se algo falhar depois, não cadastra de novo
@@ -227,6 +230,12 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
       ) : (
         <div className="flex flex-col gap-4">
           {error && <ErrorBox>{error}</ErrorBox>}
+          {livreAte && (
+            <Notice tone="ocre">
+              Este horário não poderá ser mantido a partir de <b>{formatLongDate(addDays(livreAte, 1))}</b>: já existe agendamento.
+              Use só para sessões até {formatLongDate(livreAte)}.
+            </Notice>
+          )}
           {encaixe && (
             <Notice tone="anil">
               Para um horário que <b>não está na sua grade</b> (ex.: 12:30, ou um dia em que você não atende).

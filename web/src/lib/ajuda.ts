@@ -30,6 +30,8 @@ const AGENDA: AjudaTela = {
     { p: 'Como agendo um paciente?', r: 'Toque numa linha verde “LIVRE”. Escolha um paciente cadastrado ou cadastre um novo no mesmo formulário.' },
     { p: 'Como envio a confirmação?', r: 'Toque no botão verde do WhatsApp na sessão e escolha "Confirmar presença". O app abre o WhatsApp com o lembrete e o link; o paciente confirma por ali.' },
     { p: 'O que é o Encaixe?', r: 'É uma sessão num horário que não está na sua grade (ex.: 12:30 ou um dia em que você não atende). Fica no Resumo do dia: toque em “Encaixe”, escolha o paciente (ou cadastre um novo), o dia e o horário. Regras: dentro do seu horário de atendimento (Configurações), nunca num horário que já passou e nunca coincidindo com outra sessão.' },
+    { p: 'Por que um paciente aparece com “Sem próximo horário”?', r: 'Todo paciente ativo fica na agenda. O avulso que não tem mais sessão marcada continua no dia e horário da última sessão, com um alerta piscando. Toque nele para marcar um novo horário ou dar alta.' },
+    { p: 'O que é “Começa dd/mm” e “Livre até dd/mm”?', r: 'É o paciente que só começa mais à frente: ele já aparece no horário dele. Até o início, o horário fica livre para encaixar outra pessoa só antes dessa data.' },
     { p: 'Como dou alta a um paciente?', r: 'Na agenda, toque em “Dar alta” e escolha o paciente. As sessões futuras saem da agenda, o horário fica livre e o paciente vai para a aba Inativos. Histórico, prontuário, documentos e financeiro continuam guardados.' },
     { p: 'Por que uma sessão aparece em “Outros horários”?', r: 'Ela foi marcada num turno sem grade naquele dia. Ela continua valendo; só não pertence a nenhum bloco da grade.' },
   ],
@@ -50,7 +52,7 @@ export const AJUDA: Array<{ rota: RegExp; ajuda: AjudaTela }> = [
     duvidas: [{ p: 'Como registro uma evolução?', r: 'Abra a aba Prontuário e toque em “Adicionar evolução”. Preencha a queixa e salve. Rascunhos ficam no aparelho.' }] } },
   { rota: /^\/pacientes/, ajuda: {
     titulo: 'Pacientes',
-    comoUsar: ['Busque pelo nome ou toque em “Novo paciente”.', 'Toque no paciente para abrir a ficha.'],
+    comoUsar: ['Busque pelo nome e toque no paciente para abrir a ficha.', 'Paciente novo nasce pelo agendamento: na agenda, “+ Agendar” num horário LIVRE, ou “Encaixe” no Resumo do dia.'],
     duvidas: [{ p: 'Posso excluir um paciente?', r: 'Só cadastros feitos por engano, sem prontuário, sessões ou valores. Os demais ficam guardados, como exige o CFP.' }] } },
   { rota: /^\/prontuario/, ajuda: {
     titulo: 'Prontuários',

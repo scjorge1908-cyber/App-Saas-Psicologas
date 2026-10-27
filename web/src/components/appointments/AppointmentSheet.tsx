@@ -39,7 +39,7 @@ export async function openReminder(item: AgendaItem, tz: string, professional: s
 
 type Mode = 'view' | 'cancel' | 'reschedule' | 'noshow';
 
-export function AppointmentSheet({ item, onClose, mover }: { item: AgendaItem | null; onClose: () => void; mover?: boolean }) {
+export function AppointmentSheet({ item, onClose, mover, falta }: { item: AgendaItem | null; onClose: () => void; mover?: boolean; /** abre direto no registro de falta */ falta?: boolean }) {
   const { profile, tz } = useProfile();
   const invalidate = useInvalidateAgenda();
   const toast = useToast();
@@ -71,8 +71,9 @@ export function AppointmentSheet({ item, onClose, mover }: { item: AgendaItem | 
     setNewDate(l.date); setNewTime(l.time); setNewLocation(item.location_id ?? '');
     setEscolha(null); setManual(false); setEtapa('horario'); setDataInicio(null);
     setFreqMover(item.series_id && item.series_frequency ? item.series_frequency : 'nao');
-    setMode(mover ? 'reschedule' : 'view');
-  }, [item, mover, tz]);
+    setMode(mover ? 'reschedule' : falta ? 'noshow' : 'view');
+    if (falta) setChargeNoShow(false);
+  }, [item, mover, falta, tz]);
 
   if (!item) return null;
   const started = new Date(item.starts_at).getTime() <= Date.now();
@@ -108,7 +109,7 @@ export function AppointmentSheet({ item, onClose, mover }: { item: AgendaItem | 
       <Button variant="danger" busy={busy} onClick={() => run(() => api.setStatus(item.id, 'cancelado', { canceled_by: cancelBy, cancel_reason: reason || null }), 'Sessão cancelada')}>Cancelar sessão</Button>
     </>;
     if (mode === 'noshow') return <>
-      <Button variant="secondary" onClick={() => setMode('view')}>Voltar</Button>
+      <Button variant="secondary" onClick={() => (falta ? close() : setMode('view'))}>Voltar</Button>
       <Button busy={busy} onClick={() => run(() => api.setStatus(item.id, 'faltou', { charge_no_show: chargeNoShow }), 'Falta registrada')}>Registrar falta</Button>
     </>;
     if (mode === 'reschedule') {

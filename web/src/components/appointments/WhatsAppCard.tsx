@@ -4,6 +4,7 @@
 import { useState, type ReactNode } from 'react';
 import type { AgendaItem } from '../../lib/types';
 import * as api from '../../lib/api';
+import { useQueryClient } from '@tanstack/react-query';
 import { errorMessage } from '../../lib/errors';
 import { firstName, zonedParts } from '../../lib/format';
 import { ausenciaText, conversaText, whatsappLink } from '../../lib/messages';
@@ -19,6 +20,7 @@ type Opcao = 'lembrete' | 'ausencia' | 'aniversario' | 'livre';
 export function WhatsAppCard({ item, onClose, onMover }: { item: AgendaItem | null; onClose: () => void; onMover: (item: AgendaItem) => void }) {
   const { profile, tz } = useProfile();
   const toast = useToast();
+  const qc = useQueryClient();
   const [opcao, setOpcao] = useState<Opcao | null>(null);
   const [texto, setTexto] = useState('');
   const [busy, setBusy] = useState(false);
@@ -48,6 +50,7 @@ export function WhatsAppCard({ item, onClose, onMover }: { item: AgendaItem | nu
         if (o === 'lembrete') {
           if (!alvo) { toast('Este paciente não tem próxima sessão agendada para confirmar. Agende antes ou use a mensagem livre.', 'erro'); return; }
           setTexto((await openReminder(alvo, tz, pro)).text);
+          void qc.invalidateQueries({ queryKey: ['agenda'] }); // situação passa a "Aguardando confirmação"
         } else setTexto(ausenciaText({ patientName: nome, startsAt: (alvo ?? item!).starts_at, tz, professionalName: pro }));
       } catch (e) { toast(errorMessage(e), 'erro'); return; } finally { setBusy(false); }
     } else if (o === 'aniversario') setTexto(`Feliz aniversário, ${firstName(nome)}! Desejo um dia muito especial.\n${profile?.full_name ?? ''}`);

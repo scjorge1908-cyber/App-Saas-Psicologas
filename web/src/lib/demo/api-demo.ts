@@ -366,8 +366,10 @@ export async function extendSeries(seriesId: string, until: string): Promise<Ser
 }
 export async function createConfirmationLink(appointmentId: string): Promise<string> {
   await atraso();
-  void appointmentId;
-  return 'demonstracao'; // na demonstração o link não é enviado a ninguém
+  // Marca que o link foi gerado, para a situação "Aguardando confirmação" (o link não é enviado a ninguém)
+  const a = db().appointments.find((x) => x.id === appointmentId);
+  if (a) (a as Appointment & { confirmation_link_at?: string }).confirmation_link_at = agora();
+  return 'demonstracao';
 }
 
 // ------------------------------------------------------------ prontuário ---

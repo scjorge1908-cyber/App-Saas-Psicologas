@@ -1,37 +1,48 @@
-// Agenda: um card grande por dia + período (+ sala), ex.: "Segunda 27/10 · Tarde · Sala 1".
-// Dentro do card: horários livres em uma linha (hora + "Agendar paciente") e sessões com nome e último sobrenome,
-// WhatsApp (botão pequeno), Mover (dia, horário ou sala) e mais opções. Filtro "Só horários livres".
-// A agenda nasce da grade (tela Grade e horários): sem grade, não há horários livres.
+// Agenda (referência visual: agenda do Hope App). Topo: Semana | Dia e navegação ‹ datas ›.
+// Corpo: um cartão por dia + sala, com Manhã / Tarde / Noite e uma linha por horário:
+//   • livre: linha verde-clara "09:20 · LIVRE" — tocar abre o agendamento já com dia, horário e sala;
+//   • paciente: linha azul-clara com hora, nome (prioridade) e "Situação · modalidade · idade",
+//     e na mesma linha Mover e WhatsApp (descem para baixo do nome quando falta espaço). Tocar no paciente abre
+//     todas as opções da sessão.
+// A agenda nasce da grade (tela Grade e horários). Regras de conflito, recorrência e remarcação
+// continuam nos diálogos de sempre (NewAppointmentDialog e AppointmentSheet).
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
-import type { AgendaItem, Location, WorkingHour } from '../lib/types';
-import { horariosLivres, type HorarioLivre } from '../lib/horarios';
+import type { AgendaItem, AppointmentStatus, DashboardSummary, WorkingHour } from '../lib/types';
+import { horariosLivres } from '../lib/horarios';
 import { periodoDe } from '../lib/periodos';
-import { addDays, ageOn, firstName, formatDate, formatTime, minutesBetween, monthName, startOfWeek, todayIn, weekday, weekdayName, weekdayShort, zonedParts, zonedToUtc } from '../lib/format';
+import { agruparColunas, contar, type Bloco, type Coluna, type Linha } from '../lib/agenda-colunas';
+import { addDays, ageOn, firstName, formatDate, formatTime, money, monthName, startOfWeek, todayIn, weekday, weekdayName, weekdayShort, zonedParts, zonedToUtc } from '../lib/format';
 import { errorMessage } from '../lib/errors';
 import { whatsappLink } from '../lib/messages';
 import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet, openReminder } from '../components/appointments/AppointmentSheet';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
-import { ErrorBox, Loading, STATUS_BAR, StatusBadge, cx, useToast } from '../components/ui';
+import { ErrorBox, Loading, cx, useToast } from '../components/ui';
 import { PrimeirosPassos, iniciarPasseio } from '../components/ajuda/Ajuda';
 import { FLAG_PASSEIO_OFERECIDO, FLAG_WHATS_ENVIADO, gravarFlag, lerFlag } from '../lib/ajuda';
-import type { DashboardSummary } from '../lib/types';
 import { VALOR_OCULTO, useValoresVisiveis } from '../lib/privacidade';
-import { money } from '../lib/format';
-import { IconCake, IconChevronLeft, IconChevronRight, IconCircleCheck, IconClock, IconDoor, IconDots, IconPlus, IconSwap, IconWhats } from '../components/icons';
+import { IconCake, IconCheck, IconChevronLeft, IconChevronRight, IconClock, IconDoor, IconPlus, IconSwap, IconVideo, IconWhats } from '../components/icons';
 
 type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente' };
 type Filtro = 'tudo' | 'livres' | 'agendados';
-type Linha = { tipo: 'sessao'; hora: string; item: AgendaItem } | { tipo: 'livre'; hora: string; livre: HorarioLivre };
-type Bloco = { chave: string; date: string; titulo: string; sala: Location | null; faixa: string | null; linhas: Linha[] };
+type Visao = 'semana' | 'dia';
 
 const diaNome = (d: string) => { const n = weekdayName(d).replace('-feira', ''); return n[0].toUpperCase() + n.slice(1); };
 const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 /** "Mariana Costa Albuquerque" → "Mariana Albuquerque" */
 export const nomeCurto = (n: string) => { const p = n.trim().split(/\s+/); return p.length > 1 ? `${p[0]} ${p[p.length - 1]}` : p[0] ?? ''; };
+
+/** Situação da sessão: texto + cor da linha (a cor nunca é o único sinal). */
+const SITUACAO: Record<AppointmentStatus, { rotulo: string; linha: string; texto: string }> = {
+  agendado: { rotulo: 'Agendada', linha: 'bg-ag-pac-fundo border-l-ag-pac-borda', texto: 'text-ag-pac' },
+  confirmado: { rotulo: 'Confirmada', linha: 'bg-ag-pac-fundo border-l-azul-forte', texto: 'text-azul' },
+  atendido: { rotulo: 'Atendida', linha: 'bg-afundado border-l-verde-forte', texto: 'text-verde' },
+  faltou: { rotulo: 'Falta', linha: 'bg-ocre-fundo border-l-ocre-forte', texto: 'text-ocre' },
+  cancelado: { rotulo: 'Cancelada', linha: 'bg-cinza-fundo border-l-linha-forte', texto: 'text-tinta-2' },
+};
 
 export function AgendaPage() {
   const { profile, tz } = useProfile();
@@ -39,11 +50,11 @@ export function AgendaPage() {
   const [params, setParams] = useSearchParams();
   const hoje = todayIn(tz);
   const date = params.get('d') || hoje;
+  const visao: Visao = params.get('v') === 'dia' ? 'dia' : 'semana';
   const [salaId, setSalaId] = useState(''); // '' = todas as salas
   const [filtro, setFiltro] = useState<Filtro>('tudo');
   const [open, setOpen] = useState<{ item: AgendaItem; mover?: boolean } | null>(null);
   const [novoEm, setNovoEm] = useState<NovoEm | null>(null);
-  const [abertos, setAbertos] = useState<Set<string>>(new Set()); // cards com todos os livres à mostra
   const [passeioPerguntado, setPasseioPerguntado] = useState(() => lerFlag(FLAG_PASSEIO_OFERECIDO));
 
   const semana = startOfWeek(date);
@@ -60,7 +71,7 @@ export function AgendaPage() {
   const sala = salasAtivas.find((l) => l.id === salaId) ?? null;
   const daSala = (id: string | null | undefined) => !sala || !id || id === sala.id;
 
-  // Cards da semana: um por dia + bloco da grade (sala + período); sessões fora da grade num card "Outros horários"
+  // Blocos da semana: dia + bloco da grade (sala + período); sessões fora da grade em "Outros horários"
   const blocos = useMemo<Bloco[]>(() => {
     if (!q.data || !horas.data || !profile) return [];
     const out: Bloco[] = [];
@@ -87,7 +98,7 @@ export function AgendaPage() {
         ].sort((a, b) => a.hora.localeCompare(b.hora));
         doDia.push({ chave: `${d}-${f.id}`, date: d, titulo: periodoDe(ini).nome, sala: (locais.data ?? []).find((l) => l.id === f.location_id) ?? null, faixa: `${ini}–${fim}`, linhas });
       }
-      // Sessão de outra sala ou on-line sem bloco próprio: entra no card do mesmo período do dia (com selo); sem período, "Outros horários"
+      // Sessão de outra sala ou on-line sem bloco próprio: entra no mesmo período do dia (com selo); sem período, "Outros horários"
       const outros: Linha[] = [];
       for (const it of itens.filter((x) => !usados.has(x.id))) {
         const hora = formatTime(it.starts_at, tz);
@@ -102,24 +113,26 @@ export function AgendaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q.data, horas.data, locais.data, profile, tz, semana, salaId]);
 
-  const visiveis = blocos
-    .filter((b) => b.date >= hoje || b.linhas.some((l) => l.tipo === 'sessao'))
-    .map((b) => ({ ...b, linhas: b.linhas.filter((l) => filtro === 'tudo' || (filtro === 'livres' ? l.tipo === 'livre' : l.tipo === 'sessao')) }))
-    .filter((b) => b.linhas.length > 0);
-  const totalAgendados = blocos.reduce((n, b) => n + b.linhas.filter((l) => l.tipo === 'sessao').length, 0);
-  const totalLivres = blocos.reduce((n, b) => n + b.linhas.filter((l) => l.tipo === 'livre').length, 0);
+  // Semana: dias de hoje em diante (e dias passados que tiveram sessão). Dia: só o dia escolhido.
+  const colunasBase = agruparColunas(blocos.filter((b) => (visao === 'dia' ? b.date === date : b.date >= hoje || b.linhas.some((l) => l.tipo === 'sessao'))));
+  const totais = contar(colunasBase);
+  const colunas: Coluna[] = colunasBase
+    .map((c) => ({ ...c, periodos: c.periodos.map((p) => ({ ...p, linhas: p.linhas.filter((l) => filtro === 'tudo' || (filtro === 'livres' ? l.tipo === 'livre' : l.tipo === 'sessao')) })).filter((p) => p.linhas.length > 0) }))
+    .filter((c) => c.periodos.length > 0);
+  const totalAgendadosSemana = blocos.reduce((n, b) => n + b.linhas.filter((l) => l.tipo === 'sessao').length, 0);
 
   // Alvos do passeio: o primeiro horário livre e o primeiro botão de WhatsApp da tela
-  const primeiroLivreChave = (() => { for (const b of visiveis) { const l = b.linhas.find((x) => x.tipo === 'livre'); if (l) return `${b.chave}|${l.hora}`; } return null; })();
-  const primeiroWhatsId = (() => { for (const b of visiveis) { const l = b.linhas.find((x) => x.tipo === 'sessao' && x.item.patient_phone); if (l && l.tipo === 'sessao') return l.item.id; } return null; })();
-  const primeiroLivre = (b: Bloco, l: Linha) => `${b.chave}|${l.hora}` === primeiroLivreChave;
-  const primeiraSessaoComWhats = (_b: Bloco, l: Linha) => l.tipo === 'sessao' && l.item.id === primeiroWhatsId;
+  const todasLinhas = colunas.flatMap((c) => c.periodos.flatMap((p) => p.linhas.map((l) => ({ c, l }))));
+  const primeiroLivre = todasLinhas.find((x) => x.l.tipo === 'livre');
+  const primeiroWhats = todasLinhas.find((x) => x.l.tipo === 'sessao' && !!x.l.item.patient_phone);
 
-  const irPara = (d: string) => {
-    if (startOfWeek(d) !== semana) { setParams({ d }, { replace: true }); return; }
-    setParams({ d }, { replace: true });
-    document.getElementById(`dia-${d}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  const ir = (d: string, v: Visao = visao) => setParams(v === 'dia' ? { d, v } : { d }, { replace: true });
+  const andar = (n: number) => ir(addDays(date, visao === 'dia' ? n : 7 * n));
+  const naSemanaAtual = startOfWeek(hoje) === semana;
+  const rotuloData = visao === 'dia'
+    ? `${diaNome(date)}, ${Number(date.slice(8))} de ${monthName(Number(date.slice(5, 7)))}`
+    : `${ddmm(semana)} a ${ddmm(addDays(semana, 6))}`;
+  const subRotulo = visao === 'dia' ? (date === hoje ? 'Hoje' : 'voltar para hoje') : (naSemanaAtual ? 'Esta semana' : 'voltar para esta semana');
 
   async function enviarWhatsApp(item: AgendaItem) {
     const janela = window.open('', '_blank'); // abre já no toque, para o navegador não bloquear
@@ -136,80 +149,77 @@ export function AgendaPage() {
     } catch (e) { janela?.close(); toast(errorMessage(e), 'erro'); }
   }
 
-  return (
-    <div className="flex flex-col gap-4 pb-6">
-      <h1 className="sr-only">Agenda</h1>
-      {/* Consultório ativo */}
-      <section className="cartao flex flex-col gap-3 p-4">
-        <div className="flex flex-wrap items-start gap-3">
-          <span className="grid size-12 shrink-0 place-items-center rounded-campo bg-anil-claro text-sobre-anil-claro"><IconDoor /></span>
-          <div className="min-w-[7rem] flex-1">
-            <p className="rotulo text-anil-escuro">Consultório ativo · semana {ddmm(semana)} a {ddmm(addDays(semana, 6))}</p>
-            <p className="truncate text-[1.1875rem] font-bold leading-snug">{sala?.name ?? (salasAtivas.length > 1 ? 'Todas as salas' : salasAtivas[0]?.name ?? 'Minha agenda')}{profile?.full_name ? ` · ${profile.full_name.split(' ')[0]}` : ''}</p>
-          </div>
-          {salasAtivas.length > 1 && (
-            <button onClick={() => { const ids = ['', ...salasAtivas.map((l) => l.id)]; setSalaId(ids[(ids.indexOf(salaId) + 1) % ids.length]); }}
-              aria-label="Trocar sala" title="Trocar sala" className="grid size-12 shrink-0 place-items-center rounded-full bg-afundado text-tinta-2 hover:bg-cinza-fundo"><IconSwap /></button>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-anil-claro px-3 text-sm font-bold text-sobre-anil-claro"><span className="size-1.5 rounded-full bg-current" />{totalAgendados} {totalAgendados === 1 ? 'agendado' : 'agendados'}</span>
-          <span className="inline-flex h-8 items-center gap-1.5 rounded-full bg-livre-fundo px-3 text-sm font-bold text-livre"><span className="size-1.5 rounded-full bg-current" />{totalLivres} {totalLivres === 1 ? 'livre' : 'livres'}</span>
-          {!semGrade && <span className="ml-auto inline-flex items-center gap-1 text-sm text-tinta-2"><IconCircleCheck className="size-4 text-livre" /> Grade ativa</span>}
-        </div>
-      </section>
+  const alternarFiltro = (f: Filtro) => setFiltro((atual) => (atual === f ? 'tudo' : f));
 
-      {/* Dias da semana: toca para ir ao dia */}
-      <div className="flex items-center gap-1">
-        <button onClick={() => setParams({ d: addDays(date, -7) }, { replace: true })} aria-label="Semana anterior" className="grid size-11 shrink-0 place-items-center rounded-full text-tinta-2 hover:bg-cinza-fundo"><IconChevronLeft /></button>
-        <div className="flex flex-1 gap-1.5 overflow-x-auto pb-1" aria-label="Dias da semana">
+  return (
+    <div className="flex flex-col gap-3 pb-6">
+      <h1 className="sr-only">Agenda</h1>
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
+      {/* Semana | Dia */}
+      <div className="flex gap-1 rounded-cartao border border-linha bg-papel p-1 lg:w-72 lg:shrink-0" role="tablist" aria-label="Visualização da agenda">
+        {(['semana', 'dia'] as Visao[]).map((v) => (
+          <button key={v} role="tab" aria-selected={visao === v} onClick={() => ir(date, v)}
+            className={cx('min-h-11 flex-1 rounded-campo text-[0.9375rem] font-bold', visao === v ? 'btn-degrade' : 'text-tinta-2 hover:bg-afundado')}>
+            {v === 'semana' ? 'Semana' : 'Dia'}
+          </button>
+        ))}
+      </div>
+
+      {/* ‹ datas › */}
+      <div className="flex items-center gap-1 rounded-cartao border border-linha bg-papel lg:flex-1">
+        <button onClick={() => andar(-1)} aria-label={visao === 'dia' ? 'Dia anterior' : 'Semana anterior'} className="grid size-12 shrink-0 place-items-center rounded-cartao text-anil-escuro hover:bg-afundado"><IconChevronLeft /></button>
+        <button onClick={() => ir(hoje)} className="flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center px-1 py-1 text-center leading-tight"
+          aria-label={`${rotuloData}. ${subRotulo === 'Hoje' || subRotulo === 'Esta semana' ? subRotulo : 'Toque para ' + subRotulo}`}>
+          <span className="num text-[1.0625rem] font-extrabold [overflow-wrap:anywhere]">{rotuloData}</span>
+          <span className={cx('text-[0.8125rem] font-bold', subRotulo.startsWith('voltar') ? 'text-anil-escuro underline' : 'text-tinta-3')}>{subRotulo}</span>
+        </button>
+        <button onClick={() => andar(1)} aria-label={visao === 'dia' ? 'Próximo dia' : 'Próxima semana'} className="grid size-12 shrink-0 place-items-center rounded-cartao text-anil-escuro hover:bg-afundado"><IconChevronRight /></button>
+      </div>
+      </div>
+
+      {/* Dia: os 7 dias da semana para trocar num toque */}
+      {visao === 'dia' && (
+        <div className="grid grid-cols-7 gap-1" aria-label="Dias da semana">
           {dias.map((d) => {
             const sel = d === date;
             const temAlgo = blocos.some((b) => b.date === d);
             return (
-              <button key={d} onClick={() => irPara(d)} aria-current={sel ? 'date' : undefined}
-                className={cx('flex min-w-[54px] flex-1 flex-col items-center rounded-cartao border py-2 leading-tight', sel ? 'btn-degrade border-transparent shadow-elevado' : 'border-linha bg-papel', !temAlgo && !sel && 'text-tinta-3')}>
+              <button key={d} onClick={() => ir(d)} aria-current={sel ? 'date' : undefined} aria-label={`${diaNome(d)} ${ddmm(d)}${d === hoje ? ', hoje' : ''}${temAlgo ? '' : ', sem horários'}`}
+                className={cx('flex min-h-12 min-w-0 flex-col items-center justify-center rounded-campo border leading-tight', sel ? 'btn-degrade border-transparent' : 'border-linha bg-papel', !temAlgo && !sel && 'text-tinta-3', d === hoje && !sel && 'border-anil-escuro')}>
                 <span className="text-[0.75rem] font-bold uppercase">{weekdayShort(d)}</span>
-                <span className="num text-[1.25rem] font-extrabold">{Number(d.slice(8))}</span>
-                <span className="text-[0.75rem] capitalize">{monthName(Number(d.slice(5, 7))).slice(0, 3)}</span>
-                {d === hoje && !sel && <span className="mt-0.5 size-1.5 rounded-full bg-anil" aria-label="hoje" />}
+                <span className="num text-[1rem] font-extrabold">{Number(d.slice(8))}</span>
               </button>
             );
           })}
         </div>
-        <button onClick={() => setParams({ d: addDays(date, 7) }, { replace: true })} aria-label="Próxima semana" className="grid size-11 shrink-0 place-items-center rounded-full text-tinta-2 hover:bg-cinza-fundo"><IconChevronRight /></button>
-      </div>
-
-      {dash.data && <ResumoHoje d={dash.data} />}
-
-      {q.data && horas.data && (
-        <PrimeirosPassos passos={[
-          { feito: !semGrade, texto: 'Criar meus horários', para: '/agenda/horarios' },
-          { feito: (dash.data?.active_patients ?? 0) > 0 || totalAgendados > 0, texto: 'Agendar o primeiro paciente', acao: () => setNovoEm({ date: hoje, modo: 'novo' }) },
-          { feito: totalAgendados > 0, texto: 'Ver o agendamento aqui na agenda', acao: () => setFiltro('agendados') },
-          { feito: lerFlag(FLAG_WHATS_ENVIADO), texto: 'Enviar a confirmação pelo WhatsApp', acao: () => setFiltro('agendados') },
-        ]} />
       )}
 
-      {!passeioPerguntado && !semGrade && q.data && (
-        <section className="cartao flex flex-col gap-2 px-4 py-3" aria-label="Passeio pela agenda">
-          <p className="text-[0.9375rem]"><b>Quer um passeio de 1 minuto pela agenda?</b> Dá para refazer depois em Mais → Ajuda.</p>
-          <div className="flex flex-wrap items-center justify-end gap-2">
-          <button onClick={() => { gravarFlag(FLAG_PASSEIO_OFERECIDO); setPasseioPerguntado(true); }} className="min-h-11 px-2 text-sm font-bold text-tinta-3">Agora não</button>
-          <button onClick={() => { gravarFlag(FLAG_PASSEIO_OFERECIDO); setPasseioPerguntado(true); setTimeout(() => iniciarPasseio('agenda'), 100); }} className="btn-degrade min-h-11 rounded-botao px-4 text-sm font-bold">Fazer o passeio</button>
-          </div>
-        </section>
-      )}
-
-      {/* Filtro */}
-      {!semGrade && (
-        <div className="flex gap-2 overflow-x-auto" role="tablist" aria-label="Filtro">
-          {([['tudo', 'Tudo'], ['livres', `Só horários livres (${totalLivres})`], ['agendados', `Só agendados (${totalAgendados})`]] as Array<[Filtro, string]>).map(([f, r]) => (
-            <button key={f} role="tab" aria-selected={filtro === f} onClick={() => setFiltro(f)}
-              className={cx('min-h-11 shrink-0 rounded-full border px-3.5 text-sm font-bold', filtro === f ? 'btn-degrade border-transparent' : 'border-linha bg-papel text-tinta-2')}>{r}</button>
-          ))}
+      {/* Totais (também filtram) e sala */}
+      {!semGrade && q.data && (
+        <div className="flex flex-wrap items-center gap-2" aria-label="Filtro">
+          <button onClick={() => alternarFiltro('agendados')} aria-pressed={filtro === 'agendados'}
+            className={cx('inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-sm font-bold', filtro === 'agendados' ? 'border-ag-pac bg-ag-pac text-papel' : 'border-ag-pac-borda/40 bg-ag-pac-fundo text-ag-pac')}>
+            <span aria-hidden className="size-2 rounded-full bg-current" />{totais.agendados} {totais.agendados === 1 ? 'agendado' : 'agendados'}
+          </button>
+          <button onClick={() => alternarFiltro('livres')} aria-pressed={filtro === 'livres'}
+            className={cx('inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-sm font-bold', filtro === 'livres' ? 'border-ag-livre bg-ag-livre text-papel' : 'border-ag-livre-borda/40 bg-ag-livre-fundo text-ag-livre')}>
+            <span aria-hidden className="size-2 rounded-full bg-current" />{totais.livres} {totais.livres === 1 ? 'livre' : 'livres'}
+          </button>
+          {filtro !== 'tudo' && <button onClick={() => setFiltro('tudo')} className="min-h-11 px-1 text-sm font-bold text-anil-escuro underline">Mostrar tudo</button>}
+          {salasAtivas.length > 1 && (
+            <label className="flex min-w-0 items-center gap-1.5 text-sm text-tinta-2">
+              <span className="sr-only">Sala</span><IconDoor className="size-4 shrink-0" aria-hidden />
+              <select value={salaId} onChange={(e) => setSalaId(e.target.value)} className="min-h-11 min-w-0 max-w-[11rem] rounded-campo border border-linha bg-papel px-2 font-bold text-tinta">
+                <option value="">Todas as salas</option>
+                {salasAtivas.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </select>
+            </label>
+          )}
         </div>
       )}
+
+      {dash.data && <ResumoHoje d={dash.data} />}
 
       {semGrade && (
         <section className="cartao cartao-boas-vindas flex flex-col gap-3 px-4 pb-4 pt-5">
@@ -223,64 +233,82 @@ export function AgendaPage() {
 
       {(q.isLoading || horas.isLoading) && <Loading />}
       {(q.error || horas.error) && <ErrorBox>{errorMessage(q.error ?? horas.error)}</ErrorBox>}
-      {q.data && horas.data && !semGrade && visiveis.length === 0 && (
-        <p className="cartao px-4 py-4 text-tinta-2">{filtro === 'livres' ? 'Nenhum horário livre nesta semana.' : filtro === 'agendados' ? 'Nenhuma sessão agendada nesta semana.' : 'Nada a seguir nesta semana.'}</p>
+      {q.data && horas.data && !semGrade && colunas.length === 0 && (
+        <p className="cartao px-4 py-4 text-tinta-2">
+          {filtro === 'livres' ? `Nenhum horário livre ${visao === 'dia' ? 'neste dia' : 'nesta semana'}.` : filtro === 'agendados' ? `Nenhuma sessão agendada ${visao === 'dia' ? 'neste dia' : 'nesta semana'}.` : visao === 'dia' ? 'Sem horários neste dia.' : 'Nada a seguir nesta semana.'}
+        </p>
       )}
 
-      {/* Cards grandes: dia + período (+ sala) */}
-      {visiveis.map((b, i) => {
-        const primeiroDoDia = i === 0 || visiveis[i - 1].date !== b.date;
-        return (
-          <section key={b.chave} id={primeiroDoDia ? `dia-${b.date}` : undefined} className={cx('cartao scroll-mt-24 overflow-hidden', b.date === hoje && 'ring-2 ring-anil-escuro')}>
-            <header className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-linha bg-afundado/60 px-4 py-3">
-              <h2 className="text-[1.125rem] font-bold">{diaNome(b.date)} <span className="num">{ddmm(b.date)}</span> · {b.titulo}</h2>
-              {b.date === hoje && <span className="rounded-full bg-anil-escuro px-2 py-0.5 text-[0.75rem] font-extrabold uppercase text-sobre-anil">Hoje</span>}
-              <span className="ml-auto flex items-center gap-2 text-sm text-tinta-2">
-                {b.sala && <span className="inline-flex items-center gap-1 font-bold"><span className="size-2 rounded-full" style={{ background: b.sala.color ?? 'var(--color-anil)' }} />{b.sala.name}</span>}
-                {b.faixa && <span className="num">{b.faixa}</span>}
-              </span>
-            </header>
-            <ol className="flex flex-col gap-1 p-3">
-              {(() => {
-                // Sessões sempre à mostra; livres: até 3 por card (todos no filtro "Só horários livres" ou ao expandir)
-                const todosLivres = filtro === 'livres' || abertos.has(b.chave);
-                let livresVistos = 0;
-                const linhas = b.linhas.filter((l) => l.tipo === 'sessao' || todosLivres || ++livresVistos <= 3);
-                const escondidos = b.linhas.filter((l) => l.tipo === 'livre').length - linhas.filter((l) => l.tipo === 'livre').length;
-                return (<>
-                  {linhas.map((l) => l.tipo === 'livre' ? (
-                    <li key={`livre-${l.hora}`} className="flex min-h-12 flex-wrap items-center gap-x-2 border-b border-dashed border-linha px-1 last:border-b-0">
-                      <span className="num whitespace-nowrap text-[1rem] font-bold text-tinta-2">{l.hora}</span>
-                      <span className="whitespace-nowrap text-sm text-tinta-3">{l.livre.minutes ?? profile?.session_minutes ?? 50} min</span>
-                      <span className="sr-only">livre</span>
-                      <button {...(primeiroLivre(b, l) ? { 'data-ajuda': 'livre' } : {})}
-                        onClick={() => setNovoEm({ date: b.date, time: l.hora, locationId: l.livre.location?.id ?? b.sala?.id ?? null, minutes: l.livre.minutes, modo: 'novo' })}
-                        aria-label={`Agendar paciente às ${l.hora}`}
-                        className="pressionar ml-auto inline-flex min-h-11 shrink-0 items-center gap-1 whitespace-nowrap rounded-botao border-[1.5px] border-anil-escuro px-3 text-sm font-bold text-anil-escuro hover:bg-anil-claro/50">
-                        <IconPlus className="size-4" /> Agendar
-                      </button>
-                    </li>
-                  ) : (
-                    <li key={l.item.id} className="py-1">
-                      <LinhaSessao item={l.item} date={b.date} tz={tz} foraDaSala={!!b.sala && (l.item.location_id ? l.item.location_id !== b.sala.id : l.item.modality === 'online')}
-                        marcarWhats={primeiraSessaoComWhats(b, l)}
+      {/* Um cartão por dia + sala, com os períodos dentro */}
+      <div className="grid items-start gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,19rem),1fr))]">
+        {colunas.map((c, i) => {
+          const primeiroDoDia = i === 0 || colunas[i - 1].date !== c.date;
+          const ehHoje = c.date === hoje;
+          const online = !!c.sala && /online|on-line|virtual|remot/i.test(c.sala.name);
+          return (
+            <section key={c.chave} id={primeiroDoDia ? `dia-${c.date}` : undefined} aria-label={`${diaNome(c.date)} ${ddmm(c.date)}${c.sala ? `, ${c.sala.name}` : ''}`}
+              className={cx('cartao flex min-w-0 scroll-mt-24 flex-col gap-2 p-2.5 sm:p-3', ehHoje && 'ring-2 ring-anil-escuro')}>
+              <header className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-linha pb-2">
+                <h2 className={cx('text-[1.0625rem] font-extrabold', ehHoje && 'text-anil-escuro')}>{diaNome(c.date)} <span className="num">{ddmm(c.date)}</span></h2>
+                {ehHoje && <span className="rounded-full bg-anil-escuro px-2 py-0.5 text-[0.75rem] font-extrabold uppercase text-sobre-anil">Hoje</span>}
+                {c.sala && (
+                  <span className="ml-auto inline-flex max-w-full items-center gap-1 rounded-full bg-afundado px-2.5 py-0.5 text-[0.8125rem] font-bold text-tinta-2">
+                    {online ? <IconVideo className="size-3.5 shrink-0" aria-hidden /> : <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: c.sala.color ?? 'var(--color-anil)' }} />}
+                    <span className="truncate">{c.sala.name}</span>
+                  </span>
+                )}
+              </header>
+              {c.periodos.map((p) => (
+                <div key={p.titulo} className="flex flex-col gap-1.5">
+                  <h3 className="rotulo flex flex-wrap items-baseline gap-x-1.5 text-tinta-3">{p.titulo}{p.faixa && <span className="num font-semibold normal-case tracking-normal">{p.faixa}</span>}</h3>
+                  <ul className="flex flex-col gap-1.5">
+                    {p.linhas.map((l) => l.tipo === 'livre' ? (
+                      <li key={`livre-${l.hora}-${l.livre.faixaId ?? ''}`}>
+                        <button {...(primeiroLivre?.l === l ? { 'data-ajuda': 'livre' } : {})}
+                          onClick={() => setNovoEm({ date: c.date, time: l.hora, locationId: l.livre.location?.id ?? c.sala?.id ?? null, minutes: l.livre.minutes, modo: 'novo' })}
+                          aria-label={`Horário livre às ${l.hora}${c.sala ? `, ${c.sala.name}` : ''}: toque para agendar`}
+                          className="pressionar flex min-h-12 w-full items-center gap-3 rounded-campo border-l-4 border-l-ag-livre-borda bg-ag-livre-fundo pl-2.5 pr-3 text-left text-ag-livre hover:brightness-[.97]">
+                          <span className="num whitespace-nowrap text-[1.0625rem] font-extrabold">{l.hora}</span>
+                          <span className="ml-auto inline-flex items-center gap-1 whitespace-nowrap text-[0.8125rem] font-extrabold uppercase tracking-wide"><IconPlus className="size-4" aria-hidden />Livre</span>
+                        </button>
+                      </li>
+                    ) : (
+                      <LinhaPaciente key={l.item.id} item={l.item} date={c.date} tz={tz}
+                        foraDaSala={!!c.sala && (l.item.location_id ? l.item.location_id !== c.sala.id : l.item.modality === 'online')}
+                        marcarWhats={primeiroWhats?.l === l}
                         onOpen={() => setOpen({ item: l.item })} onMover={() => setOpen({ item: l.item, mover: true })} onWhats={() => enviarWhatsApp(l.item)} />
-                    </li>
-                  ))}
-                  {escondidos > 0 && (
-                    <li><button onClick={() => setAbertos((s) => new Set(s).add(b.chave))} className="min-h-11 px-1 text-sm font-bold text-anil-escuro">+ {escondidos} {escondidos === 1 ? 'horário livre' : 'horários livres'}</button></li>
-                  )}
-                </>);
-              })()}
-            </ol>
-          </section>
-        );
-      })}
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </section>
+          );
+        })}
+      </div>
+
+      {q.data && horas.data && (
+        <PrimeirosPassos passos={[
+          { feito: !semGrade, texto: 'Criar meus horários', para: '/agenda/horarios' },
+          { feito: (dash.data?.active_patients ?? 0) > 0 || totalAgendadosSemana > 0, texto: 'Agendar o primeiro paciente', acao: () => setNovoEm({ date: hoje, modo: 'novo' }) },
+          { feito: totalAgendadosSemana > 0, texto: 'Ver o agendamento aqui na agenda', acao: () => setFiltro('agendados') },
+          { feito: lerFlag(FLAG_WHATS_ENVIADO), texto: 'Enviar a confirmação pelo WhatsApp', acao: () => setFiltro('agendados') },
+        ]} />
+      )}
+
+      {!passeioPerguntado && !semGrade && q.data && (
+        <section className="cartao flex flex-col gap-2 px-4 py-3" aria-label="Passeio pela agenda">
+          <p className="text-[0.9375rem]"><b>Quer um passeio de 1 minuto pela agenda?</b> Dá para refazer depois em Mais → Ajuda.</p>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <button onClick={() => { gravarFlag(FLAG_PASSEIO_OFERECIDO); setPasseioPerguntado(true); }} className="min-h-11 px-2 text-sm font-bold text-tinta-3">Agora não</button>
+            <button onClick={() => { gravarFlag(FLAG_PASSEIO_OFERECIDO); setPasseioPerguntado(true); setTimeout(() => iniciarPasseio('agenda'), 100); }} className="btn-degrade min-h-11 rounded-botao px-4 text-sm font-bold">Fazer o passeio</button>
+          </div>
+        </section>
+      )}
 
       {/* Ações da agenda */}
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/agenda/horarios" data-ajuda="grade" className="cartao pressionar inline-flex min-h-14 items-center justify-center gap-2 font-bold text-anil-escuro"><IconClock className="size-5" /> Editar grade</Link>
-        <button onClick={() => setNovoEm({ date, modo: 'existente' })} className="btn-degrade pressionar inline-flex min-h-14 items-center justify-center gap-2 rounded-cartao font-bold shadow-elevado"><IconPlus className="size-5" /> Adicionar encaixe</button>
+        <Link to="/agenda/horarios" data-ajuda="grade" className="cartao pressionar inline-flex min-h-14 items-center justify-center gap-2 px-2 text-center font-bold text-anil-escuro"><IconClock className="size-5 shrink-0" /> Editar grade</Link>
+        <button onClick={() => setNovoEm({ date, modo: 'existente' })} className="btn-degrade pressionar inline-flex min-h-14 items-center justify-center gap-2 rounded-cartao px-2 text-center font-bold shadow-elevado"><IconPlus className="size-5 shrink-0" /> Adicionar encaixe</button>
       </div>
 
       <AppointmentSheet item={open?.item ?? null} mover={open?.mover} onClose={() => setOpen(null)} />
@@ -290,47 +318,48 @@ export function AgendaPage() {
   );
 }
 
-/** Sessão dentro do card: hora e duração, nome e último sobrenome, situação; WhatsApp (pequeno), Mover e mais opções. */
-function LinhaSessao({ item, date, tz, onOpen, onMover, onWhats, foraDaSala, marcarWhats }: { item: AgendaItem; date: string; tz: string; onOpen: () => void; onMover: () => void; onWhats: () => void; foraDaSala?: boolean; marcarWhats?: boolean }) {
+/** Paciente em uma linha: hora + nome (prioridade) e "Situação · modalidade · idade"; Mover e WhatsApp ao lado.
+ *  Tocar no paciente abre todas as opções (registrar atendida, falta, cancelar, lembrete, editar). */
+function LinhaPaciente({ item, date, tz, onOpen, onMover, onWhats, foraDaSala, marcarWhats }: { item: AgendaItem; date: string; tz: string; onOpen: () => void; onMover: () => void; onWhats: () => void; foraDaSala?: boolean; marcarWhats?: boolean }) {
   const nome = nomeCurto(item.patient_social_name || item.patient_name);
   const nasc = item.patient_birth_date ?? null;
   const idade = nasc ? ageOn(nasc, date) : null;
   const aniversario = !!nasc && nasc.slice(5) === date.slice(5);
   const ativa = item.status === 'agendado' || item.status === 'confirmado';
+  const s = SITUACAO[item.status];
+  const modalidade = item.modality === 'online' ? 'On-line' : foraDaSala ? item.location_name ?? 'Outra sala' : 'Presencial';
   return (
-    <div className={cx('rounded-campo border border-linha border-l-4 bg-papel p-3', STATUS_BAR[item.status])}>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span className="num whitespace-nowrap text-[1.0625rem] font-bold">{formatTime(item.starts_at, tz)}</span>
-        <span className="whitespace-nowrap text-sm text-tinta-2">{minutesBetween(item.starts_at, item.ends_at)} min</span>
-        {foraDaSala && <span className="whitespace-nowrap rounded-full bg-azul-fundo px-2 py-0.5 text-[0.75rem] font-bold text-azul">{item.modality === 'online' ? 'On-line' : item.location_name ?? 'Outra sala'}</span>}
-        <span className="ml-auto"><StatusBadge status={item.status} /></span>
-      </div>
-      <button onClick={onOpen} className="mt-1 block min-h-11 w-full text-left">
-        <span className="block truncate text-[1.125rem] font-bold leading-tight">{nome}</span>
-        <span className="block truncate text-sm text-tinta-2">
-          {[idade != null ? `${idade} anos` : null, item.modality === 'online' ? 'On-line' : null, item.patient_billing_mode === 'mensal' ? 'Mensal' : 'Particular', item.series_frequency ? 'Recorrente' : null].filter(Boolean).join(' · ')}
+    <li className={cx('flex flex-wrap items-center gap-x-1.5 gap-y-1 rounded-campo border-l-4 py-1 pl-2.5 pr-1.5', s.linha)}>
+      <button onClick={onOpen} className="flex min-h-11 min-w-0 flex-1 basis-[7.5rem] items-center gap-2 py-0.5 text-left" aria-label={`${formatTime(item.starts_at, tz)}, ${nome}, ${s.rotulo}. Abrir detalhes`}>
+        <span className="num shrink-0 rounded-md bg-papel/80 px-1 py-0.5 text-[1rem] font-extrabold text-tinta">{formatTime(item.starts_at, tz)}</span>
+        <span className="min-w-0">
+          <span className="flex min-w-0 items-center gap-1 text-[1rem] font-bold leading-tight text-tinta">
+            <span className="line-clamp-2 [overflow-wrap:anywhere]">{nome}</span>
+            {aniversario && <IconCake className="size-4 shrink-0 text-acento" aria-label={`Aniversário hoje (${formatDate(nasc).slice(0, 5)})`} role="img" />}
+          </span>
+          <span className="block text-[0.8125rem] leading-snug text-tinta-2">
+            <b className={cx('font-bold', s.texto)}>{item.status === 'confirmado' && <IconCheck className="mr-0.5 inline size-3.5 align-[-2px]" aria-hidden />}{s.rotulo}</b>
+            {' · '}<span>{modalidade}</span>{idade != null && <>{' · '}<span className="whitespace-nowrap">{idade} anos</span></>}
+          </span>
         </span>
       </button>
-      {aniversario && <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-acento-claro px-2.5 py-0.5 text-[0.8125rem] font-bold text-sobre-acento-claro"><IconCake className="size-4" /> Aniversário hoje ({formatDate(nasc).slice(0, 5)})</p>}
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <span className="ml-auto flex shrink-0 items-center gap-1">
+        {ativa && (
+          <button onClick={onMover} aria-label={`Mover ${nome}`} title="Mover (dia, horário ou sala)"
+            className="pressionar grid size-11 place-items-center rounded-full border-[1.5px] border-ag-pac-borda bg-papel text-ag-pac"><IconSwap className="size-5" /></button>
+        )}
         {item.patient_phone && (
           <button onClick={onWhats} {...(marcarWhats ? { 'data-ajuda': 'whats' } : {})} aria-label={`Enviar WhatsApp para ${nome}`} title={aniversario ? 'WhatsApp: parabéns + lembrete' : 'Enviar WhatsApp'}
-            className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-livre text-sobre-status"><IconWhats className="size-5" /></button>
+            className="pressionar grid size-11 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
         )}
-        {ativa && (
-          <button onClick={onMover} className="pressionar inline-flex min-h-11 items-center gap-1.5 rounded-botao border border-anil-escuro/50 px-3.5 text-sm font-bold text-anil-escuro">
-            <IconSwap className="size-4" /> Mover
-          </button>
-        )}
-        <button onClick={onOpen} aria-label="Mais opções" className="ml-auto grid size-11 shrink-0 place-items-center rounded-botao bg-anil-claro text-sobre-anil-claro"><IconDots /></button>
-      </div>
-    </div>
+      </span>
+    </li>
   );
 }
 
-/** Resumo do dia no topo da agenda: o que precisa de atenção, recolhível (lembrado no aparelho). */
+/** Resumo do dia no topo da agenda: uma linha recolhida; abre os avisos (lembrado no aparelho). */
 function ResumoHoje({ d }: { d: DashboardSummary }) {
-  const [aberto, setAberto] = useState(() => { try { return localStorage.getItem('psi.resumo.fechado') !== '1'; } catch { return true; } });
+  const [aberto, setAberto] = useState(() => { try { return localStorage.getItem('psi.resumo.fechado') === '0'; } catch { return false; } });
   const [valoresVisiveis] = useValoresVisiveis();
   const itens = [
     d.to_register > 0 && { n: String(d.to_register), t: d.to_register === 1 ? 'sessão aguarda registro' : 'sessões aguardam registro', para: '/resumo#registrar', tom: 'bg-ocre-fundo text-ocre' },
@@ -343,8 +372,8 @@ function ResumoHoje({ d }: { d: DashboardSummary }) {
   return (
     <section className="cartao overflow-hidden" aria-labelledby="t-resumo">
       <button onClick={alternar} aria-expanded={aberto} className="flex min-h-12 w-full items-center gap-2 px-4 py-2 text-left">
-        <h2 id="t-resumo" className="flex-1 font-bold">Hoje · {d.sessions_today} {d.sessions_today === 1 ? 'sessão' : 'sessões'}{itens.length ? ` · ${itens.length} ${itens.length === 1 ? 'aviso' : 'avisos'}` : ''}</h2>
-        <IconChevronRight className={cx('size-5 text-tinta-3 transition-transform', aberto && 'rotate-90')} />
+        <h2 id="t-resumo" className="flex-1 text-[0.9375rem] font-bold">Hoje · {d.sessions_today} {d.sessions_today === 1 ? 'sessão' : 'sessões'}{itens.length ? <span className="text-ocre"> · {itens.length} {itens.length === 1 ? 'aviso' : 'avisos'}</span> : ''}</h2>
+        <IconChevronRight className={cx('size-5 shrink-0 text-tinta-3 transition-transform', aberto && 'rotate-90')} />
       </button>
       {aberto && (
         <div className="flex flex-col gap-1.5 px-3 pb-3">

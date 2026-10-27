@@ -261,14 +261,20 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.goto('/');
   await expect(page.getByText('Carlos Silva').first()).toBeVisible(); // nome e último sobrenome
   await page.screenshot({ path: `${SHOTS}/10-agenda-cards-celular.png`, fullPage: true });
-  // Horário livre: linha compacta com "Agendar" (abre o cadastro do paciente)
-  const livre = page.getByRole('button', { name: /^Agendar paciente às/ }).first();
+  // Horário livre: linha verde "LIVRE"; tocar abre o agendamento já com dia e horário
+  const livre = page.getByRole('button', { name: /^Horário livre às/ }).first();
   if (await livre.count() === 0) await page.getByRole('button', { name: 'Próxima semana' }).click();
-  await page.getByRole('button', { name: /^Agendar paciente às/ }).first().click();
+  await page.getByRole('button', { name: /^Horário livre às/ }).first().click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'Cadastrar paciente' })).toBeVisible();
   await page.getByRole('dialog').getByRole('button', { name: 'Voltar' }).click();
-  // Mover: abre direto em dia/horário/sala
+  // Semana | Dia: Dia mostra só o dia escolhido, com os 7 dias para trocar
   await page.goto('/');
+  await page.getByRole('tab', { name: 'Dia' }).click();
+  await expect(page.getByRole('button', { name: 'Próximo dia' })).toBeVisible();
+  await expect(page.getByLabel('Dias da semana').getByRole('button')).toHaveCount(7);
+  await page.getByRole('tab', { name: 'Semana' }).click();
+  await expect(page.getByRole('button', { name: 'Próxima semana' })).toBeVisible();
+  // Mover: abre direto em dia/horário/sala
   await page.getByRole('button', { name: 'Mover' }).first().click();
   await expect(page.getByRole('dialog').getByLabel('Nova data')).toBeVisible();
   await page.getByRole('dialog').getByRole('button', { name: 'Voltar' }).click();

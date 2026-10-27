@@ -41,7 +41,7 @@ export function HorariosPage() {
       <header className="flex items-center gap-2">
         <Link to="/" className="grid size-11 place-items-center rounded-xl text-tinta-2 hover:bg-cinza-fundo" aria-label="Voltar para a agenda"><IconChevronLeft /></Link>
         <div>
-          <h1 className="titulo-display text-[26px] leading-tight">Horários</h1>
+          <h1 className="titulo-display text-[26px] leading-tight">Meus horários</h1>
           <p className="text-[15px] text-tinta-2">Sala, dia e período em que você atende. A agenda mostra os horários disponíveis a partir daqui.</p>
         </div>
       </header>

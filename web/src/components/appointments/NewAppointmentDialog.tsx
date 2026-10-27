@@ -18,8 +18,9 @@ type NovoPaciente = { full_name: string; phone: string; cpf: string; rg: string;
 const NOVO_VAZIO: NovoPaciente = { full_name: '', phone: '', cpf: '', rg: '', birth_date: '', email: '', ...ENDERECO_VAZIO };
 type ArquivoPendente = { file: File; category: AttachmentCategory };
 
-export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, patientId, initialLocationId, initialMinutes }: {
+export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, patientId, initialLocationId, initialMinutes, initialModo }: {
   open: boolean; onClose: () => void; initialDate?: string; initialTime?: string; patientId?: string; initialLocationId?: string | null; initialMinutes?: number;
+  initialModo?: 'novo' | 'existente';
 }) {
   const { profile, tz } = useProfile();
   const { session } = useAuth();
@@ -52,9 +53,9 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
     setPid(patientId ?? ''); setDate(initialDate ?? todayIn(tz)); setTime(initialTime ?? '');
     setRepeat('nao'); setResult(null); setError(null); setEnding('quantidade'); setCount('12'); setUntil('');
     setLocationId(initialLocationId ?? '');
-    setNovo(NOVO_VAZIO); setArquivos([]); setModo('existente');
+    setNovo(NOVO_VAZIO); setArquivos([]); setModo(initialModo ?? 'existente');
     if (initialMinutes) setDuration(String(initialMinutes));
-  }, [open, patientId, initialDate, initialTime, tz, initialLocationId, initialMinutes]);
+  }, [open, patientId, initialDate, initialTime, tz, initialLocationId, initialMinutes, initialModo]);
 
   // Sem pacientes ativos: já abre no cadastro de paciente novo
   const semPacientes = !!patients.data && patients.data.filter((p) => p.status === 'ativo').length === 0;
@@ -143,7 +144,7 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
   const active = patients.data?.filter((p) => p.status === 'ativo') ?? [];
 
   return (
-    <Dialog open={open} onClose={onClose} wide={modo === 'novo'} title={modo === 'novo' ? 'Novo agendamento e paciente' : 'Novo agendamento'} footer={result ? <Button onClick={onClose}>Entendi</Button> : <>
+    <Dialog open={open} onClose={onClose} wide={modo === 'novo'} title={modo === 'novo' ? 'Cadastrar paciente' : 'Novo agendamento'} footer={result ? <Button onClick={onClose}>Entendi</Button> : <>
       <Button variant="secondary" onClick={onClose}>Voltar</Button>
       <Button busy={busy} onClick={submit}>{repeat === 'nao' ? 'Agendar' : `Agendar ${preview.length} sessões`}</Button>
     </>}>

@@ -51,7 +51,8 @@ export function WelcomePage() {
         <div className="flex items-center gap-3">
           <img src={`${import.meta.env.BASE_URL}logo-branca.png`} alt="" width={52} height={52} className="size-[52px] object-contain" />
           <div>
-            <p className="titulo-display text-[24px] leading-none">PsiConsultório</p>
+            <p className="text-[26px] font-extrabold leading-none tracking-[.04em]">PSI</p>
+            <p className="mt-0.5 text-[13px] font-bold leading-none tracking-[.2em]">CONSULTÓRIO</p>
             <p className="mt-1 text-[12px] font-semibold uppercase tracking-[.14em] opacity-85">Psicologia e bem-estar</p>
           </div>
         </div>

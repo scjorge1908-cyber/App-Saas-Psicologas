@@ -57,6 +57,9 @@
   --color-azul-forte: var(--confirmada);
   --color-azul-fundo: var(--confirmada-bg);
   --color-cinza-fundo: var(--muted-surface);
+  /* horário livre e WhatsApp: sempre verde de "sucesso" do tema (independe do status Atendida) */
+  --color-livre: var(--success);
+  --color-livre-fundo: color-mix(in oklab, var(--success) 13%, var(--surface));
   --color-sobre-status: var(--on-status);
   --color-inverso: var(--inverse);
   --color-sobre-inverso: var(--on-inverse);

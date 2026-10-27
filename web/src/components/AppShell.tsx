@@ -16,7 +16,7 @@ const MAIN: NavItem[] = [
 ];
 const EXTRA: NavItem[] = [
   { to: '/resumo', label: 'Resumo do dia', icon: IconToday },
-  { to: '/agenda/horarios', label: 'Horários', icon: IconClock },
+  { to: '/agenda/horarios', label: 'Meus horários', icon: IconClock },
   { to: '/notas-fiscais', label: 'Notas fiscais', icon: IconReceipt },
   { to: '/configuracoes', label: 'Configurações', icon: IconSettings },
 ];
@@ -114,12 +114,15 @@ function FaixaDemo() {
   );
 }
 
-/** Marca: símbolo da logo (versão branca, sobre o degradê) + nome em fonte de título. */
+/** Marca: símbolo da logo (versão branca, sobre o degradê) + "PSI" em cima e "CONSULTÓRIO" embaixo, como na logo. */
 export function Marca() {
   return (
-    <span className="titulo-display flex items-center gap-2 text-[22px] leading-none">
-      <img src={`${import.meta.env.BASE_URL}logo-branca.png`} alt="" width={34} height={34} className="size-[34px] object-contain" />
-      PsiConsultório
+    <span className="flex items-center gap-2.5" aria-label="PsiConsultório">
+      <img src={`${import.meta.env.BASE_URL}logo-branca.png`} alt="" width={38} height={38} className="size-[38px] object-contain" />
+      <span aria-hidden className="flex flex-col leading-none">
+        <span className="text-[22px] font-extrabold tracking-[.04em]">PSI</span>
+        <span className="mt-0.5 text-[11px] font-bold tracking-[.2em]">CONSULTÓRIO</span>
+      </span>
     </span>
   );
 }

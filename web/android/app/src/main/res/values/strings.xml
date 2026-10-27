@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">PsiConsultório</string>
-    <string name="title_activity_main">PsiConsultório</string>
+    <string name="app_name">Psi Consultório</string>
+    <string name="title_activity_main">Psi Consultório</string>
     <string name="package_name">br.com.clinicahope.psi</string>
     <string name="custom_url_scheme">br.com.clinicahope.psi</string>
 </resources>

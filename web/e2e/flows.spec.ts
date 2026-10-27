@@ -378,7 +378,7 @@ test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
   await dlg.getByRole('radio', { name: /^Empresa/ }).click();
   await dlg.getByLabel('Razão social').fill('Empresa Fictícia Ltda');
   await dlg.getByLabel('CNPJ').fill('11.222.333/0001-82');
-  await expect(dlg.getByText(/falta: CNPJ válido/)).toBeVisible();
+  await expect(dlg.getByText(/falta: CNPJ válido/i)).toBeVisible();
   await dlg.getByLabel('CNPJ').fill('11.222.333/0001-81');
   await expect(dlg.getByText('Dados completos para a nota fiscal (PJ).')).toBeVisible();
   await dlg.getByRole('button', { name: 'Salvar alterações' }).click();

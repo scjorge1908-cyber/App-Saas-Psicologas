@@ -9,7 +9,7 @@ import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet, useInvalidateAgenda } from '../components/appointments/AppointmentSheet';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
 import { Button, ErrorBox, Loading, Notice, STATUS_BAR, StatusBadge, cx, useToast } from '../components/ui';
-import { IconCalendar, IconCheck, IconClock, IconDoc, IconEye, IconEyeOff, IconMoney, IconPeople, IconPin, IconReceipt, IconVideo } from '../components/icons';
+import { IconCalendar, IconCheck, IconClock, IconDoc, IconEye, IconEyeOff, IconMoney, IconPeople, IconPin, IconReceipt, IconVideo, IconPlus } from '../components/icons';
 import { VALOR_OCULTO, useValoresVisiveis } from '../lib/privacidade';
 
 function useNow(intervalMs = 60000) {
@@ -28,6 +28,7 @@ export function TodayPage() {
   const to = zonedToUtc(addDays(today, 1), '00:00', tz);
   const [open, setOpen] = useState<AgendaItem | null>(null);
   const [creating, setCreating] = useState(false);
+  const [encaixe, setEncaixe] = useState(false);
   const invalidate = useInvalidateAgenda();
   const toast = useToast();
 
@@ -79,6 +80,13 @@ export function TodayPage() {
           );
         })}
       </nav>
+
+      {/* Encaixe (pedido do Jorge, 27/10): sessão fora da grade, dentro do horário de atendimento do perfil */}
+      <button onClick={() => setEncaixe(true)}
+        className="pressionar flex min-h-14 w-full items-center justify-center gap-2 whitespace-nowrap rounded-cartao border border-anil/30 bg-anil px-3 text-[0.9375rem] font-extrabold text-sobre-anil shadow-elevado hover:brightness-110">
+        <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-sobre-anil/15"><IconPlus className="size-[1.125rem]" strokeWidth={2.4} /></span>
+        Encaixe
+      </button>
 
       {/* Sessões de hoje */}
       <section aria-labelledby="t-hoje">
@@ -205,6 +213,7 @@ export function TodayPage() {
 
       <AppointmentSheet item={open} onClose={() => setOpen(null)} />
       <NewAppointmentDialog open={creating} onClose={() => setCreating(false)} />
+      <NewAppointmentDialog open={encaixe} onClose={() => setEncaixe(false)} encaixe />
     </div>
   );
 }

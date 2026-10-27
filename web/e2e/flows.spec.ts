@@ -6,6 +6,14 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { unzipSync, strFromU8 } from 'fflate';
 
+/** O app abre no Resumo do dia; a agenda fica no rodapé (link "Agenda"). */
+async function irParaAgenda(p: Page) {
+  await p.goto('/');
+  await p.waitForURL(/\/resumo$/);
+  await p.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Agenda', exact: true }).click();
+  await p.waitForURL(/\/$/);
+}
+
 const RUN = Date.now().toString(36);
 const SHOTS = '../docs/evidencias/telas';
 const tzDate = (offsetDays: number) => {
@@ -43,7 +51,10 @@ test.beforeAll(async ({ browser }) => {
 
 test('cadastro, perfil e tela inicial', async () => {
   await signup(page, 'Ana Fictícia Teste', `ana.e2e.${RUN}@exemplo.invalid`, '12/345678');
-  // Sem grade: a agenda convida a criar os horários e mostra os primeiros passos
+  // O app abre no Resumo do dia; sem grade, a agenda convida a criar os horários e mostra os primeiros passos
+  await page.waitForURL(/\/resumo$/);
+  await page.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Agenda', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Voltar ao Resumo' })).toBeVisible();
   await expect(page.getByText('Monte sua grade de horários')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Primeiros passos' })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/01-agenda-vazia.png`, fullPage: true });
@@ -204,7 +215,7 @@ test('anexo em armazenamento privado', async () => {
 
 test('backup completo em ZIP', async () => {
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Mais' }).click();
-  await page.getByRole('link', { name: 'Configurações' }).click();
+  await page.locator('#conteudo').getByRole('link', { name: 'Configurações' }).click();
   await page.getByText('Seus dados', { exact: true }).click(); // seção recolhível
   const dl = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Baixar backup completo' }).click();
@@ -262,7 +273,7 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.getByRole('button', { name: 'Salvar e gerar grade' }).click();
   await expect(page.getByText(/Grade gerada/)).toBeVisible();
 
-  await page.goto('/');
+  await irParaAgenda(page);
   await expect(page.getByText('Carlos Silva').first()).toBeVisible(); // nome e último sobrenome
   await page.screenshot({ path: `${SHOTS}/10-agenda-cards-celular.png`, fullPage: true });
   // Horário livre: linha verde "LIVRE"; tocar abre o agendamento já com dia e horário
@@ -273,7 +284,7 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await expect(page.getByRole('dialog').getByRole('group', { name: 'Nota fiscal' })).toBeVisible();
   await page.getByRole('dialog').getByRole('button', { name: 'Voltar' }).click();
   // Semana | Dia: Dia mostra só o dia escolhido, com os 7 dias para trocar
-  await page.goto('/');
+  await irParaAgenda(page);
   await page.getByRole('tab', { name: 'Dia' }).click();
   await expect(page.getByRole('button', { name: 'Próximo dia' })).toBeVisible();
   await expect(page.getByLabel('Dias da semana').getByRole('button')).toHaveCount(7);
@@ -304,7 +315,7 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
 });
 
 test('sessão registrada (atendida ou falta) sai da agenda e fica no histórico do paciente', async () => {
-  await page.goto('/');
+  await irParaAgenda(page);
   // A sessão passada do Carlos foi registrada como atendida no teste do financeiro: não aparece mais como linha da agenda
   await expect(page.getByRole('button', { name: /, Atendida\. Abrir detalhes$/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /, Falta\. Abrir detalhes$/ })).toHaveCount(0);
@@ -352,7 +363,7 @@ test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
 });
 
 test('ajuda: botão ?, passeio opcional (uma vez) e página de tutoriais', async () => {
-  await page.goto('/');
+  await irParaAgenda(page);
   // Sininho de avisos no cabeçalho abre a janela dos avisos do dia
   await page.getByRole('button', { name: /^Avisos de hoje/ }).click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: /^Hoje · / })).toBeVisible();
@@ -380,7 +391,7 @@ test('ajuda: botão ?, passeio opcional (uma vez) e página de tutoriais', async
 
 test('responsividade: 320 px sem quebra de duração e zoom de 200% sem sobreposição', async () => {
   await page.setViewportSize({ width: 320, height: 700 });
-  await page.goto('/');
+  await irParaAgenda(page);
   await page.waitForLoadState('networkidle');
   const quebras = await page.evaluate(() => [...document.querySelectorAll('span')].filter((e) => /^\d+\s?min$/.test(e.textContent?.trim() ?? '') && e.getBoundingClientRect().height > parseFloat(getComputedStyle(e).lineHeight) * 1.5).length);
   expect(quebras, 'duração quebrando linha em 320 px').toBe(0);
@@ -407,4 +418,31 @@ test('sem rolagem horizontal nas telas principais (celular)', async () => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow, `rolagem horizontal em ${path}`).toBeLessThanOrEqual(1);
   }
+});
+
+test('encaixe no Resumo com regra de horário e Dar alta leva o paciente para Inativos', async () => {
+  // Encaixe: fica no Resumo do dia e respeita o horário de atendimento do perfil
+  await page.goto('/resumo');
+  await page.getByRole('button', { name: 'Encaixe', exact: true }).click();
+  const dlg = page.getByRole('dialog');
+  await expect(dlg.getByRole('heading', { name: 'Encaixe fora da grade' })).toBeVisible();
+  await dlg.getByRole('combobox', { name: 'Paciente' }).selectOption({ index: 1 });
+  await dlg.getByLabel('Data').fill(tzDate(3));
+  await dlg.getByLabel('Horário').fill('23:30');
+  await dlg.getByLabel('Modalidade').selectOption('nao');
+  await dlg.getByRole('button', { name: 'Agendar' }).click();
+  await expect(dlg.getByRole('alert')).toContainText('Encaixe só dentro do seu horário de atendimento');
+  await dlg.getByRole('button', { name: 'Voltar' }).click();
+
+  // Dar alta: sai da agenda e vai para Inativos (histórico continua)
+  await irParaAgenda(page);
+  await page.getByRole('button', { name: 'Dar alta' }).click();
+  const alta = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Dar alta', exact: true }) });
+  await alta.getByRole('listitem').filter({ hasText: 'Carlos' }).getByRole('button', { name: 'Dar alta' }).click();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: /^Dar alta a / }) }).getByRole('button', { name: 'Dar alta' }).click();
+  await expect(page.getByText(/foi para Inativos/)).toBeVisible();
+  await alta.getByRole('button', { name: 'Fechar' }).last().click();
+  await page.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Pacientes' }).click();
+  await page.getByRole('tab', { name: /Inativos/ }).click();
+  await expect(page.getByText('Carlos Fictício da Silva')).toBeVisible();
 });

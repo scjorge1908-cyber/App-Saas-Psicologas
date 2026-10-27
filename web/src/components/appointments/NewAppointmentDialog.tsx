@@ -136,6 +136,13 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
     } else if (!pid) return setError('Escolha o paciente.');
     if (!date) return setError('Informe a data.');
     if (!time) return setError('Informe o horário.');
+    if (encaixe) {
+      // Regra do encaixe (27/10): fora da grade, mas dentro do horário de atendimento do perfil e nunca no passado
+      const ini = (profile?.agenda_start ?? '07:00').slice(0, 5); const fim = (profile?.agenda_end ?? '21:00').slice(0, 5);
+      const minFim = (() => { const [h, m] = time.split(':').map(Number); const t = h * 60 + m + (Number(duration) || 0); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; })();
+      if (time < ini || minFim > fim) return setError(`Encaixe só dentro do seu horário de atendimento: das ${ini} às ${fim} (Configurações).`);
+      if (new Date(zonedToUtc(date, time, tz)).getTime() < Date.now()) return setError('O encaixe não pode ser num horário que já passou.');
+    }
     if (!repeat) return setError('Escolha a modalidade: avulso, semanal ou quinzenal.');
     const dur = Number(duration);
     if (!dur || dur < 10 || dur > 300) return setError('Escolha a duração da sessão.');
@@ -222,8 +229,9 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
           {error && <ErrorBox>{error}</ErrorBox>}
           {encaixe && (
             <Notice tone="anil">
-              Para um horário que <b>não está na sua grade</b> (ex.: 12:30 ou 21:00, ou um dia em que você não atende). Escolha o dia e o horário livremente;
-              o app só não deixa coincidir com outra sessão. Nos horários da grade, use o <b>+ Agendar</b> da linha LIVRE.
+              Para um horário que <b>não está na sua grade</b> (ex.: 12:30, ou um dia em que você não atende).
+              Regras: dentro do seu horário de atendimento (<b>{(profile?.agenda_start ?? '07:00').slice(0, 5)} às {(profile?.agenda_end ?? '21:00').slice(0, 5)}</b>, em Configurações),
+              nunca num horário que já passou e nunca coincidindo com outra sessão. Nos horários da grade, use o <b>+ Agendar</b> da linha LIVRE.
             </Notice>
           )}
           {date && time && <p className="num rounded-campo bg-anil-claro/60 px-3 py-2 font-bold text-sobre-anil-claro first-letter:uppercase">{formatLongDate(date)} às {time}</p>}

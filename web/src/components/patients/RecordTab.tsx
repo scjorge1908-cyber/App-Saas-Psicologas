@@ -101,7 +101,7 @@ export function RecordTab({ patientId, sessionId, sessions, patient }: { patient
               <p className="font-bold text-ocre">{pendentes.length} {pendentes.length === 1 ? 'sessão atendida sem evolução' : 'sessões atendidas sem evolução'}</p>
               {pendentes.slice(0, 3).map((s) => (
                 <button key={s.id} onClick={() => setEvoluindo({ sessao: s })} className="flex items-center justify-between gap-2 rounded-campo bg-papel px-3 py-2 text-left">
-                  <span className="num text-[15px]">Sessão #{numeroSessao.get(s.id)} · {formatDate(zonedParts(s.starts_at, tz).date)} às {formatTime(s.starts_at, tz)}</span>
+                  <span className="num text-[0.9375rem]">Sessão #{numeroSessao.get(s.id)} · {formatDate(zonedParts(s.starts_at, tz).date)} às {formatTime(s.starts_at, tz)}</span>
                   <span className="text-sm font-bold text-anil-escuro">Evoluir</span>
                 </button>
               ))}
@@ -171,10 +171,10 @@ function CardEvolucao({ r, sessao, numero, onRetificar, onHistorico }: {
   return (
     <article className="cartao p-4">
       <header className="flex flex-wrap items-center gap-2">
-        {numero && <span className="num rounded-campo bg-anil-escuro px-2 py-1 text-[12px] font-extrabold text-sobre-anil">Sessão #{numero}</span>}
-        <span className="text-[17px] font-bold first-letter:uppercase">{formatLongDate(r.entry_date, true).split(', ')[1]}</span>
+        {numero && <span className="num rounded-campo bg-anil-escuro px-2 py-1 text-[0.75rem] font-extrabold text-sobre-anil">Sessão #{numero}</span>}
+        <span className="text-[1.0625rem] font-bold first-letter:uppercase">{formatLongDate(r.entry_date, true).split(', ')[1]}</span>
         {formato && (
-          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-afundado px-2.5 py-1 text-[12px] font-bold text-tinta-2">
+          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-afundado px-2.5 py-1 text-[0.75rem] font-bold text-tinta-2">
             {formato === 'online' ? <IconVideo className="size-4" /> : <IconDoor className="size-4" />}
             {formato === 'online' ? 'On-line' : 'Presencial'}{dur ? ` (${dur} min)` : ''}
           </span>
@@ -192,13 +192,13 @@ function CardEvolucao({ r, sessao, numero, onRetificar, onHistorico }: {
           {e.abordagens.length > 0 && (
             <div>
               <p className="rotulo mb-1.5">Técnicas e abordagem</p>
-              <div className="flex flex-wrap gap-1.5">{e.abordagens.map((a) => <span key={a} className="rounded-campo bg-afundado px-2.5 py-1 text-[13px] font-bold">{a}</span>)}</div>
+              <div className="flex flex-wrap gap-1.5">{e.abordagens.map((a) => <span key={a} className="rounded-campo bg-afundado px-2.5 py-1 text-[0.8125rem] font-bold">{a}</span>)}</div>
             </div>
           )}
           {e.tarefas.length > 0 && (
             <div className="rounded-campo border border-livre/30 bg-livre-fundo p-3">
               <p className="mb-1 inline-flex items-center gap-1.5 font-bold text-livre"><IconCheck className="size-4" /> Tarefas inter-sessão</p>
-              <ul className="list-inside list-disc text-[15px]">{e.tarefas.map((t, i) => <li key={i}>{t}</li>)}</ul>
+              <ul className="list-inside list-disc text-[0.9375rem]">{e.tarefas.map((t, i) => <li key={i}>{t}</li>)}</ul>
             </div>
           )}
         </div>
@@ -212,7 +212,7 @@ function CardEvolucao({ r, sessao, numero, onRetificar, onHistorico }: {
             <span className="inline-flex items-center gap-1.5"><IconLock className="size-4" /> Anotações pessoais (sigilosas)</span>
             {verNotas ? <IconEyeOff className="size-5" /> : <IconEye className="size-5" />}
           </button>
-          {verNotas && <p className="mt-2 whitespace-pre-wrap text-[15px]">{r.private_notes}</p>}
+          {verNotas && <p className="mt-2 whitespace-pre-wrap text-[0.9375rem]">{r.private_notes}</p>}
         </div>
       )}
 
@@ -302,7 +302,7 @@ function EvolucaoEditor({ aberto, patientId, patient, sessions, numeroSessao, on
           <div className="flex items-center gap-3">
             <span aria-hidden className="relative grid size-12 shrink-0 place-items-center rounded-full bg-anil-claro font-bold text-sobre-anil-claro">
               {nome.split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase()}
-              {sessao && numeroSessao.get(sessao.id) && <span className="num absolute -bottom-1 -right-1 rounded-full bg-anil-escuro px-1.5 text-[11px] font-extrabold text-sobre-anil">#{numeroSessao.get(sessao.id)}</span>}
+              {sessao && numeroSessao.get(sessao.id) && <span className="num absolute -bottom-1 -right-1 rounded-full bg-anil-escuro px-1.5 text-[0.75rem] font-extrabold text-sobre-anil">#{numeroSessao.get(sessao.id)}</span>}
             </span>
             <div className="min-w-0">
               <p className="truncate font-bold">{nome}</p>
@@ -333,11 +333,11 @@ function EvolucaoEditor({ aberto, patientId, patient, sessions, numeroSessao, on
 
         {/* Humor */}
         <section className="cartao p-3">
-          <div className="mb-2 flex items-baseline justify-between"><p className="font-bold">Estado geral e humor inicial</p><span className="text-[12px] text-tinta-3">um ou mais</span></div>
+          <div className="mb-2 flex items-baseline justify-between"><p className="font-bold">Estado geral e humor inicial</p><span className="text-[0.75rem] text-tinta-3">um ou mais</span></div>
           <div className="flex flex-wrap gap-2">
             {HUMORES.map((h) => (
               <button key={h} type="button" aria-pressed={ev.humor.includes(h)} onClick={() => setEv({ ...ev, humor: alterna(ev.humor, h) })}
-                className={cx('inline-flex min-h-10 items-center gap-1.5 rounded-full border px-3 text-sm font-bold', ev.humor.includes(h) ? 'border-transparent bg-anil-claro text-sobre-anil-claro' : 'border-linha text-tinta-2')}>
+                className={cx('inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-sm font-bold', ev.humor.includes(h) ? 'border-transparent bg-anil-claro text-sobre-anil-claro' : 'border-linha text-tinta-2')}>
                 <span className={cx('size-1.5 rounded-full', ev.humor.includes(h) ? 'bg-current' : 'bg-linha-forte')} />{h}
               </button>
             ))}
@@ -349,7 +349,7 @@ function EvolucaoEditor({ aberto, patientId, patient, sessions, numeroSessao, on
           <p className="font-bold">1. Queixa / tema central da sessão</p>
           <p className="mb-2 text-sm text-tinta-2">Síntese do que o paciente trouxe. Registre apenas o necessário (Código de Ética, art. 12).</p>
           <Textarea rows={5} maxLength={20000} value={ev.queixa} onChange={(e) => setEv({ ...ev, queixa: e.target.value })} aria-label="Queixa / tema central" />
-          <p className="mt-1 text-right text-[12px] text-tinta-3">{ev.queixa.length} caracteres</p>
+          <p className="mt-1 text-right text-[0.75rem] text-tinta-3">{ev.queixa.length} caracteres</p>
         </section>
 
         {/* 2. Intervenções */}
@@ -358,7 +358,7 @@ function EvolucaoEditor({ aberto, patientId, patient, sessions, numeroSessao, on
           <div className="my-2 flex flex-wrap gap-2">
             {ABORDAGENS.map((a) => (
               <button key={a} type="button" aria-pressed={ev.abordagens.includes(a)} onClick={() => setEv({ ...ev, abordagens: alterna(ev.abordagens, a) })}
-                className={cx('min-h-10 rounded-campo border px-3 text-sm font-bold', ev.abordagens.includes(a) ? 'btn-degrade border-transparent' : 'border-linha text-tinta-2')}>{a}</button>
+                className={cx('min-h-11 rounded-campo border px-3 text-sm font-bold', ev.abordagens.includes(a) ? 'btn-degrade border-transparent' : 'border-linha text-tinta-2')}>{a}</button>
             ))}
           </div>
           <Textarea rows={4} maxLength={20000} value={ev.intervencoes} onChange={(e) => setEv({ ...ev, intervencoes: e.target.value })} aria-label="Intervenções realizadas" placeholder="Técnicas e recursos usados na sessão" />
@@ -372,8 +372,8 @@ function EvolucaoEditor({ aberto, patientId, patient, sessions, numeroSessao, on
             {ev.tarefas.map((t, i) => (
               <li key={i} className="flex items-center gap-2 rounded-campo bg-afundado px-3 py-2">
                 <IconCheck className="size-4 shrink-0 text-livre" />
-                <span className="flex-1 text-[15px]">{t}</span>
-                <button type="button" onClick={() => setEv({ ...ev, tarefas: ev.tarefas.filter((_, j) => j !== i) })} className="min-h-9 px-2 text-sm font-bold text-tinta-3" aria-label={`Remover tarefa ${t}`}>Remover</button>
+                <span className="flex-1 text-[0.9375rem]">{t}</span>
+                <button type="button" onClick={() => setEv({ ...ev, tarefas: ev.tarefas.filter((_, j) => j !== i) })} className="min-h-11 px-2 text-sm font-bold text-tinta-3" aria-label={`Remover tarefa ${t}`}>Remover</button>
               </li>
             ))}
           </ul>

@@ -48,26 +48,26 @@ export function WelcomePage() {
   return (
     <div className="boas-vindas-app flex min-h-dvh flex-col">
       <header className="cabecalho-marca px-6 pb-10 pt-[calc(2.5rem+var(--sat,0px))]">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <img src={`${import.meta.env.BASE_URL}logo-branca.png`} alt="" width={52} height={52} className="size-[52px] object-contain" />
           <div>
-            <p className="text-[26px] font-extrabold leading-none tracking-[.04em]">PSI</p>
-            <p className="mt-0.5 text-[13px] font-bold leading-none tracking-[.2em]">CONSULTÓRIO</p>
-            <p className="mt-1 text-[12px] font-semibold uppercase tracking-[.14em] opacity-85">Psicologia e bem-estar</p>
+            <p className="text-[1.625rem] font-extrabold leading-none tracking-[.04em]">PSI</p>
+            <p className="mt-0.5 text-[0.8125rem] font-bold leading-none tracking-[.2em]">CONSULTÓRIO</p>
+            <p className="mt-1 text-[0.75rem] font-semibold uppercase tracking-[.14em] opacity-85">Psicologia e bem-estar</p>
           </div>
         </div>
-        <h1 className="titulo-display mt-6 max-w-md text-[30px] leading-tight">Seu consultório inteiro no celular.</h1>
-        <p className="mt-3 max-w-md text-[17px] opacity-90">Agenda, prontuário, documentos e financeiro — feito para psicólogas.</p>
+        <h1 className="titulo-display mt-6 max-w-md text-[1.875rem] leading-tight">Seu consultório inteiro no celular.</h1>
+        <p className="mt-3 max-w-md text-[1.0625rem] opacity-90">Agenda, prontuário, documentos e financeiro — feito para psicólogas.</p>
       </header>
 
       <main className="-mt-6 flex flex-1 flex-col gap-5 rounded-t-[28px] bg-gesso px-5 pb-[calc(1.5rem+var(--sab,0px))] pt-6">
         <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {RECURSOS.map(({ Icone, titulo, texto }) => (
-            <li key={titulo} className="flex items-start gap-3 cartao p-4">
+            <li key={titulo} className="flex min-w-0 items-start gap-3 cartao p-4">
               <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-anil-claro text-anil"><Icone /></span>
               <span>
-                <strong className="block text-[16px]">{titulo}</strong>
-                <span className="text-[15px] text-tinta-2">{texto}</span>
+                <strong className="block text-[1rem]">{titulo}</strong>
+                <span className="text-[0.9375rem] text-tinta-2">{texto}</span>
               </span>
             </li>
           ))}
@@ -77,18 +77,18 @@ export function WelcomePage() {
 
         <div className="mt-auto flex flex-col gap-3">
           <button type="button" onClick={conhecer}
-            className="min-h-13 btn-degrade pressionar rounded-botao px-5 text-[17px] font-bold shadow-elevado">
+            className="min-h-13 btn-degrade pressionar rounded-botao px-5 text-[1.0625rem] font-bold shadow-elevado">
             Conhecer o app
           </button>
           <p className="-mt-1 text-center text-sm text-tinta-3">Sem cadastro, com dados fictícios. Nada sai do seu celular.</p>
           <button type="button" onClick={google} disabled={indo}
-            className="flex min-h-13 items-center justify-center gap-3 rounded-2xl border border-linha-forte bg-papel px-5 text-[16px] font-bold text-tinta transition active:scale-[.98] disabled:opacity-60">
+            className="flex min-h-13 items-center justify-center gap-3 rounded-2xl border border-linha-forte bg-papel px-5 text-[1rem] font-bold text-tinta transition active:scale-[.98] disabled:opacity-60">
             <LogoGoogle /> {indo ? 'Abrindo o Google…' : 'Entrar com Google'}
           </button>
-          <div className="flex items-center justify-center gap-5 text-[15px]">
-            <Link to="/entrar" className="font-bold text-anil">Entrar com e-mail</Link>
+          <div className="flex items-center justify-center gap-5 text-[0.9375rem]">
+            <Link to="/entrar" className="inline-flex min-h-11 items-center font-bold text-anil">Entrar com e-mail</Link>
             <span className="text-linha-forte" aria-hidden>•</span>
-            <Link to="/cadastro" className="font-bold text-anil">Criar conta</Link>
+            <Link to="/cadastro" className="inline-flex min-h-11 items-center font-bold text-anil">Criar conta</Link>
           </div>
         </div>
         <Versao className="mt-8 pb-safe" />

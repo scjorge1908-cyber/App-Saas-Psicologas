@@ -1,11 +1,12 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
 import { cx } from './ui';
-import { IconCalendar, IconClock, IconDoc, IconLogout, IconMoney, IconMore, IconPeople, IconReceipt, IconSettings, IconToday } from './icons';
+import { IconCalendar, IconClock, IconDoc, IconLogout, IconMoney, IconMore, IconPeople, IconReceipt, IconHelp, IconSettings, IconToday } from './icons';
 import { signOut, useProfile } from '../auth/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { useDemo } from '../lib/demo/modo';
 import { Versao } from './Versao';
+import { BotaoAjuda, Passeio } from './ajuda/Ajuda';
 
 type NavItem = { to: string; label: string; icon: (p: React.SVGProps<SVGSVGElement>) => React.ReactElement; end?: boolean };
 const MAIN: NavItem[] = [
@@ -19,6 +20,7 @@ const EXTRA: NavItem[] = [
   { to: '/agenda/horarios', label: 'Meus horários', icon: IconClock },
   { to: '/notas-fiscais', label: 'Notas fiscais', icon: IconReceipt },
   { to: '/configuracoes', label: 'Configurações', icon: IconSettings },
+  { to: '/ajuda', label: 'Ajuda e tutoriais', icon: IconHelp },
 ];
 
 export function AppShell() {
@@ -32,7 +34,7 @@ export function AppShell() {
   const demo = useDemo();
   return (
     <div className="min-h-dvh lg:flex">
-      {demo && <FaixaDemo />}
+      <Passeio />
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-papel focus:px-3 focus:py-2">Pular para o conteúdo</a>
 
       {/* Lateral (desktop) */}
@@ -45,7 +47,7 @@ export function AppShell() {
         <nav aria-label="Principal" className="flex flex-1 flex-col gap-0.5 px-3">
           {[...MAIN, ...EXTRA].map((i) => (
             <NavLink key={i.to} to={i.to} end={i.end}
-              className={({ isActive }) => cx('flex min-h-12 items-center gap-3 rounded-full px-4 text-[15px] font-bold', isActive ? 'bg-anil-claro text-sobre-anil-claro' : 'text-tinta-2 hover:bg-cinza-fundo')}>
+              className={({ isActive }) => cx('flex min-h-12 items-center gap-3 rounded-full px-4 text-[0.9375rem] font-bold', isActive ? 'bg-anil-claro text-sobre-anil-claro' : 'text-tinta-2 hover:bg-cinza-fundo')}>
               <i.icon /> {i.label}
             </NavLink>
           ))}
@@ -54,14 +56,17 @@ export function AppShell() {
       </aside>
 
       <div className="min-w-0 flex-1">
+      {demo && <FaixaDemo />}
       {/* Cabeçalho com degradê (celular) — formato HopeCore */}
-      <header className={cx('cabecalho-marca pt-safe sticky top-0 z-30 lg:hidden', demo && 'mt-11')}>
-        <div className="flex min-h-16 items-center gap-2 pl-4 pr-2">
-          <div className="flex-1"><Marca /></div>
-          <NavLink to="/configuracoes" aria-label="Configurações" className="grid size-12 place-items-center rounded-full hover:bg-white/15"><IconSettings /></NavLink>
+      <header className="cabecalho-marca pt-safe sticky top-0 z-30 lg:hidden">
+        <div className="flex min-h-16 items-center gap-1 pl-4 pr-1">
+          <div className="min-w-0 flex-1"><Marca /></div>
+          <BotaoAjuda className="shrink-0" />
+          <NavLink to="/configuracoes" aria-label="Configurações" className="grid size-12 shrink-0 place-items-center rounded-full hover:bg-white/15"><IconSettings /></NavLink>
         </div>
       </header>
-      <main id="conteudo" ref={mainRef} tabIndex={-1} className={cx('mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-5 outline-none sm:px-6 lg:pb-12 lg:pt-8', demo && 'lg:mt-11')}>
+      <div className="hidden justify-end px-6 pt-4 text-anil-escuro lg:flex"><BotaoAjuda className="hover:bg-anil-claro/60" /></div>
+      <main id="conteudo" ref={mainRef} tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-5 outline-none sm:px-6 lg:pb-12 lg:pt-2">
         <Outlet />
         <Versao className="mt-10" />
       </main>
@@ -70,11 +75,12 @@ export function AppShell() {
       {/* Barra inferior (celular) */}
       <nav aria-label="Principal" className="pb-safe fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-linha/70 bg-papel/95 px-1 pt-1 backdrop-blur lg:hidden">
         {[...MAIN, { to: '/mais', label: 'Mais', icon: IconMore } as NavItem].map((i) => (
-          <NavLink key={i.to} to={i.to} end={i.end}
-            className={({ isActive }) => cx('group flex min-h-14 flex-col items-center justify-center gap-1 text-[12px] font-bold', isActive ? 'text-tinta' : 'text-tinta-3')}>
+          <NavLink key={i.to} to={i.to} end={i.end} data-ajuda={`nav-${i.label.toLowerCase().replace('ú', 'u')}`}
+            className={({ isActive }) => cx('@container group flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 text-[0.75rem] font-bold', isActive ? 'text-tinta' : 'text-tinta-3')}>
             {({ isActive }) => (<>
-              <span className={cx('grid h-8 w-14 place-items-center rounded-full transition-colors', isActive && 'bg-anil-claro text-sobre-anil-claro')}><i.icon /></span>
-              {i.label}
+              <span className={cx('grid h-8 w-full max-w-14 place-items-center rounded-full transition-colors', isActive && 'bg-anil-claro text-sobre-anil-claro')}><i.icon /></span>
+              {/* sem espaço (zoom ou fonte grande): só o ícone; o nome continua para o leitor de tela */}
+              <span className="max-w-full truncate @max-[3.5rem]:sr-only">{i.label}</span>
             </>)}
           </NavLink>
         ))}
@@ -87,7 +93,7 @@ export function MorePage() {
   const { profile } = useProfile();
   return (
     <div className="flex flex-col gap-1">
-      <h1 className="titulo-display mb-1 text-[30px]">Mais</h1>
+      <h1 className="titulo-display mb-1 text-[1.875rem]">Mais</h1>
       {profile && <p className="mb-4 text-tinta-2">{profile.full_name}{profile.crp ? `, CRP ${profile.crp}` : ''}</p>}
       {EXTRA.map((i) => (
         <NavLink key={i.to} to={i.to} className="cartao pressionar flex min-h-14 items-center gap-3 px-4 py-3 font-bold">
@@ -107,9 +113,9 @@ function FaixaDemo() {
     nav('/cadastro');
   }
   return (
-    <div className="pt-safe fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-3 bg-ocre-fundo px-4 py-2 text-[14px] text-ocre lg:left-64">
-      <span><b>Demonstração</b> · dados fictícios, nada é salvo</span>
-      <button type="button" onClick={criarConta} className="shrink-0 rounded-full bg-ocre px-3.5 py-1.5 font-bold text-ocre-fundo">Criar minha conta</button>
+    <div className="pt-safe flex flex-wrap items-center justify-between gap-x-3 gap-y-1 bg-ocre-fundo px-4 py-2 text-[0.875rem] text-ocre">
+      <span className="min-w-0"><b>Demonstração</b> · dados fictícios, nada é salvo</span>
+      <button type="button" onClick={criarConta} className="min-h-11 shrink-0 rounded-full bg-ocre px-4 font-bold text-ocre-fundo">Criar minha conta</button>
     </div>
   );
 }
@@ -117,11 +123,12 @@ function FaixaDemo() {
 /** Marca: símbolo da logo (versão branca, sobre o degradê) + "PSI" em cima e "CONSULTÓRIO" embaixo, como na logo. */
 export function Marca() {
   return (
-    <span className="flex items-center gap-2.5" aria-label="PsiConsultório">
-      <img src={`${import.meta.env.BASE_URL}logo-branca.png`} alt="" width={38} height={38} className="size-[38px] object-contain" />
-      <span aria-hidden className="flex flex-col leading-none">
-        <span className="text-[22px] font-extrabold tracking-[.04em]">PSI</span>
-        <span className="mt-0.5 text-[11px] font-bold tracking-[.2em]">CONSULTÓRIO</span>
+    <span className="flex items-center gap-2.5">
+      <span className="sr-only">PsiConsultório</span>
+      <img src={`${import.meta.env.BASE_URL}logo-branca.png`} alt="" width={38} height={38} className="size-[38px] shrink-0 object-contain" />
+      <span aria-hidden className="marca-texto flex flex-col whitespace-nowrap leading-none">
+        <span className="text-[1.375rem] font-extrabold tracking-[.04em]">PSI</span>
+        <span className="mt-0.5 text-[0.75rem] font-bold tracking-[.2em]">CONSULTÓRIO</span>
       </span>
     </span>
   );

@@ -58,7 +58,7 @@ export function TodayPage() {
       <section className="cartao cartao-boas-vindas flex flex-wrap items-end justify-between gap-4 px-5 pb-5 pt-6">
         <div>
           <p className="rotulo">{formatLongDate(today)}</p>
-          <h1 className="titulo-display mt-1 text-[30px] leading-tight">{saudacao}{primeiroNome ? `, ${primeiroNome}` : ''}</h1>
+          <h1 className="titulo-display mt-1 text-[1.875rem] leading-tight">{saudacao}{primeiroNome ? `, ${primeiroNome}` : ''}</h1>
           {d && <p className="mt-1 text-tinta-2">{d.sessions_today === 0 ? 'Nenhuma sessão hoje.' : `${d.sessions_today} ${d.sessions_today === 1 ? 'sessão' : 'sessões'} hoje.`}</p>}
         </div>
         <Button onClick={() => setCreating(true)}><IconPlus /> Nova sessão</Button>
@@ -78,7 +78,7 @@ export function TodayPage() {
       {/* Atalhos */}
       <nav aria-label="Atalhos" className="grid grid-cols-3 gap-3 sm:grid-cols-6">
         {ATALHOS.map((a) => (
-          <Link key={a.to} to={a.to} className="cartao pressionar flex aspect-square flex-col items-center justify-center gap-2 p-2 text-center text-[13px] font-bold leading-tight">
+          <Link key={a.to} to={a.to} className="cartao pressionar flex aspect-square flex-col items-center justify-center gap-2 p-2 text-center text-[0.8125rem] font-bold leading-tight">
             <span className={cx('atalho-icone grid size-12 place-items-center', a.cor)}><a.icon /></span>
             {a.label}
           </Link>
@@ -88,8 +88,8 @@ export function TodayPage() {
       {/* Sessões de hoje */}
       <section aria-labelledby="t-hoje">
         <div className="mb-2 flex items-center justify-between gap-2">
-          <h2 id="t-hoje" className="text-[18px] font-bold">Sessões de hoje</h2>
-          <Link to="/" className="inline-flex min-h-11 items-center px-2 text-[15px] font-bold text-anil-escuro">Ver agenda</Link>
+          <h2 id="t-hoje" className="text-[1.125rem] font-bold">Sessões de hoje</h2>
+          <Link to="/" className="inline-flex min-h-11 items-center px-2 text-[0.9375rem] font-bold text-anil-escuro">Ver agenda</Link>
         </div>
 
         {day.isLoading && <Loading />}
@@ -116,12 +116,12 @@ export function TodayPage() {
                   {idx === nowIdx && <NowLine tz={tz} now={now} />}
                   <div className={cx('cartao flex gap-3 border-l-4 py-3 pl-4 pr-3', STATUS_BAR[it.status], ended && !canRegister && 'opacity-80')}>
                     <div className="w-14 shrink-0 pt-0.5">
-                      <p className="num text-[17px] font-bold leading-none">{formatTime(it.starts_at, tz)}</p>
-                      <p className="num mt-1 text-[12px] text-tinta-3">{minutesBetween(it.starts_at, it.ends_at)} min</p>
+                      <p className="num text-[1.0625rem] font-bold leading-none">{formatTime(it.starts_at, tz)}</p>
+                      <p className="num mt-1 text-[0.75rem] text-tinta-3">{minutesBetween(it.starts_at, it.ends_at)} min</p>
                     </div>
                     <div className="flex min-w-0 flex-1 flex-col gap-2">
                       <button onClick={() => setOpen(it)} className="text-left">
-                        <span className="block truncate text-[16px] font-bold hover:text-anil-escuro">{it.patient_social_name || it.patient_name}</span>
+                        <span className="block truncate text-[1rem] font-bold hover:text-anil-escuro">{it.patient_social_name || it.patient_name}</span>
                         <span className="mt-1 flex flex-wrap items-center gap-2 text-sm text-tinta-2">
                           <StatusBadge status={it.status} />
                           {it.modality === 'online' ? <span className="inline-flex items-center gap-1"><IconVideo className="size-4" /> On-line</span>
@@ -139,7 +139,7 @@ export function TodayPage() {
                         <div><Button size="sm" variant="secondary" onClick={() => setOpen(it)}>Lembrar e confirmar</Button></div>
                       )}
                       {it.modality === 'online' && it.patient_meeting_url && !ended && (
-                        <a href={it.patient_meeting_url} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-anil-escuro underline-offset-4 hover:underline">Abrir sala on-line</a>
+                        <a href={it.patient_meeting_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center text-sm font-bold text-anil-escuro underline-offset-4 hover:underline">Abrir sala on-line</a>
                       )}
                     </div>
                   </div>
@@ -159,7 +159,7 @@ export function TodayPage() {
 
       {pending.data && pending.data.length > 0 && (
         <section id="registrar" aria-labelledby="t-reg">
-          <h2 id="t-reg" className="text-[18px] font-bold">Aguardando registro</h2>
+          <h2 id="t-reg" className="text-[1.125rem] font-bold">Aguardando registro</h2>
           <p className="mb-2 text-tinta-2">Sessões de dias anteriores ainda marcadas como agendadas ou confirmadas.</p>
           <ul className="cartao divide-y divide-linha/70 overflow-hidden">
             {pending.data.map((it) => (
@@ -188,12 +188,12 @@ export function TodayPage() {
               {valoresVisiveis ? <IconEyeOff /> : <IconEye />}
             </button>
           </div>
-          <p className="num text-[32px] font-extrabold leading-tight tracking-tight">{valor(d.received_month)}</p>
+          <p className="num text-[2rem] font-extrabold leading-tight tracking-tight">{valor(d.received_month)}</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <div className="carteira-bloco p-3"><p className="rotulo">A receber</p><p className="num mt-0.5 text-[18px] font-extrabold">{valor(d.receivable)}</p></div>
-            <div className="carteira-bloco p-3"><p className="rotulo">Vencido</p><p className="num mt-0.5 text-[18px] font-extrabold">{valor(d.overdue)}</p></div>
+            <div className="carteira-bloco p-3"><p className="rotulo">A receber</p><p className="num mt-0.5 text-[1.125rem] font-extrabold">{valor(d.receivable)}</p></div>
+            <div className="carteira-bloco p-3"><p className="rotulo">Vencido</p><p className="num mt-0.5 text-[1.125rem] font-extrabold">{valor(d.overdue)}</p></div>
           </div>
-          <Link to="/financeiro" className="mt-3 inline-flex min-h-11 items-center text-[15px] font-bold underline-offset-4 hover:underline">Abrir financeiro</Link>
+          <Link to="/financeiro" className="mt-3 inline-flex min-h-11 items-center text-[0.9375rem] font-bold underline-offset-4 hover:underline">Abrir financeiro</Link>
         </section>
       )}
 
@@ -230,9 +230,9 @@ const TOM_AVISO = {
 };
 
 function Aviso({ to, numero, titulo, sub, tom = 'alerta' }: { to: string; numero: number | string; titulo: string; sub: string; tom?: keyof typeof TOM_AVISO }) {
-  const cls = cx('pressionar flex min-h-[76px] items-center gap-4 rounded-cartao border py-3 pl-4 pr-3', TOM_AVISO[tom]);
+  const cls = cx('pressionar flex min-h-[76px] min-w-0 items-center gap-3 rounded-cartao border py-3 pl-3 pr-2', TOM_AVISO[tom]);
   const corpo = (<>
-    <span className="num min-w-11 text-center text-[36px] font-extrabold leading-none tracking-tight">{numero}</span>
+    <span className="num min-w-11 text-center text-[2.25rem] font-extrabold leading-none tracking-tight">{numero}</span>
     <span className="min-w-0 flex-1"><span className="block font-bold leading-snug">{titulo}</span><span className="block text-sm opacity-90">{sub}</span></span>
     <IconChevronRight className="shrink-0 opacity-70" />
   </>);
@@ -242,7 +242,7 @@ function Aviso({ to, numero, titulo, sub, tom = 'alerta' }: { to: string; numero
 function Kpi({ valor, rotulo, alerta }: { valor: number; rotulo: string; alerta?: boolean }) {
   return (
     <div className="cartao p-3">
-      <p className={cx('num text-[22px] font-extrabold leading-tight', alerta ? 'text-ocre' : 'text-tinta')}>{valor}</p>
+      <p className={cx('num text-[1.375rem] font-extrabold leading-tight', alerta ? 'text-ocre' : 'text-tinta')}>{valor}</p>
       <p className="rotulo mt-1">{rotulo}</p>
     </div>
   );

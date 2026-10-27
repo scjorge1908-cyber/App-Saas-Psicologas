@@ -83,7 +83,7 @@ body {
   background: var(--color-gesso);
   color: var(--color-tinta);
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.5;
 }
 
@@ -127,7 +127,16 @@ body {
 
 /* ---- Componentes do formato HopeCore (ver design-system/styles.css) ---- */
 .titulo-display { font-family: var(--font-display); font-weight: var(--display-weight); font-variation-settings: var(--display-opsz); letter-spacing: -.01em; }
-.rotulo { font-size: 11px; line-height: 1.3; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+/* Cabeçalho fixo no topo e barra inferior: o elemento focado ou levado à vista nunca fica escondido atrás deles (WCAG 2.4.11) */
+html { scroll-padding-top: 5.5rem; scroll-padding-bottom: 6rem; }
+@media (min-width: 1024px) { html { scroll-padding-bottom: 1rem; } }
+
+/* Zoom de 200%+ ou fonte muito grande: a área útil fica estreita; deixa o texto quebrar para nada sair da tela (WCAG 1.4.10) */
+@media (max-width: 260px) {
+  body { overflow-wrap: anywhere; hyphens: auto; }
+  .marca-texto { display: none; } /* só o símbolo da logo */
+}
+.rotulo { font-size: 0.75rem; line-height: 1.3; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
 .cartao { background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--r-lg); box-shadow: var(--elev-1); }
 .cartao-boas-vindas { position: relative; overflow: hidden; }
 .cartao-boas-vindas::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--grad-strip); }

@@ -24,7 +24,7 @@ export function SettingsPage() {
       <AgendaForm profile={profile} />
       <BackupPanel />
       <SecurityPanel />
-      <Panel title="Sobre e privacidade">
+      <Panel recolhivel title="Sobre e privacidade">
         <ul className="flex flex-col gap-2">
           <li><Link to="/termos" className="font-bold text-anil">Termos de uso e política de privacidade</Link></li>
           <li className="text-tinta-2">Você é a controladora dos dados dos seus pacientes (LGPD). A plataforma atua como operadora e guarda os dados em servidor com acesso restrito à sua conta.</li>
@@ -81,7 +81,7 @@ function ProfileForm({ profile }: { profile: Profile }) {
   }
 
   return (
-    <Panel title="Perfil profissional" actions={<Button size="sm" busy={busy} onClick={submit}>Salvar perfil</Button>}>
+    <Panel recolhivel aberto title="Perfil profissional" actions={<Button size="sm" busy={busy} onClick={submit}>Salvar perfil</Button>}>
       <div className="flex flex-col gap-4">
         {error && <ErrorBox>{error}</ErrorBox>}
         <div className="grid gap-3 sm:grid-cols-2">
@@ -136,7 +136,7 @@ function AgendaForm({ profile }: { profile: Profile }) {
   }
 
   return (
-    <Panel title="Agenda e atendimento" actions={<Button size="sm" busy={busy} onClick={submit}>Salvar</Button>}>
+    <Panel recolhivel title="Agenda e atendimento" actions={<Button size="sm" busy={busy} onClick={submit}>Salvar</Button>}>
       <div className="flex flex-col gap-4">
         {error && <ErrorBox>{error}</ErrorBox>}
         <div className="grid gap-3 sm:grid-cols-3">
@@ -193,7 +193,7 @@ function BackupPanel() {
   }
 
   return (
-    <Panel title="Seus dados">
+    <Panel recolhivel title="Seus dados">
       <div className="flex flex-col gap-3">
         {error && <ErrorBox>{error}</ErrorBox>}
         <p className="text-tinta-2">Baixe um arquivo com todos os dados da conta e os anexos. Use para guardar uma cópia de segurança, levar seus dados para outro sistema ou atender a pedidos de acesso.</p>
@@ -227,7 +227,7 @@ function SecurityPanel() {
     setPw(''); setPw2(''); toast('Senha alterada');
   }
   return (
-    <Panel title="Segurança">
+    <Panel recolhivel title="Segurança">
       <div className="flex flex-col gap-3">
         {error && <ErrorBox>{error}</ErrorBox>}
         <div className="grid gap-3 sm:grid-cols-2">
@@ -248,17 +248,17 @@ function AparenciaPanel() {
   const { tema, modo } = useAparencia();
   const MODOS: Array<[Modo, string]> = [['sistema', 'Automático'], ['claro', 'Claro'], ['escuro', 'Escuro']];
   return (
-    <Panel title="Aparência">
+    <Panel recolhivel title="Aparência">
       <fieldset>
         <legend className="rotulo mb-2">Tema</legend>
         <div className="grid gap-2 sm:grid-cols-2">
           {TEMAS.map((t) => (
-            <label key={t.id} className={`pressionar flex min-h-16 cursor-pointer items-center gap-3 rounded-campo border-[1.5px] px-3 py-2 ${tema === t.id ? 'border-anil bg-anil-claro/50' : 'border-linha'}`}>
+            <label key={t.id} className={`pressionar flex min-h-16 min-w-0 cursor-pointer flex-wrap items-center gap-3 rounded-campo border-[1.5px] px-3 py-2 ${tema === t.id ? 'border-anil bg-anil-claro/50' : 'border-linha'}`}>
               <input type="radio" name="tema" value={t.id} checked={tema === t.id} onChange={() => definirAparencia({ tema: t.id })} className="sr-only" />
               <span aria-hidden className="flex -space-x-1.5">
                 {t.cores.map((c) => <span key={c} className="size-6 rounded-full ring-2 ring-papel" style={{ background: c }} />)}
               </span>
-              <span className="min-w-0">
+              <span className="min-w-0 flex-1">
                 <span className="block font-bold">{t.nome}</span>
                 <span className="block text-sm text-tinta-2">{t.descricao}</span>
               </span>
@@ -270,7 +270,7 @@ function AparenciaPanel() {
         <legend className="rotulo mb-2">Modo</legend>
         <div className="inline-flex gap-1 rounded-campo bg-afundado p-1">
           {MODOS.map(([v, r]) => (
-            <label key={v} className={`flex min-h-10 cursor-pointer items-center rounded-[calc(var(--r-field)-4px)] px-4 text-sm font-bold ${modo === v ? 'bg-papel text-anil-escuro shadow-cartao' : 'text-tinta-2'}`}>
+            <label key={v} className={`flex min-h-11 cursor-pointer items-center rounded-[calc(var(--r-field)-4px)] px-4 text-sm font-bold ${modo === v ? 'bg-papel text-anil-escuro shadow-cartao' : 'text-tinta-2'}`}>
               <input type="radio" name="modo" value={v} checked={modo === v} onChange={() => definirAparencia({ modo: v })} className="sr-only" />
               {r}
             </label>

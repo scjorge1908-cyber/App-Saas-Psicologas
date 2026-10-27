@@ -23,7 +23,7 @@ const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp,image/heic,image
 export const PROTECTED: AttachmentCategory[] = ['avaliacao', 'documento_emitido', 'laudo', 'encaminhamento', 'exame'];
 /** Laudos e encaminhamentos médicos: aparecem também na aba Prontuário. */
 export const CATEGORIAS_PRONTUARIO: AttachmentCategory[] = ['laudo', 'encaminhamento'];
-const OPCOES: AttachmentCategory[] = ['laudo', 'encaminhamento', 'outro', 'avaliacao', 'autorizacao_responsavel', 'nota_fiscal'];
+const OPCOES: AttachmentCategory[] = ['outro', 'laudo', 'encaminhamento', 'avaliacao', 'autorizacao_responsavel', 'nota_fiscal'];
 
 export function AttachmentsTab({ patientId, somente }: { patientId: string; somente?: AttachmentCategory[] }) {
   const { session } = useAuth();
@@ -33,7 +33,7 @@ export function AttachmentsTab({ patientId, somente }: { patientId: string; some
   const toast = useToast();
   const confirm = useConfirm();
   const opcoes = somente ?? OPCOES;
-  const [category, setCategory] = useState<AttachmentCategory>(opcoes[0]);
+  const [category, setCategory] = useState<AttachmentCategory>(somente ? somente[0] : 'outro');
   const lista = somente ? q.data?.filter((a) => somente.includes(a.category)) : q.data;
   const [busy, setBusy] = useState(false);
   const input = useRef<HTMLInputElement>(null);

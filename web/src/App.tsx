@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { useAuth, useProfile } from './auth/AuthProvider';
 import { supabaseConfigured } from './lib/supabase';
 import { AppShell, MorePage } from './components/AppShell';
+import { AjudaPage } from './pages/AjudaPage';
 import { ErrorBox, Loading } from './components/ui';
 import { ForgotPasswordPage, LoginPage, OnboardingPage, ResetPasswordPage, SignupPage } from './pages/auth/AuthPages';
 import { TodayPage } from './pages/TodayPage';
@@ -66,6 +67,7 @@ export default function App() {
         <Route path="notas-fiscais" element={<InvoicesPage />} />
         <Route path="configuracoes" element={<SettingsPage />} />
         <Route path="mais" element={<MorePage />} />
+        <Route path="ajuda" element={<AjudaPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

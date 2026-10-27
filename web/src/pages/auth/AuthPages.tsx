@@ -14,9 +14,9 @@ function AuthLayout({ title, children, footer }: { title: string; children: Reac
     <div className="flex min-h-dvh flex-col items-center px-4 py-10 sm:justify-center">
       <div className="w-full max-w-sm">
         <p className="mb-8 text-xl font-bold text-anil">PsiConsultório</p>
-        <h1 className="mb-6 text-[28px] font-bold leading-tight">{title}</h1>
+        <h1 className="mb-6 text-[1.75rem] font-bold leading-tight">{title}</h1>
         {children}
-        {footer && <div className="mt-6 flex flex-col gap-2 text-[15px]">{footer}</div>}
+        {footer && <div className="mt-6 flex flex-col gap-2 text-[0.9375rem]">{footer}</div>}
       </div>
     </div>
   );
@@ -121,7 +121,7 @@ export function SignupPage() {
         <TextField label="E-mail" type="email" autoComplete="email" required value={form.email} onChange={set('email')} />
         <TextField label="Senha" type="password" autoComplete="new-password" required hint="Mínimo de 10 caracteres." value={form.password} onChange={set('password')} />
         <TextField label="Repita a senha" type="password" autoComplete="new-password" required value={form.password2} onChange={set('password2')} />
-        <label className="flex items-start gap-3 text-[15px]">
+        <label className="flex items-start gap-3 text-[0.9375rem]">
           <input type="checkbox" className="mt-1 h-5 w-5 accent-anil" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} />
           <span>Li e aceito os <Link to="/termos" className={linkCls} target="_blank">termos de uso e a política de privacidade</Link>.</span>
         </label>

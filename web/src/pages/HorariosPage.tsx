@@ -37,10 +37,10 @@ export function HorariosPage() {
   return (
     <div className="flex flex-col gap-5 pb-6">
       <header className="flex items-center gap-2">
-        <Link to="/" className="grid size-11 place-items-center rounded-xl text-tinta-2 hover:bg-cinza-fundo" aria-label="Voltar para a agenda"><IconChevronLeft /></Link>
+        <Link to="/" className="grid size-11 shrink-0 place-items-center rounded-xl text-tinta-2 hover:bg-cinza-fundo" aria-label="Voltar para a agenda"><IconChevronLeft /></Link>
         <div>
-          <h1 className="titulo-display text-[26px] leading-tight">Grade e horários</h1>
-          <p className="text-[15px] text-tinta-2">Gere os horários da sua rotina com os intervalos certos. A agenda usa esta grade.</p>
+          <h1 className="titulo-display text-[1.625rem] leading-tight">Grade e horários</h1>
+          <p className="text-[0.9375rem] text-tinta-2">Gere os horários da sua rotina com os intervalos certos. A agenda usa esta grade.</p>
         </div>
       </header>
 
@@ -55,7 +55,7 @@ export function HorariosPage() {
       {(horas.data ?? []).length > 0 && (
         <section aria-labelledby="t-semana" className="flex flex-col gap-3">
           <div className="flex items-baseline justify-between">
-            <h2 id="t-semana" className="text-[18px] font-bold">Grade atual</h2>
+            <h2 id="t-semana" className="text-[1.125rem] font-bold">Grade atual</h2>
             <span className="text-sm text-tinta-2">Toque num bloco para mudar ou excluir</span>
           </div>
           {ORDEM_DIAS.map((d) => {
@@ -93,13 +93,13 @@ export function HorariosPage() {
       {lista.length > 0 && (
         <section aria-labelledby="t-salas" className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <h2 id="t-salas" className="text-[18px] font-bold">Salas</h2>
+            <h2 id="t-salas" className="text-[1.125rem] font-bold">Salas</h2>
             <Button variant="ghost" size="sm" onClick={() => setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] })}><IconPlus /> Sala</Button>
           </div>
           <ul className="grid gap-2 sm:grid-cols-2">
             {lista.map((l) => (
               <li key={l.id}>
-                <button type="button" onClick={() => setEditLocal(l)} className={cx('cartao pressionar flex w-full items-center gap-3 px-4 py-3 text-left', !l.active && 'opacity-60')}>
+                <button type="button" onClick={() => setEditLocal(l)} className={cx('cartao pressionar flex w-full min-w-0 items-center gap-3 px-3 py-3 text-left', !l.active && 'opacity-60')}>
                   <span className="size-3 shrink-0 rounded-full" style={{ background: l.color ?? 'var(--color-anil)' }} aria-hidden />
                   <span className="min-w-0 flex-1">
                     <strong className="block truncate">{l.name}</strong>
@@ -172,7 +172,7 @@ function LocalDialog({ local, onClose, onSaved }: { local: Partial<Location> | n
           </div>
         </fieldset>
         {form.id && (
-          <label className="flex items-center gap-3 text-[15px]">
+          <label className="flex items-center gap-3 text-[0.9375rem]">
             <input type="checkbox" className="size-5 accent-anil" checked={form.active !== false} onChange={(e) => setForm({ ...form, active: e.target.checked })} />
             Local em uso (desmarque para pausar sem excluir)
           </label>
@@ -304,8 +304,8 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
   return (
     <section className="flex flex-col gap-4" aria-labelledby="t-gerar">
       <div>
-        <span className="inline-flex h-7 items-center rounded-full bg-livre-fundo px-3 text-[12px] font-bold text-livre">Gerador de horários</span>
-        <h2 id="t-gerar" className="mt-2 text-[20px] font-bold leading-tight">Configurar regras de atendimento</h2>
+        <span className="inline-flex h-7 items-center rounded-full bg-livre-fundo px-3 text-[0.75rem] font-bold text-livre">Gerador de horários</span>
+        <h2 id="t-gerar" className="mt-2 text-[1.25rem] font-bold leading-tight">Configurar regras de atendimento</h2>
       </div>
       {erro && <ErrorBox>{erro}</ErrorBox>}
 
@@ -322,7 +322,7 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
                 <button key={l.id} type="button" aria-pressed={sel} onClick={() => setLocalId(l.id)}
                   className={cx('flex min-h-16 min-w-36 shrink-0 items-center gap-2 rounded-cartao border px-3 text-left', sel ? 'btn-degrade border-transparent shadow-elevado' : 'border-linha bg-papel')}>
                   <span className="size-2.5 shrink-0 rounded-full" style={{ background: sel ? 'currentColor' : l.color ?? 'var(--color-anil)' }} aria-hidden />
-                  <span className="min-w-0"><span className="block truncate font-bold">{l.name}</span><span className="block text-[12px] opacity-80">{l.modality === 'online' ? 'On-line' : 'Presencial'}</span></span>
+                  <span className="min-w-0"><span className="block truncate font-bold">{l.name}</span><span className="block text-[0.75rem] opacity-80">{l.modality === 'online' ? 'On-line' : 'Presencial'}</span></span>
                 </button>
               );
             })}
@@ -363,15 +363,15 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
 
       {/* Pré-visualização */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between"><p className="text-[18px] font-bold">Pré-visualização da grade</p></div>
-        <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[15px] text-sobre-anil-claro">
+        <div className="flex items-center justify-between"><p className="text-[1.125rem] font-bold">Pré-visualização da grade</p></div>
+        <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
           <b className="num">{String(inicios.length).padStart(2, '0')} horários</b> de {dur} min{int ? <> com <b>{int} min</b> de intervalo</> : ' sem intervalo'}.
           Total útil: <b className="num">{Math.floor(util / 60)}h{util % 60 ? `${util % 60}` : ''}</b> de agenda{dias.length ? `, em ${ORDEM_DIAS.filter((d) => dias.includes(d)).map((d) => DIAS_SEMANA[d].slice(0, 3)).join(', ')}` : ''}. Vale para todas as semanas.
         </p>
         <ol className="flex flex-col">
           {inicios.map((t, i) => (
             <li key={t}>
-              {i > 0 && int > 0 && <p className="num py-1 text-center text-[12px] text-tinta-3">{int} min de intervalo</p>}
+              {i > 0 && int > 0 && <p className="num py-1 text-center text-[0.75rem] text-tinta-3">{int} min de intervalo</p>}
               <div className={cx('cartao flex items-center gap-3 border-l-4 border-l-livre px-4 py-3', i > 0 && int === 0 && 'mt-2')}>
                 <span className="min-w-0 flex-1">
                   <span className="num block font-bold">{t} — {fimDe(t)}</span>
@@ -384,7 +384,7 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
         </ol>
       </div>
 
-      <Button onClick={salvar} busy={salvando} className="min-h-14 w-full text-[16px]">Salvar e gerar grade</Button>
+      <Button onClick={salvar} busy={salvando} className="min-h-14 w-full text-[1rem]">Salvar e gerar grade</Button>
       <Button variant="secondary" onClick={restaurar} className="w-full">Restaurar padrão</Button>
     </section>
   );

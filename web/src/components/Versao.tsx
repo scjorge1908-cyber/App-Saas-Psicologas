@@ -11,5 +11,5 @@ export function Versao({ className }: { className?: string }) {
     if (!Capacitor.isNativePlatform()) return;
     App.getInfo().then((i) => setTexto(`Versão ${i.version}`)).catch(() => {});
   }, []);
-  return <p className={cx('num text-center text-[12px] text-tinta-3', className)}>PsiConsultório · {texto}</p>;
+  return <p className={cx('num text-center text-[0.75rem] text-tinta-3', className)}>PsiConsultório · {texto}</p>;
 }

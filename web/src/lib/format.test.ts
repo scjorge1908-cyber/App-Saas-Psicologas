@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  avisoNascimento,
   addDays, ageOn, formatCpf, formatDate, formatLongDate, formatPhone, isMinor, isValidCpf,
   money, normalizeCrp, parseMoney, startOfWeek, sumMoney, zonedParts, zonedToUtc,
 } from './format';
@@ -85,5 +86,17 @@ describe('mensagens', () => {
   it('mensagem de cobrança não expõe dados clínicos', () => {
     const t = chargeText({ patientName: 'Carlos', amount: 150, description: 'Sessão de 01/10/2026 14:00', professionalName: 'Ana' });
     expect(t).toContain('150,00');
+  });
+});
+
+describe('aviso de data de nascimento', () => {
+  it('avisa idade 0, 1, acima de 110 e data no futuro; não avisa idades normais', () => {
+    expect(avisoNascimento('2026-03-01', '2026-10-27')).toContain('0 anos');
+    expect(avisoNascimento('2025-05-01', '2026-10-27')).toContain('1 ano.');
+    expect(avisoNascimento('1900-01-01', '2026-10-27')).toContain('126 anos');
+    expect(avisoNascimento('2027-01-01', '2026-10-27')).toContain('futuro');
+    expect(avisoNascimento('2023-01-01', '2026-10-27')).toBeNull();
+    expect(avisoNascimento('1985-02-08', '2026-10-27')).toBeNull();
+    expect(avisoNascimento(null, '2026-10-27')).toBeNull();
   });
 });

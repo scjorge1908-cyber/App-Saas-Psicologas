@@ -16,7 +16,12 @@ import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet, openReminder } from '../components/appointments/AppointmentSheet';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
 import { ErrorBox, Loading, STATUS_BAR, StatusBadge, cx, useToast } from '../components/ui';
-import { IconAlert, IconCake, IconChevronLeft, IconChevronRight, IconCircleCheck, IconClock, IconDoor, IconDots, IconPlus, IconSwap, IconUserPlus, IconWhats } from '../components/icons';
+import { PrimeirosPassos, iniciarPasseio } from '../components/ajuda/Ajuda';
+import { FLAG_PASSEIO_OFERECIDO, FLAG_WHATS_ENVIADO, gravarFlag, lerFlag } from '../lib/ajuda';
+import type { DashboardSummary } from '../lib/types';
+import { VALOR_OCULTO, useValoresVisiveis } from '../lib/privacidade';
+import { money } from '../lib/format';
+import { IconCake, IconChevronLeft, IconChevronRight, IconCircleCheck, IconClock, IconDoor, IconDots, IconPlus, IconSwap, IconWhats } from '../components/icons';
 
 type NovoEm = { date: string; time?: string; locationId?: string | null; minutes?: number; modo?: 'novo' | 'existente' };
 type Filtro = 'tudo' | 'livres' | 'agendados';
@@ -38,6 +43,8 @@ export function AgendaPage() {
   const [filtro, setFiltro] = useState<Filtro>('tudo');
   const [open, setOpen] = useState<{ item: AgendaItem; mover?: boolean } | null>(null);
   const [novoEm, setNovoEm] = useState<NovoEm | null>(null);
+  const [abertos, setAbertos] = useState<Set<string>>(new Set()); // cards com todos os livres à mostra
+  const [passeioPerguntado, setPasseioPerguntado] = useState(() => lerFlag(FLAG_PASSEIO_OFERECIDO));
 
   const semana = startOfWeek(date);
   const dias = Array.from({ length: 7 }, (_, i) => addDays(semana, i));
@@ -65,6 +72,7 @@ export function AgendaPage() {
       const livres = horariosLivres({ date: d, hours: faixas, locations: locais.data ?? [], items: q.data.filter((it) => zonedParts(it.starts_at, tz).date === d),
         sessionMinutes: profile.session_minutes, bufferMinutes: profile.buffer_minutes, tz });
       const usados = new Set<string>();
+      const doDia: Bloco[] = [];
       for (const f of faixas) {
         const ini = f.start_time.slice(0, 5); const fim = f.end_time.slice(0, 5);
         const sessoes = itens.filter((it) => {
@@ -77,11 +85,18 @@ export function AgendaPage() {
           ...sessoes.map((item) => ({ tipo: 'sessao' as const, hora: formatTime(item.starts_at, tz), item })),
           ...livres.filter((l) => l.faixaId === f.id).map((livre) => ({ tipo: 'livre' as const, hora: livre.time, livre })),
         ].sort((a, b) => a.hora.localeCompare(b.hora));
-        if (linhas.length) out.push({ chave: `${d}-${f.id}`, date: d, titulo: periodoDe(ini).nome, sala: (locais.data ?? []).find((l) => l.id === f.location_id) ?? null, faixa: `${ini}–${fim}`, linhas });
+        doDia.push({ chave: `${d}-${f.id}`, date: d, titulo: periodoDe(ini).nome, sala: (locais.data ?? []).find((l) => l.id === f.location_id) ?? null, faixa: `${ini}–${fim}`, linhas });
       }
-      const fora = itens.filter((it) => !usados.has(it.id));
-      if (fora.length) out.push({ chave: `${d}-fora`, date: d, titulo: 'Outros horários', sala: null, faixa: null,
-        linhas: fora.map((item) => ({ tipo: 'sessao' as const, hora: formatTime(item.starts_at, tz), item })).sort((a, b) => a.hora.localeCompare(b.hora)) });
+      // Sessão de outra sala ou on-line sem bloco próprio: entra no card do mesmo período do dia (com selo); sem período, "Outros horários"
+      const outros: Linha[] = [];
+      for (const it of itens.filter((x) => !usados.has(x.id))) {
+        const hora = formatTime(it.starts_at, tz);
+        const alvo = doDia.find((b) => b.titulo === periodoDe(hora).nome);
+        if (alvo) alvo.linhas = [...alvo.linhas, { tipo: 'sessao' as const, hora, item: it }].sort((a, b) => a.hora.localeCompare(b.hora));
+        else outros.push({ tipo: 'sessao' as const, hora, item: it });
+      }
+      out.push(...doDia.filter((b) => b.linhas.length > 0));
+      if (outros.length) out.push({ chave: `${d}-fora`, date: d, titulo: 'Outros horários', sala: null, faixa: null, linhas: outros.sort((a, b) => a.hora.localeCompare(b.hora)) });
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,6 +108,12 @@ export function AgendaPage() {
     .filter((b) => b.linhas.length > 0);
   const totalAgendados = blocos.reduce((n, b) => n + b.linhas.filter((l) => l.tipo === 'sessao').length, 0);
   const totalLivres = blocos.reduce((n, b) => n + b.linhas.filter((l) => l.tipo === 'livre').length, 0);
+
+  // Alvos do passeio: o primeiro horário livre e o primeiro botão de WhatsApp da tela
+  const primeiroLivreChave = (() => { for (const b of visiveis) { const l = b.linhas.find((x) => x.tipo === 'livre'); if (l) return `${b.chave}|${l.hora}`; } return null; })();
+  const primeiroWhatsId = (() => { for (const b of visiveis) { const l = b.linhas.find((x) => x.tipo === 'sessao' && x.item.patient_phone); if (l && l.tipo === 'sessao') return l.item.id; } return null; })();
+  const primeiroLivre = (b: Bloco, l: Linha) => `${b.chave}|${l.hora}` === primeiroLivreChave;
+  const primeiraSessaoComWhats = (_b: Bloco, l: Linha) => l.tipo === 'sessao' && l.item.id === primeiroWhatsId;
 
   const irPara = (d: string) => {
     if (startOfWeek(d) !== semana) { setParams({ d }, { replace: true }); return; }
@@ -111,18 +132,20 @@ export function AgendaPage() {
         : r.wa;
       if (!wa) { janela?.close(); toast('Paciente sem celular cadastrado.', 'erro'); return; }
       if (janela) janela.location.href = wa; else window.location.href = wa;
+      gravarFlag(FLAG_WHATS_ENVIADO);
     } catch (e) { janela?.close(); toast(errorMessage(e), 'erro'); }
   }
 
   return (
     <div className="flex flex-col gap-4 pb-6">
+      <h1 className="sr-only">Agenda</h1>
       {/* Consultório ativo */}
       <section className="cartao flex flex-col gap-3 p-4">
-        <div className="flex items-start gap-3">
+        <div className="flex flex-wrap items-start gap-3">
           <span className="grid size-12 shrink-0 place-items-center rounded-campo bg-anil-claro text-sobre-anil-claro"><IconDoor /></span>
-          <div className="min-w-0 flex-1">
+          <div className="min-w-[7rem] flex-1">
             <p className="rotulo text-anil-escuro">Consultório ativo · semana {ddmm(semana)} a {ddmm(addDays(semana, 6))}</p>
-            <p className="truncate text-[19px] font-bold leading-snug">{sala?.name ?? (salasAtivas.length > 1 ? 'Todas as salas' : salasAtivas[0]?.name ?? 'Minha agenda')}{profile?.full_name ? ` · ${profile.full_name.split(' ')[0]}` : ''}</p>
+            <p className="truncate text-[1.1875rem] font-bold leading-snug">{sala?.name ?? (salasAtivas.length > 1 ? 'Todas as salas' : salasAtivas[0]?.name ?? 'Minha agenda')}{profile?.full_name ? ` · ${profile.full_name.split(' ')[0]}` : ''}</p>
           </div>
           {salasAtivas.length > 1 && (
             <button onClick={() => { const ids = ['', ...salasAtivas.map((l) => l.id)]; setSalaId(ids[(ids.indexOf(salaId) + 1) % ids.length]); }}
@@ -138,31 +161,44 @@ export function AgendaPage() {
 
       {/* Dias da semana: toca para ir ao dia */}
       <div className="flex items-center gap-1">
-        <button onClick={() => setParams({ d: addDays(date, -7) }, { replace: true })} aria-label="Semana anterior" className="grid size-10 shrink-0 place-items-center rounded-full text-tinta-2 hover:bg-cinza-fundo"><IconChevronLeft /></button>
+        <button onClick={() => setParams({ d: addDays(date, -7) }, { replace: true })} aria-label="Semana anterior" className="grid size-11 shrink-0 place-items-center rounded-full text-tinta-2 hover:bg-cinza-fundo"><IconChevronLeft /></button>
         <div className="flex flex-1 gap-1.5 overflow-x-auto pb-1" aria-label="Dias da semana">
           {dias.map((d) => {
             const sel = d === date;
             const temAlgo = blocos.some((b) => b.date === d);
             return (
               <button key={d} onClick={() => irPara(d)} aria-current={sel ? 'date' : undefined}
-                className={cx('flex min-w-[54px] flex-1 flex-col items-center rounded-cartao border py-2 leading-tight', sel ? 'btn-degrade border-transparent shadow-elevado' : 'border-linha bg-papel', !temAlgo && !sel && 'opacity-55')}>
-                <span className="text-[12px] font-bold uppercase">{weekdayShort(d)}</span>
-                <span className="num text-[20px] font-extrabold">{Number(d.slice(8))}</span>
-                <span className="text-[12px] capitalize">{monthName(Number(d.slice(5, 7))).slice(0, 3)}</span>
+                className={cx('flex min-w-[54px] flex-1 flex-col items-center rounded-cartao border py-2 leading-tight', sel ? 'btn-degrade border-transparent shadow-elevado' : 'border-linha bg-papel', !temAlgo && !sel && 'text-tinta-3')}>
+                <span className="text-[0.75rem] font-bold uppercase">{weekdayShort(d)}</span>
+                <span className="num text-[1.25rem] font-extrabold">{Number(d.slice(8))}</span>
+                <span className="text-[0.75rem] capitalize">{monthName(Number(d.slice(5, 7))).slice(0, 3)}</span>
                 {d === hoje && !sel && <span className="mt-0.5 size-1.5 rounded-full bg-anil" aria-label="hoje" />}
               </button>
             );
           })}
         </div>
-        <button onClick={() => setParams({ d: addDays(date, 7) }, { replace: true })} aria-label="Próxima semana" className="grid size-10 shrink-0 place-items-center rounded-full text-tinta-2 hover:bg-cinza-fundo"><IconChevronRight /></button>
+        <button onClick={() => setParams({ d: addDays(date, 7) }, { replace: true })} aria-label="Próxima semana" className="grid size-11 shrink-0 place-items-center rounded-full text-tinta-2 hover:bg-cinza-fundo"><IconChevronRight /></button>
       </div>
 
-      {dash.data && dash.data.to_register > 0 && (
-        <Link to="/resumo#registrar" className="flex min-h-12 items-center gap-2 rounded-campo bg-ocre-fundo px-4 py-2 text-[15px] font-bold text-ocre">
-          <IconAlert className="size-5 shrink-0" />
-          <span className="flex-1">{dash.data.to_register} {dash.data.to_register === 1 ? 'sessão aguarda' : 'sessões aguardam'} registro</span>
-          <IconChevronRight className="size-5 shrink-0" />
-        </Link>
+      {dash.data && <ResumoHoje d={dash.data} />}
+
+      {q.data && horas.data && (
+        <PrimeirosPassos passos={[
+          { feito: !semGrade, texto: 'Criar meus horários', para: '/agenda/horarios' },
+          { feito: (dash.data?.active_patients ?? 0) > 0 || totalAgendados > 0, texto: 'Agendar o primeiro paciente', acao: () => setNovoEm({ date: hoje, modo: 'novo' }) },
+          { feito: totalAgendados > 0, texto: 'Ver o agendamento aqui na agenda', acao: () => setFiltro('agendados') },
+          { feito: lerFlag(FLAG_WHATS_ENVIADO), texto: 'Enviar a confirmação pelo WhatsApp', acao: () => setFiltro('agendados') },
+        ]} />
+      )}
+
+      {!passeioPerguntado && !semGrade && q.data && (
+        <section className="cartao flex flex-col gap-2 px-4 py-3" aria-label="Passeio pela agenda">
+          <p className="text-[0.9375rem]"><b>Quer um passeio de 1 minuto pela agenda?</b> Dá para refazer depois em Mais → Ajuda.</p>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+          <button onClick={() => { gravarFlag(FLAG_PASSEIO_OFERECIDO); setPasseioPerguntado(true); }} className="min-h-11 px-2 text-sm font-bold text-tinta-3">Agora não</button>
+          <button onClick={() => { gravarFlag(FLAG_PASSEIO_OFERECIDO); setPasseioPerguntado(true); setTimeout(() => iniciarPasseio('agenda'), 100); }} className="btn-degrade min-h-11 rounded-botao px-4 text-sm font-bold">Fazer o passeio</button>
+          </div>
+        </section>
       )}
 
       {/* Filtro */}
@@ -170,7 +206,7 @@ export function AgendaPage() {
         <div className="flex gap-2 overflow-x-auto" role="tablist" aria-label="Filtro">
           {([['tudo', 'Tudo'], ['livres', `Só horários livres (${totalLivres})`], ['agendados', `Só agendados (${totalAgendados})`]] as Array<[Filtro, string]>).map(([f, r]) => (
             <button key={f} role="tab" aria-selected={filtro === f} onClick={() => setFiltro(f)}
-              className={cx('min-h-10 shrink-0 rounded-full border px-3.5 text-sm font-bold', filtro === f ? 'btn-degrade border-transparent' : 'border-linha bg-papel text-tinta-2')}>{r}</button>
+              className={cx('min-h-11 shrink-0 rounded-full border px-3.5 text-sm font-bold', filtro === f ? 'btn-degrade border-transparent' : 'border-linha bg-papel text-tinta-2')}>{r}</button>
           ))}
         </div>
       )}
@@ -178,8 +214,8 @@ export function AgendaPage() {
       {semGrade && (
         <section className="cartao cartao-boas-vindas flex flex-col gap-3 px-4 pb-4 pt-5">
           <div>
-            <strong className="block text-[17px]">Monte sua grade de horários</strong>
-            <span className="text-[15px] text-tinta-2">Escolha a sala, os dias, o turno, a duração e o intervalo. O app gera os horários, que aparecem aqui prontos para agendar. Dá para mudar ou excluir quando quiser.</span>
+            <strong className="block text-[1.0625rem]">Monte sua grade de horários</strong>
+            <span className="text-[0.9375rem] text-tinta-2">Escolha a sala, os dias, o turno, a duração e o intervalo. O app gera os horários, que aparecem aqui prontos para agendar. Dá para mudar ou excluir quando quiser.</span>
           </div>
           <Link to="/agenda/horarios" className="btn-degrade pressionar inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-botao px-5 font-bold"><IconClock /> Criar minha grade</Link>
         </section>
@@ -197,28 +233,45 @@ export function AgendaPage() {
         return (
           <section key={b.chave} id={primeiroDoDia ? `dia-${b.date}` : undefined} className={cx('cartao scroll-mt-24 overflow-hidden', b.date === hoje && 'ring-2 ring-anil-escuro')}>
             <header className="flex flex-wrap items-center gap-x-2 gap-y-1 border-b border-linha bg-afundado/60 px-4 py-3">
-              <h2 className="text-[18px] font-bold">{diaNome(b.date)} <span className="num">{ddmm(b.date)}</span> · {b.titulo}</h2>
-              {b.date === hoje && <span className="rounded-full bg-anil-escuro px-2 py-0.5 text-[11px] font-extrabold uppercase text-sobre-anil">Hoje</span>}
+              <h2 className="text-[1.125rem] font-bold">{diaNome(b.date)} <span className="num">{ddmm(b.date)}</span> · {b.titulo}</h2>
+              {b.date === hoje && <span className="rounded-full bg-anil-escuro px-2 py-0.5 text-[0.75rem] font-extrabold uppercase text-sobre-anil">Hoje</span>}
               <span className="ml-auto flex items-center gap-2 text-sm text-tinta-2">
                 {b.sala && <span className="inline-flex items-center gap-1 font-bold"><span className="size-2 rounded-full" style={{ background: b.sala.color ?? 'var(--color-anil)' }} />{b.sala.name}</span>}
                 {b.faixa && <span className="num">{b.faixa}</span>}
               </span>
             </header>
-            <ol className="flex flex-col gap-2 p-3">
-              {b.linhas.map((l) => l.tipo === 'livre' ? (
-                <li key={`livre-${l.hora}`} className="flex min-h-14 items-center gap-3 rounded-campo border-l-4 border-l-livre bg-livre-fundo py-2 pl-3 pr-2">
-                  <span className="num text-[17px] font-bold">{l.hora}</span>
-                  <span className="text-sm text-tinta-2">{l.livre.minutes ?? profile?.session_minutes ?? 50} min</span>
-                  <button onClick={() => setNovoEm({ date: b.date, time: l.hora, locationId: l.livre.location?.id ?? null, minutes: l.livre.minutes, modo: 'novo' })}
-                    className="btn-degrade pressionar ml-auto inline-flex min-h-10 items-center gap-1.5 rounded-botao px-3.5 text-sm font-bold">
-                    <IconUserPlus className="size-4" /> Agendar paciente
-                  </button>
-                </li>
-              ) : (
-                <li key={l.item.id}>
-                  <LinhaSessao item={l.item} date={b.date} tz={tz} onOpen={() => setOpen({ item: l.item })} onMover={() => setOpen({ item: l.item, mover: true })} onWhats={() => enviarWhatsApp(l.item)} />
-                </li>
-              ))}
+            <ol className="flex flex-col gap-1 p-3">
+              {(() => {
+                // Sessões sempre à mostra; livres: até 3 por card (todos no filtro "Só horários livres" ou ao expandir)
+                const todosLivres = filtro === 'livres' || abertos.has(b.chave);
+                let livresVistos = 0;
+                const linhas = b.linhas.filter((l) => l.tipo === 'sessao' || todosLivres || ++livresVistos <= 3);
+                const escondidos = b.linhas.filter((l) => l.tipo === 'livre').length - linhas.filter((l) => l.tipo === 'livre').length;
+                return (<>
+                  {linhas.map((l) => l.tipo === 'livre' ? (
+                    <li key={`livre-${l.hora}`} className="flex min-h-12 flex-wrap items-center gap-x-2 border-b border-dashed border-linha px-1 last:border-b-0">
+                      <span className="num whitespace-nowrap text-[1rem] font-bold text-tinta-2">{l.hora}</span>
+                      <span className="whitespace-nowrap text-sm text-tinta-3">{l.livre.minutes ?? profile?.session_minutes ?? 50} min</span>
+                      <span className="sr-only">livre</span>
+                      <button {...(primeiroLivre(b, l) ? { 'data-ajuda': 'livre' } : {})}
+                        onClick={() => setNovoEm({ date: b.date, time: l.hora, locationId: l.livre.location?.id ?? b.sala?.id ?? null, minutes: l.livre.minutes, modo: 'novo' })}
+                        aria-label={`Agendar paciente às ${l.hora}`}
+                        className="pressionar ml-auto inline-flex min-h-11 shrink-0 items-center gap-1 whitespace-nowrap rounded-botao border-[1.5px] border-anil-escuro px-3 text-sm font-bold text-anil-escuro hover:bg-anil-claro/50">
+                        <IconPlus className="size-4" /> Agendar
+                      </button>
+                    </li>
+                  ) : (
+                    <li key={l.item.id} className="py-1">
+                      <LinhaSessao item={l.item} date={b.date} tz={tz} foraDaSala={!!b.sala && (l.item.location_id ? l.item.location_id !== b.sala.id : l.item.modality === 'online')}
+                        marcarWhats={primeiraSessaoComWhats(b, l)}
+                        onOpen={() => setOpen({ item: l.item })} onMover={() => setOpen({ item: l.item, mover: true })} onWhats={() => enviarWhatsApp(l.item)} />
+                    </li>
+                  ))}
+                  {escondidos > 0 && (
+                    <li><button onClick={() => setAbertos((s) => new Set(s).add(b.chave))} className="min-h-11 px-1 text-sm font-bold text-anil-escuro">+ {escondidos} {escondidos === 1 ? 'horário livre' : 'horários livres'}</button></li>
+                  )}
+                </>);
+              })()}
             </ol>
           </section>
         );
@@ -226,7 +279,7 @@ export function AgendaPage() {
 
       {/* Ações da agenda */}
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/agenda/horarios" className="cartao pressionar inline-flex min-h-14 items-center justify-center gap-2 font-bold text-anil-escuro"><IconClock className="size-5" /> Editar grade</Link>
+        <Link to="/agenda/horarios" data-ajuda="grade" className="cartao pressionar inline-flex min-h-14 items-center justify-center gap-2 font-bold text-anil-escuro"><IconClock className="size-5" /> Editar grade</Link>
         <button onClick={() => setNovoEm({ date, modo: 'existente' })} className="btn-degrade pressionar inline-flex min-h-14 items-center justify-center gap-2 rounded-cartao font-bold shadow-elevado"><IconPlus className="size-5" /> Adicionar encaixe</button>
       </div>
 
@@ -238,7 +291,7 @@ export function AgendaPage() {
 }
 
 /** Sessão dentro do card: hora e duração, nome e último sobrenome, situação; WhatsApp (pequeno), Mover e mais opções. */
-function LinhaSessao({ item, date, tz, onOpen, onMover, onWhats }: { item: AgendaItem; date: string; tz: string; onOpen: () => void; onMover: () => void; onWhats: () => void }) {
+function LinhaSessao({ item, date, tz, onOpen, onMover, onWhats, foraDaSala, marcarWhats }: { item: AgendaItem; date: string; tz: string; onOpen: () => void; onMover: () => void; onWhats: () => void; foraDaSala?: boolean; marcarWhats?: boolean }) {
   const nome = nomeCurto(item.patient_social_name || item.patient_name);
   const nasc = item.patient_birth_date ?? null;
   const idade = nasc ? ageOn(nasc, date) : null;
@@ -246,21 +299,22 @@ function LinhaSessao({ item, date, tz, onOpen, onMover, onWhats }: { item: Agend
   const ativa = item.status === 'agendado' || item.status === 'confirmado';
   return (
     <div className={cx('rounded-campo border border-linha border-l-4 bg-papel p-3', STATUS_BAR[item.status])}>
-      <div className="flex items-center gap-2">
-        <span className="num text-[17px] font-bold">{formatTime(item.starts_at, tz)}</span>
-        <span className="text-sm text-tinta-2">{minutesBetween(item.starts_at, item.ends_at)} min</span>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="num whitespace-nowrap text-[1.0625rem] font-bold">{formatTime(item.starts_at, tz)}</span>
+        <span className="whitespace-nowrap text-sm text-tinta-2">{minutesBetween(item.starts_at, item.ends_at)} min</span>
+        {foraDaSala && <span className="whitespace-nowrap rounded-full bg-azul-fundo px-2 py-0.5 text-[0.75rem] font-bold text-azul">{item.modality === 'online' ? 'On-line' : item.location_name ?? 'Outra sala'}</span>}
         <span className="ml-auto"><StatusBadge status={item.status} /></span>
       </div>
-      <button onClick={onOpen} className="mt-1 block w-full text-left">
-        <span className="block truncate text-[18px] font-bold leading-tight">{nome}</span>
+      <button onClick={onOpen} className="mt-1 block min-h-11 w-full text-left">
+        <span className="block truncate text-[1.125rem] font-bold leading-tight">{nome}</span>
         <span className="block truncate text-sm text-tinta-2">
           {[idade != null ? `${idade} anos` : null, item.modality === 'online' ? 'On-line' : null, item.patient_billing_mode === 'mensal' ? 'Mensal' : 'Particular', item.series_frequency ? 'Recorrente' : null].filter(Boolean).join(' · ')}
         </span>
       </button>
-      {aniversario && <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-acento-claro px-2.5 py-0.5 text-[13px] font-bold text-sobre-acento-claro"><IconCake className="size-4" /> Aniversário hoje ({formatDate(nasc).slice(0, 5)})</p>}
-      <div className="mt-2 flex items-center gap-2">
+      {aniversario && <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-acento-claro px-2.5 py-0.5 text-[0.8125rem] font-bold text-sobre-acento-claro"><IconCake className="size-4" /> Aniversário hoje ({formatDate(nasc).slice(0, 5)})</p>}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
         {item.patient_phone && (
-          <button onClick={onWhats} aria-label="Enviar WhatsApp" title={aniversario ? 'WhatsApp: parabéns + lembrete' : 'Enviar WhatsApp'}
+          <button onClick={onWhats} {...(marcarWhats ? { 'data-ajuda': 'whats' } : {})} aria-label={`Enviar WhatsApp para ${nome}`} title={aniversario ? 'WhatsApp: parabéns + lembrete' : 'Enviar WhatsApp'}
             className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-livre text-sobre-status"><IconWhats className="size-5" /></button>
         )}
         {ativa && (
@@ -271,5 +325,40 @@ function LinhaSessao({ item, date, tz, onOpen, onMover, onWhats }: { item: Agend
         <button onClick={onOpen} aria-label="Mais opções" className="ml-auto grid size-11 shrink-0 place-items-center rounded-botao bg-anil-claro text-sobre-anil-claro"><IconDots /></button>
       </div>
     </div>
+  );
+}
+
+/** Resumo do dia no topo da agenda: o que precisa de atenção, recolhível (lembrado no aparelho). */
+function ResumoHoje({ d }: { d: DashboardSummary }) {
+  const [aberto, setAberto] = useState(() => { try { return localStorage.getItem('psi.resumo.fechado') !== '1'; } catch { return true; } });
+  const [valoresVisiveis] = useValoresVisiveis();
+  const itens = [
+    d.to_register > 0 && { n: String(d.to_register), t: d.to_register === 1 ? 'sessão aguarda registro' : 'sessões aguardam registro', para: '/resumo#registrar', tom: 'bg-ocre-fundo text-ocre' },
+    d.to_confirm_48h > 0 && { n: String(d.to_confirm_48h), t: 'sem confirmação nas próximas 48 h', para: '/resumo', tom: 'bg-azul-fundo text-azul' },
+    d.overdue > 0 && { n: 'R$', t: `${valoresVisiveis ? money(d.overdue) : VALOR_OCULTO} em atraso`, para: '/financeiro', tom: 'bg-vermelho-fundo text-vermelho' },
+    d.receita_saude_pending > 0 && { n: String(d.receita_saude_pending), t: 'sem recibo no Receita Saúde', para: '/financeiro?aba=receita', tom: 'bg-ocre-fundo text-ocre' },
+    d.invoices_pending > 0 && { n: String(d.invoices_pending), t: d.invoices_pending === 1 ? 'nota fiscal a emitir' : 'notas fiscais a emitir', para: '/notas-fiscais', tom: 'bg-azul-fundo text-azul' },
+  ].filter(Boolean) as Array<{ n: string; t: string; para: string; tom: string }>;
+  const alternar = () => setAberto((v) => { try { localStorage.setItem('psi.resumo.fechado', v ? '1' : '0'); } catch { /* sem armazenamento */ } return !v; });
+  return (
+    <section className="cartao overflow-hidden" aria-labelledby="t-resumo">
+      <button onClick={alternar} aria-expanded={aberto} className="flex min-h-12 w-full items-center gap-2 px-4 py-2 text-left">
+        <h2 id="t-resumo" className="flex-1 font-bold">Hoje · {d.sessions_today} {d.sessions_today === 1 ? 'sessão' : 'sessões'}{itens.length ? ` · ${itens.length} ${itens.length === 1 ? 'aviso' : 'avisos'}` : ''}</h2>
+        <IconChevronRight className={cx('size-5 text-tinta-3 transition-transform', aberto && 'rotate-90')} />
+      </button>
+      {aberto && (
+        <div className="flex flex-col gap-1.5 px-3 pb-3">
+          {itens.length === 0 && <p className="px-1 text-sm text-tinta-2">Nada pendente. Tudo em dia.</p>}
+          {itens.map((i) => (
+            <Link key={i.t} to={i.para} className={cx('flex min-h-12 flex-wrap items-center gap-x-3 gap-y-0.5 rounded-campo px-3 py-1.5', i.tom)}>
+              <span className="num min-w-9 text-center text-[1.5rem] font-extrabold leading-none">{i.n}</span>
+              <span className="min-w-0 flex-1 basis-28 text-[0.9375rem] font-bold leading-snug">{i.t}</span>
+              <IconChevronRight className="size-4 shrink-0 opacity-70" />
+            </Link>
+          ))}
+          <Link to="/resumo" className="min-h-11 px-1 pt-1 text-sm font-bold text-anil-escuro">Ver resumo completo</Link>
+        </div>
+      )}
+    </section>
   );
 }

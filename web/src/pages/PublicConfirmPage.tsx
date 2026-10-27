@@ -59,7 +59,7 @@ export function PublicConfirmPage() {
         ) : (
           <>
             <p className="text-tinta-2">Olá, {info.patient_first_name}.</p>
-            <h1 className="mt-1 text-[26px] font-bold leading-tight">
+            <h1 className="mt-1 text-[1.625rem] font-bold leading-tight">
               {info.state === 'confirmado' && 'Presença confirmada'}
               {info.state === 'cancelado' && 'Sessão cancelada'}
               {info.state === 'expirado' && 'Este link expirou'}

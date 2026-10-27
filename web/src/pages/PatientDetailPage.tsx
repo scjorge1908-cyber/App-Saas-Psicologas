@@ -51,10 +51,10 @@ export function PatientDetailPage() {
       <Link to="/pacientes" className="mb-3 inline-flex items-center gap-1 font-bold text-anil"><IconChevronLeft width={18} height={18} /> Pacientes</Link>
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
-          <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-full bg-anil-claro text-[18px] font-bold text-sobre-anil-claro">{(pt.social_name || pt.full_name).split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase()}</span>
+          <span aria-hidden className="grid size-14 shrink-0 place-items-center rounded-full bg-anil-claro text-[1.125rem] font-bold text-sobre-anil-claro">{(pt.social_name || pt.full_name).split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('').toUpperCase()}</span>
           <div>
-          <h1 className="titulo-display text-[26px] leading-tight">{pt.social_name || pt.full_name}</h1>
-          {pt.status === 'ativo' && <span className="mt-1 inline-flex h-6 items-center rounded-full bg-livre-fundo px-2.5 text-[12px] font-bold text-livre">Em acompanhamento</span>}
+          <h1 className="titulo-display text-[1.625rem] leading-tight">{pt.social_name || pt.full_name}</h1>
+          {pt.status === 'ativo' && <span className="mt-1 inline-flex h-6 items-center rounded-full bg-livre-fundo px-2.5 text-[0.75rem] font-bold text-livre">Em acompanhamento</span>}
           {pt.social_name && <p className="text-tinta-2">Nome civil: {pt.full_name}</p>}
           <p className="mt-1 flex flex-wrap items-center gap-2 text-tinta-2">
             {pt.status !== 'ativo' && <Badge>{pt.status === 'alta' ? 'Alta' : 'Inativo'}</Badge>}

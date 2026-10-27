@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import * as api from '../../lib/api';
 import type { AttachmentCategory, Modality, SeriesFrequency } from '../../lib/types';
 import { errorMessage } from '../../lib/errors';
-import { addDays, formatDateTime, formatLongDate, isValidCpf, money, onlyDigits, parseMoney, todayIn, zonedToUtc } from '../../lib/format';
+import { addDays, avisoNascimento, formatDateTime, formatLongDate, isValidCpf, money, onlyDigits, parseMoney, todayIn, zonedToUtc } from '../../lib/format';
 import { useAuth, useProfile } from '../../auth/AuthProvider';
 import { ENDERECO_VAZIO, EnderecoCampos, enderecoParaPaciente, type Endereco } from '../patients/EnderecoCampos';
 import { Button, Dialog, ErrorBox, Field, Input, Notice, Select, TextField, cx, useToast } from '../ui';
@@ -166,7 +166,7 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
             <div role="tablist" aria-label="Paciente" className="inline-flex gap-1 self-start rounded-campo bg-afundado p-1">
               {([['existente', 'Paciente cadastrado'], ['novo', 'Paciente novo']] as const).map(([v, r]) => (
                 <button key={v} role="tab" type="button" aria-selected={modo === v} onClick={() => setModo(v)}
-                  className={cx('min-h-10 rounded-[calc(var(--r-field)-4px)] px-3.5 text-sm font-bold', modo === v ? 'bg-papel text-anil-escuro shadow-cartao' : 'text-tinta-2')}>{r}</button>
+                  className={cx('min-h-11 rounded-[calc(var(--r-field)-4px)] px-3.5 text-sm font-bold', modo === v ? 'bg-papel text-anil-escuro shadow-cartao' : 'text-tinta-2')}>{r}</button>
               ))}
             </div>
           )}
@@ -180,7 +180,7 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
               )}
             </Field>
           ) : (
-            <NovoPacienteCampos valor={novo} onChange={setNovo} arquivos={arquivos} onArquivos={setArquivos} />
+            <NovoPacienteCampos valor={novo} onChange={setNovo} arquivos={arquivos} onArquivos={setArquivos} hoje={todayIn(tz)} />
           )}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Data" required>{(id) => <Input id={id} type="date" value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
@@ -251,8 +251,8 @@ export function NewAppointmentDialog({ open, onClose, initialDate, initialTime, 
 const ACEITOS = 'application/pdf,image/png,image/jpeg,image/webp,image/heic,image/heif';
 
 /** Cadastro do paciente dentro do agendamento: dados, endereço pelo CEP e anexos (laudo, encaminhamento médico). */
-function NovoPacienteCampos({ valor, onChange, arquivos, onArquivos }: {
-  valor: NovoPaciente; onChange: (v: NovoPaciente) => void; arquivos: ArquivoPendente[]; onArquivos: (a: ArquivoPendente[]) => void;
+function NovoPacienteCampos({ valor, onChange, arquivos, onArquivos, hoje }: {
+  valor: NovoPaciente; onChange: (v: NovoPaciente) => void; arquivos: ArquivoPendente[]; onArquivos: (a: ArquivoPendente[]) => void; hoje: string;
 }) {
   const set = (k: keyof NovoPaciente) => (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...valor, [k]: e.target.value });
   const laudo = useRef<HTMLInputElement>(null);
@@ -269,7 +269,7 @@ function NovoPacienteCampos({ valor, onChange, arquivos, onArquivos }: {
         <TextField label="E-mail" type="email" value={valor.email} onChange={set('email')} />
         <TextField label="CPF" inputMode="numeric" value={valor.cpf} onChange={set('cpf')} />
         <TextField label="RG" value={valor.rg} onChange={set('rg')} />
-        <Field label="Nascimento">{(id) => <Input id={id} type="date" value={valor.birth_date} onChange={set('birth_date')} />}</Field>
+        <Field label="Nascimento" hint={avisoNascimento(valor.birth_date, hoje) && <span className="font-bold text-ocre">{avisoNascimento(valor.birth_date, hoje)}</span>}>{(id, d) => <Input id={id} aria-describedby={d} type="date" value={valor.birth_date} onChange={set('birth_date')} />}</Field>
       </div>
       <fieldset className="flex flex-col gap-2">
         <legend className="rotulo mb-1">Endereço</legend>
@@ -288,7 +288,7 @@ function NovoPacienteCampos({ valor, onChange, arquivos, onArquivos }: {
             {arquivos.map((a, i) => (
               <li key={`${a.file.name}-${i}`} className="flex items-center gap-2">
                 <span className="min-w-0 flex-1 truncate"><b>{a.category === 'laudo' ? 'Laudo' : 'Encaminhamento'}:</b> {a.file.name}</span>
-                <button type="button" className="min-h-9 px-2 font-bold text-tinta-3" onClick={() => onArquivos(arquivos.filter((_, j) => j !== i))} aria-label={`Remover ${a.file.name}`}>Remover</button>
+                <button type="button" className="min-h-11 px-2 font-bold text-tinta-3" onClick={() => onArquivos(arquivos.filter((_, j) => j !== i))} aria-label={`Remover ${a.file.name}`}>Remover</button>
               </li>
             ))}
           </ul>

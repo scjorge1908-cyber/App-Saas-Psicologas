@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Patient } from '../../lib/types';
 import * as api from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
-import { isMinor, isValidCpf, onlyDigits, parseMoney, todayIn } from '../../lib/format';
+import { avisoNascimento, isMinor, isValidCpf, onlyDigits, parseMoney, todayIn } from '../../lib/format';
 import { useProfile } from '../../auth/AuthProvider';
 import { Button, Dialog, ErrorBox, Field, Input, Notice, Select, TextField, Textarea } from '../ui';
 import { EnderecoCampos, enderecoParaPaciente, type Endereco } from './EnderecoCampos';
@@ -106,7 +106,7 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
           <TextField label="Nome completo" required value={f.full_name} onChange={set('full_name')} />
           <div className="grid gap-3 sm:grid-cols-3">
             <TextField label="Nome social" value={f.social_name} onChange={set('social_name')} hint="Usado na agenda e nas mensagens." className="sm:col-span-3" />
-            <Field label="Nascimento">{(id) => <Input id={id} type="date" value={f.birth_date} onChange={set('birth_date')} />}</Field>
+            <Field label="Nascimento" hint={avisoNascimento(f.birth_date, todayIn(tz)) && <span className="font-bold text-ocre">{avisoNascimento(f.birth_date, todayIn(tz))}</span>}>{(id, d) => <Input id={id} aria-describedby={d} type="date" value={f.birth_date} onChange={set('birth_date')} />}</Field>
             <TextField label="CPF" inputMode="numeric" value={f.cpf} onChange={set('cpf')} hint="Necessário para recibos." />
             <TextField label="RG" value={f.rg} onChange={set('rg')} />
           </div>

@@ -25,7 +25,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
         ref={ref}
         className={cx(
           'pressionar inline-flex items-center justify-center gap-2 rounded-botao font-bold transition-[filter,box-shadow,background-color] disabled:cursor-not-allowed',
-          size === 'md' ? 'min-h-12 px-5 text-[15px]' : 'min-h-10 px-3.5 text-sm',
+          size === 'md' ? 'min-h-12 px-5 text-[0.9375rem]' : 'min-h-11 px-3.5 text-sm',
           VARIANTS[variant], className,
         )}
         disabled={disabled || busy}
@@ -54,7 +54,7 @@ export function Loading({ label = 'Carregando…' }: { label?: string }) {
 }
 
 // --------------------------------------------------------------- Campos -----
-const inputBase = 'w-full min-h-12 rounded-campo border-[1.5px] border-linha bg-papel px-4 py-2 text-tinta placeholder:text-tinta-3 focus:border-anil focus:outline-none focus:ring-2 focus:ring-anil/25 disabled:bg-cinza-fundo aria-[invalid=true]:border-vermelho';
+const inputBase = 'w-full min-w-0 min-h-12 rounded-campo border-[1.5px] border-linha bg-papel px-4 py-2 text-tinta placeholder:text-tinta-3 focus:border-anil focus:outline-none focus:ring-2 focus:ring-anil/25 disabled:bg-cinza-fundo aria-[invalid=true]:border-vermelho';
 
 interface FieldProps { label: string; hint?: ReactNode; error?: string | null; required?: boolean; children: (id: string, describedBy?: string) => ReactNode; className?: string }
 export function Field({ label, hint, error, required, children, className }: FieldProps) {
@@ -107,12 +107,12 @@ export const STATUS_BAR: Record<AppointmentStatus, string> = {
   agendado: 'border-l-anil', confirmado: 'border-l-azul-forte', atendido: 'border-l-verde-forte', faltou: 'border-l-ocre-forte', cancelado: 'border-l-linha-forte',
 };
 export function StatusBadge({ status }: { status: AppointmentStatus }) {
-  return <span className={cx('inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-bold', STATUS_STYLE[status])}><span aria-hidden className="size-1.5 rounded-full bg-current opacity-85" />{STATUS_LABEL[status]}</span>;
+  return <span className={cx('inline-flex h-6 items-center gap-1.5 rounded-full px-2.5 text-[0.75rem] font-bold', STATUS_STYLE[status])}><span aria-hidden className="size-1.5 rounded-full bg-current opacity-85" />{STATUS_LABEL[status]}</span>;
 }
 
 export function Badge({ tone = 'neutro', children }: { tone?: 'neutro' | 'atencao' | 'ok' | 'erro' | 'anil'; children: ReactNode }) {
   const t = { neutro: 'bg-cinza-fundo text-tinta-2', atencao: 'bg-ocre-fundo text-ocre', ok: 'bg-verde-fundo text-verde', erro: 'bg-vermelho-fundo text-vermelho', anil: 'bg-anil-claro text-sobre-anil-claro' }[tone];
-  return <span className={cx('inline-flex h-6 items-center rounded-full px-2.5 text-[12px] font-bold', t)}>{children}</span>;
+  return <span className={cx('inline-flex h-6 items-center rounded-full px-2.5 text-[0.75rem] font-bold', t)}>{children}</span>;
 }
 
 // ----------------------------------------------------------- Estruturas -----
@@ -120,7 +120,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   return (
     <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="titulo-display text-[30px] leading-tight text-tinta">{title}</h1>
+        <h1 className="titulo-display text-[1.875rem] leading-tight text-tinta [overflow-wrap:anywhere]">{title}</h1>
         {subtitle && <p className="mt-1 text-tinta-2">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -128,12 +128,24 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   );
 }
 
-export function Panel({ title, actions, children, className }: { title?: string; actions?: ReactNode; children: ReactNode; className?: string }) {
+export function Panel({ title, actions, children, className, recolhivel, aberto }: { title?: string; actions?: ReactNode; children: ReactNode; className?: string; recolhivel?: boolean; aberto?: boolean }) {
+  if (recolhivel && title) {
+    // Seção que abre e fecha (Configurações): menos rolagem, uma coisa por vez
+    return (
+      <details className={cx('cartao group', className)} open={aberto}>
+        <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
+          <h2 className="text-[1.0625rem] font-bold">{title}</h2>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-tinta-3 transition-transform group-open:rotate-90" aria-hidden><path d="M9 5l7 7-7 7" /></svg>
+        </summary>
+        <div className="border-t border-linha/70 p-4">{actions && <div className="mb-3">{actions}</div>}{children}</div>
+      </details>
+    );
+  }
   return (
     <section className={cx('cartao', className)}>
       {(title || actions) && (
         <div className="flex items-center justify-between gap-3 border-b border-linha/70 px-4 py-3.5">
-          {title && <h2 className="text-[17px] font-bold">{title}</h2>}
+          {title && <h2 className="text-[1.0625rem] font-bold">{title}</h2>}
           {actions}
         </div>
       )}
@@ -158,7 +170,7 @@ export function ErrorBox({ children }: { children: ReactNode }) {
 
 export function Notice({ children, tone = 'anil' }: { children: ReactNode; tone?: 'anil' | 'ocre' }) {
   return (
-    <div className={cx('rounded-campo border px-4 py-3 text-[15px]', tone === 'anil' ? 'border-anil/25 bg-anil-claro text-sobre-anil-claro' : 'border-ocre/30 bg-ocre-fundo text-ocre')}>
+    <div className={cx('rounded-campo border px-4 py-3 text-[0.9375rem]', tone === 'anil' ? 'border-anil/25 bg-anil-claro text-sobre-anil-claro' : 'border-ocre/30 bg-ocre-fundo text-ocre')}>
       {children}
     </div>
   );
@@ -212,11 +224,13 @@ export function Dialog({ open, onClose, title, children, footer, wide }: { open:
         <div className="flex max-h-[92dvh] flex-col">
           <div className="flex items-center justify-between gap-3 border-b border-linha px-5 py-4">
             <h2 id="dlg-title" className="text-xl font-bold">{title}</h2>
-            <button onClick={onClose} className="rounded p-2 text-tinta-3 hover:bg-cinza-fundo" aria-label="Fechar">
+            <button onClick={onClose} className="grid size-11 shrink-0 place-items-center rounded-full text-tinta-3 hover:bg-cinza-fundo" aria-label="Fechar">
               <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
             </button>
           </div>
-          <div className="overflow-y-auto px-5 py-4">{children}</div>
+          <div className="overflow-y-auto px-5 py-4"
+            // Teclado virtual: depois que ele abre, traz o campo focado para o meio da área visível
+            onFocus={(e) => { const t = e.target as HTMLElement; if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) setTimeout(() => t.scrollIntoView({ block: 'center', behavior: 'smooth' }), 320); }}>{children}</div>
           {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-linha px-5 py-3 pb-safe">{footer}</div>}
         </div>
       )}

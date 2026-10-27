@@ -177,3 +177,16 @@ export function formatBytes(n: number): string {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
   return `${(n / 1024 / 1024).toFixed(1).replace('.', ',')} MB`;
 }
+
+/**
+ * Aviso para data de nascimento implausível (idade abaixo de 2 ou acima de 110 anos).
+ * Só avisa: nunca corrige a data sozinho. Vazio = sem aviso.
+ */
+export function avisoNascimento(birth: string | null | undefined, ref: string): string | null {
+  if (!birth || !/^\d{4}-\d{2}-\d{2}$/.test(birth)) return null;
+  if (birth > ref) return 'Confira a data de nascimento: está no futuro.';
+  const idade = ageOn(birth, ref);
+  if (idade < 2) return `Confira a data de nascimento: idade calculada ${idade} ${idade === 1 ? 'ano' : 'anos'}.`;
+  if (idade > 110) return `Confira a data de nascimento: idade calculada ${idade} anos.`;
+  return null;
+}

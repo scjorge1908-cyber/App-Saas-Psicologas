@@ -20,13 +20,13 @@ async function signup(page: Page, name: string, email: string, crp: string) {
   await page.getByRole('textbox', { name: 'Senha', exact: true }).fill('Senha-Ficticia-2026');
   await page.getByLabel('Repita a senha').fill('Senha-Ficticia-2026');
   await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Criar conta' }).click();
+  await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Seu perfil profissional' })).toBeVisible();
   await page.getByLabel('CRP').fill(crp);
   await page.getByLabel('Cidade').fill('Palhoça');
   await page.getByLabel('UF').fill('SC');
   await page.getByRole('button', { name: 'Começar a usar' }).click();
-  await expect(page.getByRole('heading', { name: 'Hoje', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeAttached(); // tela inicial = agenda
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -41,8 +41,10 @@ test.beforeAll(async ({ browser }) => {
 
 test('cadastro, perfil e tela inicial', async () => {
   await signup(page, 'Ana Fictícia Teste', `ana.e2e.${RUN}@exemplo.invalid`, '12/345678');
-  await expect(page.getByText('Nenhuma sessão hoje.')).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/01-hoje-vazio.png`, fullPage: true });
+  // Sem grade: a agenda convida a criar os horários e mostra os primeiros passos
+  await expect(page.getByText('Monte sua grade de horários')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Primeiros passos' })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/01-agenda-vazia.png`, fullPage: true });
 });
 
 test('cadastro de paciente com validação', async () => {
@@ -91,7 +93,7 @@ test('agenda: série semanal e sessão passada', async () => {
 });
 
 test('registro de presença gera cobrança; recebimento quita', async () => {
-  await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Hoje' }).click();
+  await page.goto('/resumo');
   const pending = page.locator('#registrar');
   await expect(pending.getByText('Carlos Fictício da Silva')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/04-hoje-pendencias.png`, fullPage: true });
@@ -151,7 +153,8 @@ test('lembrete com link e confirmação pelo paciente', async ({ browser }) => {
 
 test('prontuário com retificação preservada', async () => {
   await page.getByRole('tab', { name: 'Prontuário' }).click();
-  await page.getByRole('button', { name: 'Registrar avaliação da demanda' }).click();
+  await page.getByRole('tab', { name: 'Avaliação e plano' }).click();
+  await page.getByRole('button', { name: 'Avaliação da demanda' }).click();
   let dlg = page.getByRole('dialog');
   await dlg.getByRole('textbox', { name: 'Registro', exact: true }).fill('Demanda fictícia: texto de teste, versão original.');
   await dlg.getByRole('button', { name: 'Salvar registro' }).click();
@@ -198,6 +201,7 @@ test('anexo em armazenamento privado', async () => {
 test('backup completo em ZIP', async () => {
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('link', { name: 'Mais' }).click();
   await page.getByRole('link', { name: 'Configurações' }).click();
+  await page.getByText('Seus dados', { exact: true }).click(); // seção recolhível
   const dl = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Baixar backup completo' }).click();
   backupPath = `test-results/backup-${RUN}.zip`;
@@ -228,12 +232,14 @@ test('restauração do backup em conta nova (dados + arquivos)', async ({ browse
   const p3 = await ctx.newPage();
   await signup(p3, 'Clara Fictícia Restauração', `clara.e2e.${RUN}@exemplo.invalid`, '06/222222');
   await p3.goto('http://127.0.0.1:5173/configuracoes');
+  await p3.getByText('Seus dados', { exact: true }).click();
   await p3.locator('input[type=file][accept=".zip,.json"]').setInputFiles(backupPath);
   await p3.getByRole('dialog').getByRole('button', { name: 'Restaurar' }).click();
   await expect(p3.getByText(/Backup restaurado: 1 pacientes/)).toBeVisible({ timeout: 20000 });
   await p3.goto('http://127.0.0.1:5173/pacientes');
   await p3.getByText('Carlos Fictício da Silva').click();
   await p3.getByRole('tab', { name: 'Prontuário' }).click();
+  await p3.getByRole('tab', { name: 'Avaliação e plano' }).click();
   await expect(p3.getByText('versão corrigida')).toBeVisible();
   await p3.getByRole('tab', { name: 'Documentos' }).click();
   const dl = p3.waitForEvent('download');
@@ -242,18 +248,78 @@ test('restauração do backup em conta nova (dados + arquivos)', async ({ browse
   await ctx.close();
 });
 
-test('agenda nas visões dia, semana e mês', async () => {
-  await page.goto('/agenda?v=semana');
-  await expect(page.getByText('Carlos Fictício da Silva').filter({ visible: true }).first()).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/10-agenda-semana-celular.png`, fullPage: true });
-  await page.getByRole('tab', { name: 'Mês' }).click();
-  await page.screenshot({ path: `${SHOTS}/11-agenda-mes-celular.png`, fullPage: true });
-  await page.getByRole('tab', { name: 'Dia' }).click();
-  await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
+test('grade de horários, agenda em cards e mover sessão', async () => {
+  // Gera a grade da noite em todos os dias (sempre há horário livre à frente nesta semana ou na próxima)
+  await page.goto('/agenda/horarios');
+  await page.getByLabel('Nome da sala').fill('Sala Fictícia');
+  for (const d of ['Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']) await page.getByRole('button', { name: d, exact: true }).click();
+  await page.getByRole('tab', { name: 'Noite' }).click();
+  await expect(page.getByText(/horários de 50 min/)).toBeVisible();
+  await page.getByRole('button', { name: 'Salvar e gerar grade' }).click();
+  await expect(page.getByText(/Grade gerada/)).toBeVisible();
+
+  await page.goto('/');
+  await expect(page.getByText('Carlos Silva').first()).toBeVisible(); // nome e último sobrenome
+  await page.screenshot({ path: `${SHOTS}/10-agenda-cards-celular.png`, fullPage: true });
+  // Horário livre: linha compacta com "Agendar" (abre o cadastro do paciente)
+  const livre = page.getByRole('button', { name: /^Agendar paciente às/ }).first();
+  if (await livre.count() === 0) await page.getByRole('button', { name: 'Próxima semana' }).click();
+  await page.getByRole('button', { name: /^Agendar paciente às/ }).first().click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Cadastrar paciente' })).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Voltar' }).click();
+  // Mover: abre direto em dia/horário/sala
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Mover' }).first().click();
+  await expect(page.getByRole('dialog').getByLabel('Nova data')).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Voltar' }).click();
+});
+
+test('ajuda: botão ?, passeio opcional (uma vez) e página de tutoriais', async () => {
+  await page.goto('/');
+  await page.getByRole('button', { name: /^Ajuda:/ }).click();
+  await expect(page.getByRole('dialog').getByRole('heading', { name: 'Ajuda · Agenda' })).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: 'Fechar' }).click();
+  // Oferta do passeio aparece uma vez; Pular fecha e não volta
+  await page.getByRole('button', { name: 'Fazer o passeio' }).click();
+  await expect(page.getByText(/Passo 1 de \d/)).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/12-passeio.png` });
+  await page.getByRole('button', { name: 'Próximo' }).click();
+  await expect(page.getByText(/Passo 2 de \d/)).toBeVisible();
+  await page.getByRole('button', { name: 'Pular' }).click();
+  await expect(page.getByText(/Passo \d de \d/)).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Fazer o passeio' })).toHaveCount(0);
+  // Mais → Ajuda e tutoriais, com busca
+  await page.goto('/mais');
+  await page.getByRole('link', { name: 'Ajuda e tutoriais' }).click();
+  await page.getByLabel('Buscar na ajuda').fill('evolução');
+  await expect(page.getByText(/resultado/)).toBeVisible();
+});
+
+test('responsividade: 320 px sem quebra de duração e zoom de 200% sem sobreposição', async () => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  const quebras = await page.evaluate(() => [...document.querySelectorAll('span')].filter((e) => /^\d+\s?min$/.test(e.textContent?.trim() ?? '') && e.getBoundingClientRect().height > parseFloat(getComputedStyle(e).lineHeight) * 1.5).length);
+  expect(quebras, 'duração quebrando linha em 320 px').toBe(0);
+  // 200% de zoom em celular de 360 px = 180 px úteis
+  await page.setViewportSize({ width: 180, height: 400 });
+  for (const path of ['/', '/agenda/horarios', '/pacientes', '/prontuario', '/financeiro', '/notas-fiscais', '/configuracoes', '/mais', '/resumo', '/ajuda']) {
+    await page.goto(path);
+    await page.waitForLoadState('networkidle');
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, `rolagem horizontal com zoom em ${path}`).toBeLessThanOrEqual(1);
+    const sobrepostos = await page.evaluate(() => {
+      const r = [...document.querySelectorAll('nav[aria-label="Principal"] a span:last-child')].map((e) => e.getBoundingClientRect()).filter((b) => b.width > 1 && b.height > 1);
+      return r.some((a, i) => r.some((b, j) => i < j && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom));
+    });
+    expect(sobrepostos, `rótulos da barra inferior sobrepostos em ${path}`).toBe(false);
+  }
+  await page.setViewportSize({ width: 412, height: 915 });
 });
 
 test('sem rolagem horizontal nas telas principais (celular)', async () => {
-  for (const path of ['/', '/agenda', '/pacientes', patientUrl, '/financeiro', '/notas-fiscais', '/configuracoes']) {
+  for (const path of ['/', '/agenda/horarios', '/pacientes', patientUrl, '/prontuario', '/financeiro', '/notas-fiscais', '/configuracoes']) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);

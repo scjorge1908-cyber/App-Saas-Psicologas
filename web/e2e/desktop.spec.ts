@@ -11,10 +11,10 @@ test('desktop: agenda semanal em grade e ficha do paciente', async ({ page }) =>
   await page.getByRole('textbox', { name: 'Senha', exact: true }).fill('Senha-Ficticia-2026');
   await page.getByLabel('Repita a senha').fill('Senha-Ficticia-2026');
   await page.getByRole('checkbox').check();
-  await page.getByRole('button', { name: 'Criar conta' }).click();
+  await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
   await page.getByLabel('CRP').fill('12/999999');
   await page.getByRole('button', { name: 'Começar a usar' }).click();
-  await expect(page.getByRole('heading', { name: 'Hoje', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeAttached();
 
   for (const [name, time, freq] of [['Helena Fictícia', '09:00', 'semanal'], ['Rafael Fictício', '11:00', 'quinzenal'], ['Júlia Fictícia', '16:30', 'semanal']] as const) {
     await page.goto('/pacientes');
@@ -33,11 +33,9 @@ test('desktop: agenda semanal em grade e ficha do paciente', async ({ page }) =>
     await a.getByRole('button', { name: /Agendar 6 sessões/ }).click();
     await expect(a).toBeHidden();
   }
-  await page.goto('/agenda?v=semana');
-  await expect(page.getByText('Helena Fictícia').filter({ visible: true }).first()).toBeVisible();
-  await page.screenshot({ path: `${SHOTS}/20-desktop-agenda-semana.png` });
   await page.goto('/');
-  await page.screenshot({ path: `${SHOTS}/21-desktop-hoje.png`, fullPage: true });
-  await page.goto('/agenda?v=mes');
-  await page.screenshot({ path: `${SHOTS}/22-desktop-agenda-mes.png` });
+  await expect(page.getByText('Helena Fictícia').filter({ visible: true }).first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/20-desktop-agenda.png`, fullPage: true });
+  await page.goto('/resumo');
+  await page.screenshot({ path: `${SHOTS}/21-desktop-resumo.png`, fullPage: true });
 });

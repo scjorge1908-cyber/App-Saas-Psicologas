@@ -52,8 +52,8 @@ export function ProntuarioPage() {
   return (
     <div className="flex flex-col gap-4 pb-6">
       <header>
-        <h1 className="titulo-display text-[28px] leading-tight">Prontuários</h1>
-        {profile && <p className="text-[15px] text-tinta-2">{profile.full_name}{profile.crp ? ` · CRP ${profile.crp}` : ''}</p>}
+        <h1 className="titulo-display text-[1.75rem] leading-tight">Prontuários</h1>
+        {profile && <p className="text-[0.9375rem] text-tinta-2">{profile.full_name}{profile.crp ? ` · CRP ${profile.crp}` : ''}</p>}
       </header>
 
       {/* Guarda e sigilo (informações verdadeiras do sistema) */}
@@ -61,7 +61,7 @@ export function ProntuarioPage() {
         <div className="flex items-center gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-campo bg-anil-claro text-sobre-anil-claro"><IconLock /></span>
           <div className="min-w-0">
-            <p className="flex items-center gap-2 font-bold">Guarda e sigilo <span className="rounded-full bg-livre-fundo px-2 py-0.5 text-[12px] text-livre">Ativo</span></p>
+            <p className="flex flex-wrap items-center gap-2 font-bold">Guarda e sigilo <span className="rounded-full bg-livre-fundo px-2 py-0.5 text-[0.75rem] text-livre">Ativo</span></p>
             <p className="text-sm text-tinta-2">Registro documental conforme a Res. CFP 001/2009.</p>
           </div>
         </div>
@@ -80,7 +80,7 @@ export function ProntuarioPage() {
       <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Situação">
         {([['todos', 'Todos'], ['ativo', 'Em atendimento'], ['alta', 'Alta'], ['inativo', 'Inativos']] as Array<[Filtro, string]>).map(([f, r]) => (
           <button key={f} role="tab" aria-selected={filtro === f} onClick={() => setFiltro(f)}
-            className={cx('min-h-10 shrink-0 rounded-full border px-3.5 text-sm font-bold', filtro === f ? 'btn-degrade border-transparent' : 'border-linha bg-papel text-tinta-2')}>
+            className={cx('min-h-11 shrink-0 rounded-full border px-3.5 text-sm font-bold', filtro === f ? 'btn-degrade border-transparent' : 'border-linha bg-papel text-tinta-2')}>
             {r} ({conta(f)})
           </button>
         ))}
@@ -89,22 +89,22 @@ export function ProntuarioPage() {
       {/* Modelos e documentos */}
       <section>
         <p className="mb-2 font-bold">Modelos e documentos</p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(4.75rem,1fr))] gap-2">
           {MODELOS.map((m) => (
             <button key={m.rotulo} onClick={() => setModelo(modelo?.rotulo === m.rotulo ? null : m)} aria-pressed={modelo?.rotulo === m.rotulo}
               className={cx('cartao pressionar flex flex-col items-center gap-1 px-1 py-3 text-center', modelo?.rotulo === m.rotulo && 'ring-2 ring-anil-escuro')}>
               <span className="grid size-10 place-items-center rounded-campo bg-anil-claro text-sobre-anil-claro"><m.icone className="size-5" /></span>
-              <span className="text-[13px] font-bold leading-tight">{m.rotulo}</span>
-              <span className="text-[11px] leading-tight text-tinta-3">{m.sub}</span>
+              <span className="text-[0.8125rem] font-bold leading-tight">{m.rotulo}</span>
+              <span className="text-[0.75rem] leading-tight text-tinta-3">{m.sub}</span>
             </button>
           ))}
         </div>
         {modelo && <p className="mt-2 rounded-campo bg-anil-claro/60 px-3 py-2 text-sm font-bold text-sobre-anil-claro">Escolha o paciente para: {modelo.rotulo}</p>}
       </section>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-x-2">
         <p className="font-bold">Prontuários recentes</p>
-        <button onClick={alternarResumos} className="inline-flex min-h-10 items-center gap-1.5 text-sm font-bold text-anil-escuro" aria-pressed={verResumos}>
+        <button onClick={alternarResumos} className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-anil-escuro" aria-pressed={verResumos}>
           {verResumos ? <IconEyeOff className="size-4" /> : <IconEye className="size-4" />} {verResumos ? 'Ocultar resumos' : 'Mostrar resumos'}
         </button>
       </div>
@@ -128,9 +128,9 @@ export function ProntuarioPage() {
               <button onClick={() => abrir(r)} className="flex items-start gap-3 text-left">
                 <span aria-hidden className="grid size-12 shrink-0 place-items-center rounded-full bg-anil-claro font-bold text-sobre-anil-claro">{iniciais}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="flex items-start justify-between gap-2">
-                    <span className="truncate text-[17px] font-bold">{nome}</span>
-                    <span className={cx('shrink-0 rounded-full px-2.5 py-0.5 text-[12px] font-bold', selo.c)}>{selo.t}</span>
+                  <span className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
+                    <span className="truncate text-[1.0625rem] font-bold">{nome}</span>
+                    <span className={cx('max-w-full rounded-full px-2.5 py-0.5 text-[0.75rem] font-bold', selo.c)}>{selo.t}</span>
                   </span>
                   <span className="block text-sm text-tinta-2">{[p.birth_date ? `${ageOn(p.birth_date, hoje)} anos` : null, cpf ? `CPF ${cpf}` : null].filter(Boolean).join(' · ') || '—'}</span>
                 </span>
@@ -139,11 +139,11 @@ export function ProntuarioPage() {
               {verResumos && (
                 <div className="rounded-campo bg-afundado p-3">
                   <p className="rotulo text-anil-escuro">Demanda principal</p>
-                  <p className="mt-0.5 line-clamp-3 text-[15px]">{r.demanda ?? <span className="text-tinta-3">Avaliação da demanda ainda não registrada.</span>}</p>
+                  <p className="mt-0.5 line-clamp-3 text-[0.9375rem]">{r.demanda ?? <span className="text-tinta-3">Avaliação da demanda ainda não registrada.</span>}</p>
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(8rem,1fr))] gap-2">
                 <div className="flex items-center gap-2 rounded-campo bg-afundado px-3 py-2">
                   <IconClock className="size-5 shrink-0 text-tinta-3" />
                   <span className="min-w-0"><span className="rotulo block">Última sessão{r.ultima ? ` #${r.ultima.numero}` : ''}</span>
@@ -156,7 +156,7 @@ export function ProntuarioPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm text-tinta-3">{r.evolucoes} {r.evolucoes === 1 ? 'evolução' : 'evoluções'}</span>
                 {r.evolucaoPendente ? (
                   <Link to={`/pacientes/${p.id}?aba=prontuario${r.ultima ? `&sessao=${r.ultima.id}` : ''}`} className="btn-degrade pressionar inline-flex min-h-11 items-center gap-1.5 rounded-botao px-4 text-sm font-bold"><IconDoc className="size-4" /> Evoluir sessão</Link>
@@ -169,7 +169,7 @@ export function ProntuarioPage() {
         })}
       </ol>
 
-      <p className="text-center text-[12px] text-tinta-3">Código de Ética Profissional do Psicólogo, art. 9º: sigilo profissional.</p>
+      <p className="text-center text-[0.75rem] text-tinta-3">Código de Ética Profissional do Psicólogo, art. 9º: sigilo profissional.</p>
     </div>
   );
 }

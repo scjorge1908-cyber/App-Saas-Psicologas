@@ -6,7 +6,7 @@ export function TermsPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 leading-relaxed">
       <Link to="/" className="font-bold text-anil">Voltar</Link>
-      <h1 className="mb-2 mt-4 text-[28px] font-bold">Termos de uso e política de privacidade</h1>
+      <h1 className="mb-2 mt-4 text-[1.75rem] font-bold">Termos de uso e política de privacidade</h1>
       <p className="mb-6 rounded-lg bg-ocre-fundo px-4 py-3 text-ocre">Minuta em revisão jurídica. Versão de desenvolvimento.</p>
 
       <h2 className="mt-6 text-xl font-bold">1. O serviço</h2>

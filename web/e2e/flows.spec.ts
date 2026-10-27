@@ -308,6 +308,32 @@ test('sessão registrada (atendida ou falta) sai da agenda e fica no histórico 
   await expect(page.getByText(/1 atendidas, 0 faltas no histórico/)).toBeVisible();
 });
 
+test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
+  await page.goto(patientUrl);
+  await page.getByRole('button', { name: 'Editar cadastro' }).click();
+  const dlg = page.getByRole('dialog');
+  await dlg.getByLabel('Emitir nota fiscal para este paciente').check();
+  await expect(dlg.getByText(/Para emitir a nota, falta: .*e-mail do paciente/)).toBeVisible();
+  await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
+  await expect(dlg.getByRole('alert')).toContainText('Para emitir a nota fiscal, falta');
+  await dlg.getByRole('radio', { name: 'Outra pessoa' }).click();
+  await dlg.getByLabel('Nome completo de quem paga').fill('Maria Fictícia da Silva');
+  await dlg.getByLabel('CPF de quem paga').fill('529.982.247-25');
+  await dlg.getByRole('button', { name: /Repetir celular, e-mail e endereço/ }).click();
+  await expect(dlg.getByLabel('Celular', { exact: true })).toHaveValue(/9999\D?0001$/);
+  await dlg.getByLabel('E-mail (recebe a nota)').fill('maria@exemplo.invalid');
+  await dlg.getByRole('textbox', { name: 'CEP', exact: true }).last().fill('88132150');
+  await dlg.getByRole('textbox', { name: 'Rua', exact: true }).last().fill('Rua Fictícia');
+  await dlg.getByRole('textbox', { name: 'Número', exact: true }).last().fill('10');
+  await dlg.getByRole('textbox', { name: 'Bairro', exact: true }).last().fill('Centro');
+  await dlg.getByRole('textbox', { name: 'Cidade', exact: true }).last().fill('Palhoça');
+  await dlg.getByRole('textbox', { name: 'UF', exact: true }).last().fill('SC');
+  await expect(dlg.getByText('Dados completos para a nota fiscal.')).toBeVisible();
+  await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
+  await expect(dlg).toBeHidden();
+  await expect(page.getByText(/no nome de Maria Fictícia da Silva, maria@exemplo\.invalid, Palhoça\/SC/)).toBeVisible();
+});
+
 test('ajuda: botão ?, passeio opcional (uma vez) e página de tutoriais', async () => {
   await page.goto('/');
   // Sininho de avisos no cabeçalho abre a janela dos avisos do dia

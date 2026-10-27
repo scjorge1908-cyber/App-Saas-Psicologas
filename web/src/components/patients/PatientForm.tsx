@@ -5,8 +5,8 @@ import * as api from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { avisoNascimento, isMinor, isValidCpf, onlyDigits, parseMoney, todayIn } from '../../lib/format';
 import { useProfile } from '../../auth/AuthProvider';
-import { Button, Dialog, ErrorBox, Field, Input, Notice, Select, TextField, Textarea } from '../ui';
-import { EnderecoCampos, enderecoParaPaciente, type Endereco } from './EnderecoCampos';
+import { Button, Dialog, ErrorBox, Field, Input, Notice, Select, TextField, Textarea, cx } from '../ui';
+import { EnderecoCampos, enderecoFaltando, enderecoParaPaciente, ENDERECO_VAZIO, type Endereco } from './EnderecoCampos';
 
 type Form = Record<string, string>;
 
@@ -20,6 +20,14 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
   );
 }
 
+/** Endereço de quem paga (colunas payer_*) no formato dos campos de endereço. */
+function enderecoPagador(p?: Patient | null): Endereco {
+  const s = (v: unknown) => (v === null || v === undefined ? '' : String(v));
+  return { cep: s(p?.payer_cep), street: s(p?.payer_street), address_number: s(p?.payer_number), address_complement: s(p?.payer_complement),
+    neighborhood: s(p?.payer_neighborhood), city: s(p?.payer_city), uf: s(p?.payer_uf) };
+}
+const emailOk = (v: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim());
+
 function toForm(p?: Patient | null): Form {
   const s = (v: unknown) => (v === null || v === undefined ? '' : String(v));
   return {
@@ -30,7 +38,7 @@ function toForm(p?: Patient | null): Form {
     emergency_contact_name: s(p?.emergency_contact_name), emergency_contact_phone: s(p?.emergency_contact_phone),
     guardian_name: s(p?.guardian_name), guardian_cpf: s(p?.guardian_cpf), guardian_relationship: s(p?.guardian_relationship),
     guardian_phone: s(p?.guardian_phone), guardian_authorization_date: s(p?.guardian_authorization_date),
-    payer_name: s(p?.payer_name), payer_cpf: s(p?.payer_cpf),
+    payer_name: s(p?.payer_name), payer_cpf: s(p?.payer_cpf), payer_email: s(p?.payer_email), payer_phone: s(p?.payer_phone),
     billing_mode: p?.billing_mode ?? 'por_sessao', session_price: p?.session_price != null ? String(p.session_price).replace('.', ',') : '',
     session_minutes: s(p?.session_minutes), modality: p?.modality ?? 'presencial', meeting_url: s(p?.meeting_url),
     status: p?.status ?? 'ativo', admin_notes: s(p?.admin_notes),
@@ -41,14 +49,37 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
   const { tz } = useProfile();
   const qc = useQueryClient();
   const [f, setF] = useState<Form>(toForm(patient));
-  const [otherPayer, setOtherPayer] = useState(!!patient?.payer_name);
+  const [otherPayer, setOtherPayer] = useState(!!patient?.payer_name || patient?.nf_tomador === 'outro');
+  const [emiteNota, setEmiteNota] = useState(!!patient?.nf_tomador);
+  const [endPagador, setEndPagador] = useState<Endereco>(enderecoPagador(patient));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { if (open) { setF(toForm(patient)); setOtherPayer(!!patient?.payer_name); setError(null); } }, [open, patient]);
+  useEffect(() => {
+    if (open) {
+      setF(toForm(patient)); setOtherPayer(!!patient?.payer_name || patient?.nf_tomador === 'outro'); setEmiteNota(!!patient?.nf_tomador);
+      setEndPagador(enderecoPagador(patient)); setError(null);
+    }
+  }, [open, patient]);
 
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
   const minor = isMinor(f.birth_date || null, todayIn(tz));
+
+  // O que falta para emitir a nota fiscal (tomador = paciente ou quem paga)
+  const faltaNota: string[] = !emiteNota ? [] : otherPayer
+    ? [
+        ...(f.payer_name.trim().length < 2 ? ['nome completo'] : []), ...(!isValidCpf(f.payer_cpf) ? ['CPF'] : []),
+        ...(!emailOk(f.payer_email) ? ['e-mail'] : []), ...enderecoFaltando(endPagador),
+      ]
+    : [
+        ...(f.full_name.trim().length < 2 ? ['nome completo'] : []), ...(!isValidCpf(f.cpf) ? ['CPF do paciente'] : []),
+        ...(!emailOk(f.email) ? ['e-mail do paciente'] : []), ...enderecoFaltando(f as unknown as Endereco).map((x) => `${x} do paciente`),
+      ];
+  /** "Pode repetir o contato principal": copia celular, e-mail e endereço do paciente para quem paga. */
+  const repetirContato = () => {
+    setF((x) => ({ ...x, payer_email: x.email, payer_phone: x.phone }));
+    setEndPagador({ ...ENDERECO_VAZIO, cep: f.cep, street: f.street, address_number: f.address_number, address_complement: f.address_complement, neighborhood: f.neighborhood, city: f.city, uf: f.uf });
+  };
 
   async function submit() {
     setError(null);
@@ -56,7 +87,7 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
     for (const [k, label] of [['cpf', 'CPF do paciente'], ['guardian_cpf', 'CPF do responsável'], ['payer_cpf', 'CPF do pagador']] as const) {
       if (f[k] && !isValidCpf(f[k])) return setError(`${label} inválido.`);
     }
-    for (const [k, label] of [['phone', 'Telefone'], ['emergency_contact_phone', 'Telefone de emergência'], ['guardian_phone', 'Telefone do responsável']] as const) {
+    for (const [k, label] of [['phone', 'Telefone'], ['emergency_contact_phone', 'Telefone de emergência'], ['guardian_phone', 'Telefone do responsável'], ['payer_phone', 'Telefone de quem paga']] as const) {
       const d = onlyDigits(f[k]);
       if (d && (d.length < 10 || d.length > 11)) return setError(`${label} inválido: informe DDD + número.`);
     }
@@ -65,6 +96,9 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
     if (f.session_price.trim() && price === null) return setError('Valor da sessão inválido. Exemplo: 150,00');
     if (f.meeting_url && !/^https:\/\//i.test(f.meeting_url)) return setError('O link da sala online deve começar com https://');
     if (minor && !f.guardian_name.trim()) return setError('Paciente menor de idade: informe o responsável legal.');
+    if (otherPayer && (f.payer_name.trim().length < 2 || !f.payer_cpf.trim())) return setError('Nota fiscal: informe o nome completo e o CPF de quem paga.');
+    if (f.payer_email.trim() && !emailOk(f.payer_email)) return setError('Nota fiscal: e-mail de quem paga inválido.');
+    if (faltaNota.length) return setError(`Para emitir a nota fiscal, falta: ${faltaNota.join(', ')}.`);
 
     const nn = (v: string) => (v.trim() ? v.trim() : null);
     const payload: Partial<Patient> = {
@@ -76,6 +110,8 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
       guardian_name: nn(f.guardian_name), guardian_cpf: nn(onlyDigits(f.guardian_cpf)), guardian_relationship: nn(f.guardian_relationship),
       guardian_phone: nn(onlyDigits(f.guardian_phone)), guardian_authorization_date: nn(f.guardian_authorization_date),
       payer_name: otherPayer ? nn(f.payer_name) : null, payer_cpf: otherPayer ? nn(onlyDigits(f.payer_cpf)) : null,
+      ...dadosPagador(otherPayer, f, endPagador),
+      nf_tomador: emiteNota ? (otherPayer ? 'outro' : 'paciente') : null,
       billing_mode: f.billing_mode as Patient['billing_mode'], session_price: price,
       session_minutes: f.session_minutes ? Number(f.session_minutes) : null,
       modality: f.modality as Patient['modality'], meeting_url: nn(f.meeting_url),
@@ -150,16 +186,37 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
               <Select id={id} value={f.billing_mode} onChange={set('billing_mode')}><option value="por_sessao">Por sessão</option><option value="mensal">Mensalidade ou pacote</option></Select>
             )}</Field>
           </div>
+        </Group>
+
+        <Group title="Nota fiscal">
+          <p className="text-sm text-tinta-2">Dados de quem recebe a nota (e o recibo do Receita Saúde). Com a nota marcada, os campos com <span className="text-vermelho">*</span> são obrigatórios.</p>
+          <div role="radiogroup" aria-label="Quem paga as sessões" className="grid grid-cols-2 gap-2">
+            {([[false, 'O próprio paciente'], [true, 'Outra pessoa']] as const).map(([v, rot]) => (
+              <button key={rot} type="button" role="radio" aria-checked={otherPayer === v} onClick={() => setOtherPayer(v)}
+                className={cx('min-h-12 rounded-campo border-[1.5px] px-3 text-[0.9375rem] font-bold', otherPayer === v ? 'border-anil bg-anil-claro text-sobre-anil-claro' : 'border-linha bg-papel text-tinta-2')}>{rot}</button>
+            ))}
+          </div>
           <label className="flex items-center gap-3">
-            <input type="checkbox" className="h-5 w-5 accent-anil" checked={otherPayer} onChange={(e) => setOtherPayer(e.target.checked)} />
-            Outra pessoa paga as sessões
+            <input type="checkbox" className="h-5 w-5 accent-anil" checked={emiteNota} onChange={(e) => setEmiteNota(e.target.checked)} />
+            Emitir nota fiscal para este paciente
           </label>
-          {otherPayer && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <TextField label="Nome do pagador" value={f.payer_name} onChange={set('payer_name')} />
-              <TextField label="CPF do pagador" inputMode="numeric" value={f.payer_cpf} onChange={set('payer_cpf')} hint="Exigido no recibo do Receita Saúde." />
+          {otherPayer ? (
+            <div className="flex flex-col gap-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <TextField label="Nome completo de quem paga" required value={f.payer_name} onChange={set('payer_name')} className="sm:col-span-2" />
+                <TextField label="CPF de quem paga" required inputMode="numeric" value={f.payer_cpf} onChange={set('payer_cpf')} hint="Exigido na nota e no recibo do Receita Saúde." />
+                <TextField label="Celular" inputMode="tel" placeholder="(48) 99999-9999" value={f.payer_phone} onChange={set('payer_phone')} />
+                <TextField label="E-mail (recebe a nota)" required={emiteNota} type="email" value={f.payer_email} onChange={set('payer_email')} className="sm:col-span-2" />
+              </div>
+              <Button type="button" variant="ghost" size="sm" className="self-start" onClick={repetirContato}>Repetir celular, e-mail e endereço do paciente</Button>
+              <EnderecoCampos valor={endPagador} onChange={setEndPagador} obrigatorio={emiteNota} />
             </div>
+          ) : (
+            <p className="text-sm text-tinta-2">A nota sai no nome do paciente, com o CPF, o e-mail e o endereço preenchidos acima.</p>
           )}
+          {emiteNota && (faltaNota.length
+            ? <Notice tone="ocre">Para emitir a nota, falta: {faltaNota.join(', ')}.</Notice>
+            : <p className="text-sm font-bold text-verde">Dados completos para a nota fiscal.</p>)}
         </Group>
 
         <Group title="Situação">
@@ -177,4 +234,16 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
       </div>
     </Dialog>
   );
+}
+
+/** Contato e endereço de quem paga (só quando é outra pessoa; senão, limpa). */
+function dadosPagador(outro: boolean, f: Form, e: Endereco): Partial<Patient> {
+  const nn = (v: string) => (v.trim() ? v.trim() : null);
+  if (!outro) return { payer_email: null, payer_phone: null, payer_cep: null, payer_street: null, payer_number: null, payer_complement: null, payer_neighborhood: null, payer_city: null, payer_uf: null };
+  const end = enderecoParaPaciente(e);
+  return {
+    payer_email: nn(f.payer_email), payer_phone: nn(onlyDigits(f.payer_phone)),
+    payer_cep: end.cep, payer_street: end.street, payer_number: end.address_number, payer_complement: end.address_complement,
+    payer_neighborhood: end.neighborhood, payer_city: end.city, payer_uf: end.uf,
+  };
 }

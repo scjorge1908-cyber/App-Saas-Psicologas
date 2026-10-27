@@ -82,11 +82,12 @@ export function PatientDetailPage() {
           <Panel title="Cadastro">
             <DescList items={[
               ['Nascimento', pt.birth_date ? formatDate(pt.birth_date) : ''], ['CPF', pt.cpf ? formatCpf(pt.cpf) : ''],
-              ['E-mail', pt.email], ['Endereço', pt.address],
+              ['E-mail', pt.email], ['Endereço', enderecoTexto(pt.street, pt.address_number, pt.address_complement, pt.neighborhood, pt.city, pt.uf, pt.cep) || pt.address],
               ['Emergência', [pt.emergency_contact_name, pt.emergency_contact_phone && formatPhone(pt.emergency_contact_phone)].filter(Boolean).join(', ')],
               ['Responsável legal', [pt.guardian_name, pt.guardian_relationship].filter(Boolean).join(', ')],
               ['Autorização do responsável', pt.guardian_authorization_date ? formatDate(pt.guardian_authorization_date) : pt.guardian_name ? 'não registrada' : ''],
               ['Pagador', pt.payer_name ? `${pt.payer_name}${pt.payer_cpf ? `, CPF ${formatCpf(pt.payer_cpf)}` : ''}` : ''],
+              ['Nota fiscal', pt.nf_tomador === 'outro' ? `no nome de ${pt.payer_name ?? 'quem paga'}${pt.payer_email ? `, ${pt.payer_email}` : ''}${pt.payer_city ? `, ${pt.payer_city}/${pt.payer_uf ?? ''}` : ''}` : pt.nf_tomador === 'paciente' ? 'no nome do paciente' : ''],
               ['Atendimento', `${pt.modality === 'online' ? 'Online' : 'Presencial'}${pt.session_minutes ? `, ${pt.session_minutes} min` : ''}`],
               ['Valor', pt.session_price != null ? `${money(pt.session_price)} ${pt.billing_mode === 'mensal' ? '(mensalidade/pacote)' : 'por sessão'}` : ''],
               ['Observações', pt.admin_notes],
@@ -187,4 +188,10 @@ function PatientFinance({ patientId }: { patientId: string }) {
       <PaymentDialog open={newPayment} onClose={() => setNewPayment(false)} patient={patient.data} />
     </div>
   );
+}
+
+/** "Rua X, 10, ap 2 · Centro · Palhoça/SC · CEP 88132-150" (vazio se não houver endereço em campos). */
+function enderecoTexto(rua?: string | null, num?: string | null, compl?: string | null, bairro?: string | null, cidade?: string | null, uf?: string | null, cep?: string | null) {
+  const linha = [rua, num, compl].filter(Boolean).join(', ');
+  return [linha, bairro, cidade && `${cidade}${uf ? `/${uf}` : ''}`, cep && `CEP ${cep.replace(/^(\d{5})(\d{3})$/, '$1-$2')}`].filter(Boolean).join(' · ');
 }

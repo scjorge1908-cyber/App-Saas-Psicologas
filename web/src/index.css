@@ -60,6 +60,14 @@
   /* horário livre e WhatsApp: sempre verde de "sucesso" do tema (independe do status Atendida) */
   --color-livre: var(--success);
   --color-livre-fundo: color-mix(in oklab, var(--success) 13%, var(--surface));
+  /* Linhas da agenda (referência Hope App): verde = horário livre, azul = paciente. Misturadas com as cores
+     do tema para funcionar no claro e no escuro; o significado sempre vem escrito (LIVRE, Agendada…). */
+  --color-ag-livre: color-mix(in oklab, #2E9E4F 62%, var(--on-surface));
+  --color-ag-livre-borda: #2E9E4F;
+  --color-ag-livre-fundo: color-mix(in oklab, #2E9E4F 11%, var(--surface));
+  --color-ag-pac: color-mix(in oklab, #1E66D0 60%, var(--on-surface));
+  --color-ag-pac-borda: #1E66D0;
+  --color-ag-pac-fundo: color-mix(in oklab, #1E66D0 9%, var(--surface));
   --color-sobre-status: var(--on-status);
   --color-inverso: var(--inverse);
   --color-sobre-inverso: var(--on-inverse);

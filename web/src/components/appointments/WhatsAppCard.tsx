@@ -3,6 +3,7 @@
 // Também leva para Mover a sessão, que fica disponível a qualquer momento enquanto a sessão está ativa.
 import { useState, type ReactNode } from 'react';
 import type { AgendaItem } from '../../lib/types';
+import * as api from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { firstName, zonedParts } from '../../lib/format';
 import { ausenciaText, conversaText, whatsappLink } from '../../lib/messages';
@@ -31,20 +32,34 @@ export function WhatsAppCard({ item, onClose, onMover }: { item: AgendaItem | nu
   const nasc = item.patient_birth_date;
   const aniversario = !!nasc && nasc.slice(5) === zonedParts(item.starts_at, tz).date.slice(5);
 
+  /** Sessão a que o texto se refere: esta, se ainda vai acontecer; senão, a próxima agendada do paciente. */
+  async function proximaSessao(): Promise<AgendaItem | null> {
+    if (ativa && futura) return item;
+    const lista = await api.listPatientAgenda(item!.patient_id);
+    return lista.filter((a) => (a.status === 'agendado' || a.status === 'confirmado') && new Date(a.starts_at).getTime() > Date.now())
+      .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0] ?? null;
+  }
+
   async function escolher(o: Opcao) {
-    if (o === 'lembrete') {
+    if (o === 'lembrete' || o === 'ausencia') {
       setBusy(true);
-      try { setTexto((await openReminder(item!, tz, pro)).text); } catch (e) { toast(errorMessage(e), 'erro'); return; } finally { setBusy(false); }
-    } else if (o === 'ausencia') setTexto(ausenciaText({ patientName: nome, startsAt: item!.starts_at, tz, professionalName: pro }));
-    else if (o === 'aniversario') setTexto(`Feliz aniversário, ${firstName(nome)}! Desejo um dia muito especial.\n${profile?.full_name ?? ''}`);
+      try {
+        const alvo = await proximaSessao();
+        if (o === 'lembrete') {
+          if (!alvo) { toast('Este paciente não tem próxima sessão agendada para confirmar. Agende antes ou use a mensagem livre.', 'erro'); return; }
+          setTexto((await openReminder(alvo, tz, pro)).text);
+        } else setTexto(ausenciaText({ patientName: nome, startsAt: (alvo ?? item!).starts_at, tz, professionalName: pro }));
+      } catch (e) { toast(errorMessage(e), 'erro'); return; } finally { setBusy(false); }
+    } else if (o === 'aniversario') setTexto(`Feliz aniversário, ${firstName(nome)}! Desejo um dia muito especial.\n${profile?.full_name ?? ''}`);
     else setTexto(conversaText({ patientName: nome, professionalName: profile?.full_name ?? '' }));
     setOpcao(o);
   }
 
   const wa = whatsappLink(item.patient_phone, texto);
   const opcoes: Array<{ o: Opcao; titulo: string; sub: string; icone: ReactNode; mostrar: boolean }> = [
-    { o: 'lembrete', titulo: 'Confirmar presença', sub: 'Lembrete com link para o paciente confirmar ou cancelar', icone: <IconCheck className="size-5" />, mostrar: ativa && futura },
-    { o: 'ausencia', titulo: 'Avisar que não vou atender', sub: 'Texto pronto informando que neste dia você não atende', icone: <IconWhats className="size-5" />, mostrar: ativa },
+    // Os 3 modelos de texto aparecem sempre (pedido do Jorge, 27/10); sessão que já passou usa a próxima agendada
+    { o: 'lembrete', titulo: 'Confirmar presença', sub: ativa && futura ? 'Lembrete com link para o paciente confirmar ou cancelar' : 'Lembrete da próxima sessão, com link de confirmação', icone: <IconCheck className="size-5" />, mostrar: true },
+    { o: 'ausencia', titulo: 'Avisar que não vou atender', sub: 'Texto pronto informando que neste dia você não atende', icone: <IconWhats className="size-5" />, mostrar: true },
     { o: 'aniversario', titulo: 'Parabéns pelo aniversário', sub: 'Hoje é aniversário do paciente', icone: <IconCake className="size-5" />, mostrar: aniversario },
     { o: 'livre', titulo: 'Mensagem livre', sub: 'Abre a conversa só com a saudação', icone: <IconWhats className="size-5" />, mostrar: true },
   ];

@@ -305,23 +305,17 @@ export function AgendaPage() {
         </section>
       )}
 
-      {/* Ações da agenda: grade (horários fixos) e encaixe (sessão fora da grade) */}
+      {/* Ações da agenda: grade (horários fixos) e encaixe (sessão fora da grade). Texto em uma linha só (pedido do Jorge, 27/10) */}
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/agenda/horarios" data-ajuda="grade"
-          className="pressionar group flex min-h-16 items-center gap-2.5 rounded-cartao border border-linha bg-papel p-2.5 text-left shadow-cartao hover:border-anil">
-          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-anil-claro text-sobre-anil-claro"><IconClock className="size-5" /></span>
-          <span className="min-w-0 leading-tight">
-            <span className="block text-[0.9375rem] font-extrabold text-tinta">Editar grade</span>
-            <span className="block text-[0.75rem] text-tinta-3">Dias, salas e horários</span>
-          </span>
+        <Link to="/agenda/horarios" data-ajuda="grade" title="Dias, salas e horários da sua grade"
+          className="pressionar flex min-h-14 items-center justify-center gap-2 whitespace-nowrap rounded-cartao border border-linha bg-papel px-3 text-[0.9375rem] font-extrabold text-tinta shadow-cartao hover:border-anil">
+          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-anil-claro text-sobre-anil-claro"><IconClock className="size-[1.125rem]" /></span>
+          Editar grade
         </Link>
-        <button onClick={() => setNovoEm({ date, modo: 'existente', encaixe: true })}
-          className="pressionar flex min-h-16 items-center gap-2.5 rounded-cartao border border-anil/30 bg-anil p-2.5 text-left text-sobre-anil shadow-elevado hover:brightness-110">
-          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-sobre-anil/15"><IconPlus className="size-5" strokeWidth={2.4} /></span>
-          <span className="min-w-0 leading-tight">
-            <span className="block text-[0.9375rem] font-extrabold">Encaixe</span>
-            <span className="block text-[0.75rem] opacity-85">Sessão fora da grade</span>
-          </span>
+        <button onClick={() => setNovoEm({ date, modo: 'existente', encaixe: true })} title="Sessão em horário fora da grade"
+          className="pressionar flex min-h-14 items-center justify-center gap-2 whitespace-nowrap rounded-cartao border border-anil/30 bg-anil px-3 text-[0.9375rem] font-extrabold text-sobre-anil shadow-elevado hover:brightness-110">
+          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-sobre-anil/15"><IconPlus className="size-[1.125rem]" strokeWidth={2.4} /></span>
+          Encaixe
         </button>
       </div>
 

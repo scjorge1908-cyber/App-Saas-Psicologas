@@ -9,6 +9,7 @@ export type { SeriesResult } from './api-real';
 
 const fonte = () => (isDemo() ? demo : real);
 
+export const listProntuarios: typeof real.listProntuarios = (...a) => (fonte().listProntuarios as typeof real.listProntuarios)(...a);
 export const listPatients: typeof real.listPatients = (...a) => (fonte().listPatients as typeof real.listPatients)(...a);
 export const getPatient: typeof real.getPatient = (...a) => (fonte().getPatient as typeof real.getPatient)(...a);
 export const savePatient: typeof real.savePatient = (...a) => (fonte().savePatient as typeof real.savePatient)(...a);

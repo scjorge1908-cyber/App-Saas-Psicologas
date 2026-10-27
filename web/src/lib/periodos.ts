@@ -9,7 +9,7 @@ export const PERIODOS: Array<{ id: PeriodoId; nome: string; inicio: string; fim:
   { id: 'noite', nome: 'Noite', inicio: '18:00', fim: '22:00' },
 ];
 
-export const DURACOES = [30, 40, 45, 50, 60];
+export const DURACOES = [30, 40, 45, 50, 60, 90];
 export const INTERVALOS = [0, 10, 15, 20, 30];
 
 const min = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));

@@ -5,6 +5,7 @@ import type {
   Expense, FinancialReportRow, InvoiceItem, Location, Patient, PaymentItem, RecordEntry, RecordEntryVersion, SeriesFrequency, Modality, WorkingHour,
 } from './types';
 import { sha256Hex } from './hash';
+import { resumirProntuarios, type ProntuarioResumo } from './prontuario';
 
 function check<T>(r: { data: T | null; error: unknown }): T {
   if (r.error) throw r.error;
@@ -88,8 +89,19 @@ export async function listRecords(patientId: string): Promise<RecordEntry[]> {
 }
 export async function saveRecord(r: Partial<RecordEntry> & { patient_id: string }) {
   const { id, ...rest } = r;
-  if (id) return check(await supabase.from('record_entries').update({ kind: rest.kind, entry_date: rest.entry_date, title: rest.title, content: rest.content }).eq('id', id).select().single());
+  if (id) return check(await supabase.from('record_entries').update({ kind: rest.kind, entry_date: rest.entry_date, title: rest.title, content: rest.content, private_notes: rest.private_notes ?? null }).eq('id', id).select().single());
   return check(await supabase.from('record_entries').insert(rest).select().single());
+}
+/** Resumo de todos os prontuários (lista "Prontuários"): demanda principal, última/próxima sessão e evolução pendente. */
+export async function listProntuarios(): Promise<ProntuarioResumo[]> {
+  const [pts, regs, dems, ses] = await Promise.all([
+    supabase.from('patients').select('*').order('full_name'),
+    supabase.from('record_entries').select('patient_id, kind, appointment_id, entry_date, created_at').neq('kind', 'identificacao_demanda'),
+    supabase.from('record_entries').select('patient_id, kind, appointment_id, entry_date, created_at, content').eq('kind', 'identificacao_demanda'),
+    supabase.from('appointments').select('id, patient_id, starts_at, status').in('status', ['atendido', 'agendado', 'confirmado']),
+  ]);
+  void supabase.rpc('log_event', { p_action: 'VISUALIZAR_LISTA_PRONTUARIOS', p_table: 'record_entries' });
+  return resumirProntuarios(check(pts), [...check(regs), ...check(dems)], check(ses));
 }
 export async function listRecordVersions(entryId: string): Promise<RecordEntryVersion[]> {
   return check(await supabase.from('record_entry_versions').select('*').eq('entry_id', entryId).order('version', { ascending: false }));

@@ -51,3 +51,11 @@ export const IconVideo = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><rec
 export const IconPin = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0113 0c0 5-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>);
 export const IconSun = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4" /></svg>);
 export const IconLogout = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M14 4h4.5A1.5 1.5 0 0120 5.5v13a1.5 1.5 0 01-1.5 1.5H14M10 16l-4-4 4-4M6 12h10" /></svg>);
+export const IconMoon = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z" /></svg>);
+export const IconSunset = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M7 16a5 5 0 0110 0M3 16h2M19 16h2M12 7.5V9.5M5.6 10.6l1.4 1.4M18.4 10.6L17 12M3 19.5h18" /></svg>);
+export const IconSwap = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" /></svg>);
+export const IconDoor = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M5 21V4.5A1.5 1.5 0 016.5 3h11A1.5 1.5 0 0119 4.5V21M3 21h18M14.5 12.5h.01" /></svg>);
+export const IconCake = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M4 20.5h16M5 20.5v-7a1.5 1.5 0 011.5-1.5h11a1.5 1.5 0 011.5 1.5v7M5 15.5c1.2 1 2.3 1 3.5 0s2.3-1 3.5 0 2.3 1 3.5 0 2.3-1 3.5 0M12 12V8.5M12 5.5c.8-.8.8-1.7 0-2.5-.8.8-.8 1.7 0 2.5z" /></svg>);
+export const IconDots = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><circle cx="12" cy="5.5" r="1.3" /><circle cx="12" cy="12" r="1.3" /><circle cx="12" cy="18.5" r="1.3" /></svg>);
+export const IconUserPlus = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><circle cx="9.5" cy="8" r="3.5" /><path d="M3 20c.8-3.6 3.4-5.5 6.5-5.5 1.6 0 3 .5 4.2 1.4M18.5 12.5v6M15.5 15.5h6" /></svg>);
+export const IconCircleCheck = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><path d="M8.5 12.3l2.3 2.3 4.7-4.9" /></svg>);

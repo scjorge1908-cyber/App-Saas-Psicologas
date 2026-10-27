@@ -10,6 +10,10 @@ with _i as (insert into public.patients (full_name, cep, street, address_number,
   values ('Paciente Endereço', '88132150', 'Rua Fictícia', '100', 'Centro', 'Palhoça', 'SC') returning id)
 select tests.put('P', id) from _i;
 select tests.eq((select city from public.patients where id = tests.id('P')), 'Palhoça', 'Endereço em campos é gravado');
+update public.patients set birth_date = '1990-05-18' where id = tests.id('P');
+with _i as (insert into public.appointments (patient_id, starts_at, ends_at) values (tests.id('P'), '2030-05-06 09:00-03', '2030-05-06 09:50-03') returning id)
+select tests.put('SA', id) from _i;
+select tests.eq((select patient_birth_date::text from public.agenda_items where id = tests.id('SA')), '1990-05-18', 'Agenda traz a data de nascimento');
 select tests.throws($q$insert into public.patients (full_name, cep) values ('CEP ruim', '88132-150')$q$, '23514', 'CEP com traço é recusado (só números)');
 select tests.throws($q$insert into public.patients (full_name, uf) values ('UF ruim', 'sc')$q$, '23514', 'UF minúscula é recusada');
 select tests.eq(tests.affected($q$update public.patients set rg = '12.345.678-9' where full_name = 'Paciente Endereço'$q$), 1, 'RG digitado é gravado');

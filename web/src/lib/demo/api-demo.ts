@@ -9,10 +9,11 @@ import type {
 import { DEFAULT_TZ, addDays, todayIn, zonedParts, zonedToUtc } from '../format';
 import { sha256Hex } from '../hash';
 import { DEMO_USER_ID } from './modo';
+import { montarEvolucao, resumirProntuarios, type ProntuarioResumo } from '../prontuario';
 import type { SeriesResult } from '../api-real';
 
 // ----------------------------------------------------------------- tipos ---
-type Appointment = Omit<AgendaItem, 'patient_name' | 'patient_social_name' | 'patient_phone' | 'patient_meeting_url' | 'patient_billing_mode' | 'series_frequency' | 'location_name' | 'location_color'>;
+type Appointment = Omit<AgendaItem, 'patient_name' | 'patient_social_name' | 'patient_phone' | 'patient_meeting_url' | 'patient_billing_mode' | 'series_frequency' | 'location_name' | 'location_color' | 'patient_birth_date'>;
 type Series = { id: string; patient_id: string; frequency: SeriesFrequency; time: string; duration: number; price: number | null; modality: Modality; location_id: string | null };
 type Charge = { id: string; patient_id: string; appointment_id: string | null; description: string; amount: number; due_date: string; canceled_at: string | null; created_at: string };
 type Payment = Omit<PaymentItem, 'patient_name' | 'patient_cpf' | 'charge_description'>;
@@ -140,7 +141,13 @@ function montarStore(): Store {
   reg(mariana, 'identificacao_demanda', -60, 'Demanda inicial', 'Paciente fictícia relata ansiedade relacionada ao trabalho e dificuldade para dormir. Busca estratégias para lidar com a sobrecarga.');
   reg(mariana, 'objetivos', -55, 'Objetivos do acompanhamento', 'Reduzir sintomas de ansiedade, organizar a rotina de sono e fortalecer a comunicação no trabalho.');
   reg(mariana, 'evolucao', -21, 'Sessão', 'Relatou melhora no sono após aplicar a rotina combinada. Trabalhamos registro de pensamentos automáticos.');
-  reg(mariana, 'evolucao', -14, 'Sessão', 'Trouxe situação de conflito com a liderança. Ensaiamos uma conversa assertiva.');
+  reg(mariana, 'evolucao', -14, 'Sessão', montarEvolucao({ formato: 'presencial', humor: ['Ansioso', 'Reflexivo'], queixa: 'Trouxe situação fictícia de conflito com a liderança e antecipação ansiosa antes de reuniões.',
+    abordagens: ['TCC'], intervencoes: 'Registro de pensamentos disfuncionais e ensaio de conversa assertiva.', tarefas: ['Registrar pensamentos automáticos antes das reuniões', 'Pausa de 5 minutos com respiração diafragmática'] }));
+  s.records[s.records.length - 1].private_notes = 'Exemplo de anotação pessoal (fictícia): levar o caso para supervisão.';
+  // Liga as duas evoluções de Mariana às sessões atendidas (a mais recente fica pendente, como na vida real)
+  const atendM = s.appointments.filter((x) => x.patient_id === mariana.id && x.status === 'atendido').sort((x, y) => x.starts_at.localeCompare(y.starts_at));
+  const evoM = s.records.filter((r) => r.patient_id === mariana.id && r.kind === 'evolucao');
+  evoM.forEach((r, i) => { const ap = atendM[atendM.length - 1 - evoM.length + i]; if (ap) { r.appointment_id = ap.id; r.entry_date = zonedParts(ap.starts_at, tz).date; } });
   reg(rafael, 'identificacao_demanda', -40, 'Demanda inicial', 'Atendimento on-line. Paciente fictício em processo de luto, com queixa de desânimo e isolamento.');
   reg(beatriz, 'identificacao_demanda', -30, 'Demanda inicial', 'Atendimento infantojuvenil com autorização da responsável. Dificuldades de adaptação na escola nova.');
   reg(pedro, 'encerramento', -10, 'Encerramento', 'Objetivos alcançados. Alta combinada com o paciente, com orientação de retorno se necessário.');
@@ -196,7 +203,7 @@ function agendaItem(a: Appointment): AgendaItem {
   const s = a.series_id ? db().series.find((x) => x.id === a.series_id) : null;
   const l = a.location_id ? db().locations.find((x) => x.id === a.location_id) : null;
   return { ...a, patient_name: p.full_name, patient_social_name: p.social_name, patient_phone: p.phone,
-    patient_meeting_url: p.meeting_url, patient_billing_mode: p.billing_mode, series_frequency: s?.frequency ?? null,
+    patient_meeting_url: p.meeting_url, patient_billing_mode: p.billing_mode, patient_birth_date: p.birth_date, series_frequency: s?.frequency ?? null,
     location_name: l?.name ?? null, location_color: l?.color ?? null };
 }
 function saldo(c: Charge): ChargeBalance {
@@ -373,15 +380,19 @@ export async function saveRecord(r: Partial<RecordEntry> & { patient_id: string 
     const atual = db().records.find((x) => x.id === r.id);
     if (!atual) throw new Error('Registro não encontrado.');
     db().versions.push({ id: uid(), entry_id: atual.id, version: atual.version, kind: atual.kind, entry_date: atual.entry_date,
-      title: atual.title, content: atual.content, valid_from: atual.updated_at, replaced_at: agora() });
+      title: atual.title, content: atual.content, private_notes: atual.private_notes ?? null, valid_from: atual.updated_at, replaced_at: agora() });
     Object.assign(atual, { kind: r.kind ?? atual.kind, entry_date: r.entry_date ?? atual.entry_date, title: r.title ?? atual.title,
-      content: r.content ?? atual.content, version: atual.version + 1, updated_at: agora() });
+      content: r.content ?? atual.content, private_notes: r.private_notes !== undefined ? r.private_notes : atual.private_notes, version: atual.version + 1, updated_at: agora() });
     return atual;
   }
   const novo: RecordEntry = { id: uid(), appointment_id: null, kind: 'evolucao', entry_date: todayIn(tz), title: null, content: '',
     ...r, version: 1, created_at: agora(), updated_at: agora() } as RecordEntry;
   db().records.push(novo);
   return novo;
+}
+export async function listProntuarios(): Promise<ProntuarioResumo[]> {
+  await atraso();
+  return resumirProntuarios(db().patients, db().records, db().appointments);
 }
 export async function listRecordVersions(entryId: string): Promise<RecordEntryVersion[]> {
   await atraso();

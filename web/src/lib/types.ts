@@ -101,6 +101,7 @@ export interface AgendaItem {
   location_id: string | null;
   location_name: string | null;
   location_color: string | null;
+  patient_birth_date?: string | null;
 }
 
 /** Local de atendimento (sala, consultório ou on-line). */
@@ -132,6 +133,7 @@ export interface RecordEntry {
   entry_date: string;
   title: string | null;
   content: string;
+  private_notes?: string | null; // anotações pessoais (uso restrito, fora dos documentos)
   version: number;
   created_at: string;
   updated_at: string;
@@ -145,6 +147,7 @@ export interface RecordEntryVersion {
   entry_date: string;
   title: string | null;
   content: string;
+  private_notes?: string | null;
   valid_from: string;
   replaced_at: string;
 }

@@ -1,16 +1,16 @@
-// "Horários": onde a psicóloga cadastra os locais em que atende e as faixas semanais de atendimento.
-// A agenda usa isso para sugerir os horários livres. Aberta por um botão discreto na Agenda.
+// "Grade e horários" (layout Stitch): gerador de grade por sala, dias, turno, duração e intervalo, com pré-visualização;
+// abaixo, a grade atual (cada bloco editável/excluível) e as salas. A agenda mostra os horários livres a partir daqui.
 import { useState, type FormEvent } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { Location, Modality, WorkingHour } from '../lib/types';
 import { DIAS_SEMANA, faixaTexto } from '../lib/horarios';
-import { DURACOES, INTERVALOS, PERIODOS, gerarInicios, periodoDe, type PeriodoId } from '../lib/periodos';
+import { DURACOES, INTERVALOS, PERIODOS, gerarInicios, hhmm, periodoDe, type PeriodoId } from '../lib/periodos';
 import { useProfile } from '../auth/AuthProvider';
 import { errorMessage } from '../lib/errors';
 import { Button, Dialog, ErrorBox, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
-import { IconChevronLeft, IconPlus } from '../components/icons';
+import { IconChevronLeft, IconCircleCheck, IconPlus } from '../components/icons';
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na segunda
 const CORES = ['#146C70', '#0B6E8A', '#B3541E', '#2F7D5B', '#9C2F6B', '#5B6472'];
@@ -21,8 +21,6 @@ export function HorariosPage() {
   const horas = useQuery({ queryKey: ['working-hours'], queryFn: api.listWorkingHours });
   const [editLocal, setEditLocal] = useState<Partial<Location> | null>(null);
   const [editHora, setEditHora] = useState<Partial<WorkingHour> | null>(null);
-  const [params] = useSearchParams();
-  const [criando, setCriando] = useState(params.get('novo') === '1');
   const { profile } = useProfile();
   const durPadrao = profile?.session_minutes ?? 50;
   const intPadrao = profile?.buffer_minutes ?? 10;
@@ -37,59 +35,29 @@ export function HorariosPage() {
   const nomeLocal = (id: string) => lista.find((l) => l.id === id);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5 pb-6">
       <header className="flex items-center gap-2">
         <Link to="/" className="grid size-11 place-items-center rounded-xl text-tinta-2 hover:bg-cinza-fundo" aria-label="Voltar para a agenda"><IconChevronLeft /></Link>
         <div>
-          <h1 className="titulo-display text-[26px] leading-tight">Meus horários</h1>
-          <p className="text-[15px] text-tinta-2">Sala, dia e período em que você atende. A agenda mostra os horários disponíveis a partir daqui.</p>
+          <h1 className="titulo-display text-[26px] leading-tight">Grade e horários</h1>
+          <p className="text-[15px] text-tinta-2">Gere os horários da sua rotina com os intervalos certos. A agenda usa esta grade.</p>
         </div>
       </header>
-
-      <Button className="self-start" onClick={() => setCriando(true)}><IconPlus /> Adicionar horários</Button>
 
       {erro && <ErrorBox>{errorMessage(erro)}</ErrorBox>}
       {(locais.isLoading || horas.isLoading) && <Loading />}
 
-      {/* Locais */}
-      <section aria-labelledby="t-locais" className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <h2 id="t-locais" className="text-[13px] font-bold uppercase tracking-[.06em] text-tinta-3">Locais de atendimento</h2>
-          <Button variant="ghost" size="sm" onClick={() => setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] })}><IconPlus /> Local</Button>
-        </div>
-        {locais.data && lista.length === 0 && (
-          <button type="button" onClick={() => setEditLocal({ modality: 'presencial', color: CORES[0] })}
-            className="rounded-2xl border border-dashed border-linha-forte bg-papel px-4 py-5 text-left text-tinta-2 hover:border-anil">
-            <strong className="block text-tinta">Comece cadastrando um local</strong>
-            Ex.: "Sala 1 · Centro" ou "On-line".
-          </button>
-        )}
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {lista.map((l) => (
-            <li key={l.id}>
-              <button type="button" onClick={() => setEditLocal(l)}
-                className={cx('flex w-full items-center gap-3 cartao pressionar px-4 py-3 text-left', !l.active && 'opacity-60')}>
-                <span className="size-3 shrink-0 rounded-full" style={{ background: l.color ?? 'var(--color-anil)' }} aria-hidden />
-                <span className="min-w-0 flex-1">
-                  <strong className="block truncate">{l.name}</strong>
-                  <span className="text-sm text-tinta-3">{l.modality === 'online' ? 'On-line' : l.address || 'Presencial'}{!l.active && ' · desativado'}</span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {locais.data && horas.data && (
+        <GeradorGrade locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onNovaSala={() => setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] })} onSaved={atualizar} />
+      )}
 
-      {/* Semana: um card por bloco (sala + período) */}
-      {lista.length > 0 && (
+      {/* Grade atual: um card por bloco (sala + turno), por dia */}
+      {(horas.data ?? []).length > 0 && (
         <section aria-labelledby="t-semana" className="flex flex-col gap-3">
-          <h2 id="t-semana" className="rotulo">Horários da semana</h2>
-          {(horas.data ?? []).length === 0 && (
-            <button type="button" onClick={() => setCriando(true)} className="cartao px-4 py-5 text-left text-tinta-2">
-              <strong className="block text-tinta">Nenhum horário ainda</strong>
-              Escolha os dias, o período (manhã, tarde ou noite) e a duração da sessão. O app monta os horários.
-            </button>
-          )}
+          <div className="flex items-baseline justify-between">
+            <h2 id="t-semana" className="text-[18px] font-bold">Grade atual</h2>
+            <span className="text-sm text-tinta-2">Toque num bloco para mudar ou excluir</span>
+          </div>
           {ORDEM_DIAS.map((d) => {
             const doDia = (horas.data ?? []).filter((h) => h.weekday === d);
             if (doDia.length === 0) return null;
@@ -103,12 +71,12 @@ export function HorariosPage() {
                     const inicios = gerarInicios(h.start_time.slice(0, 5), h.end_time.slice(0, 5), dur, int);
                     return (
                       <li key={h.id}>
-                        <button type="button" onClick={() => setEditHora(h)} className="cartao pressionar flex w-full flex-col gap-1 px-4 py-3 text-left">
+                        <button type="button" onClick={() => setEditHora(h)} className="cartao pressionar flex w-full flex-col gap-1 border-l-4 border-l-livre px-4 py-3 text-left">
                           <span className="flex items-center gap-2 font-bold">
                             <span className="size-2.5 rounded-full" style={{ background: l?.color ?? 'var(--color-anil)' }} aria-hidden />
                             {l?.name ?? 'Local'} · {periodoDe(h.start_time).nome}
                           </span>
-                          <span className="num text-sm text-tinta-2">{faixaTexto(h)} · sessões de {dur} min{int ? ` + ${int} de intervalo` : ''}</span>
+                          <span className="num text-sm text-tinta-2">{faixaTexto(h)} · {dur} min{int ? ` + ${int} de intervalo` : ''}</span>
                           <span className="num text-sm text-tinta-3">{inicios.length} {inicios.length === 1 ? 'horário' : 'horários'}: {inicios.join(', ')}</span>
                         </button>
                       </li>
@@ -121,9 +89,31 @@ export function HorariosPage() {
         </section>
       )}
 
+      {/* Salas */}
+      {lista.length > 0 && (
+        <section aria-labelledby="t-salas" className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h2 id="t-salas" className="text-[18px] font-bold">Salas</h2>
+            <Button variant="ghost" size="sm" onClick={() => setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] })}><IconPlus /> Sala</Button>
+          </div>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {lista.map((l) => (
+              <li key={l.id}>
+                <button type="button" onClick={() => setEditLocal(l)} className={cx('cartao pressionar flex w-full items-center gap-3 px-4 py-3 text-left', !l.active && 'opacity-60')}>
+                  <span className="size-3 shrink-0 rounded-full" style={{ background: l.color ?? 'var(--color-anil)' }} aria-hidden />
+                  <span className="min-w-0 flex-1">
+                    <strong className="block truncate">{l.name}</strong>
+                    <span className="text-sm text-tinta-3">{l.modality === 'online' ? 'On-line' : l.address || 'Presencial'}{!l.active && ' · pausada'}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <LocalDialog local={editLocal} onClose={() => setEditLocal(null)} onSaved={atualizar} />
       <HoraDialog hora={editHora} locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onClose={() => setEditHora(null)} onSaved={atualizar} />
-      <CriarHorariosDialog open={criando} locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onClose={() => setCriando(false)} onSaved={atualizar} />
     </div>
   );
 }
@@ -194,6 +184,7 @@ function LocalDialog({ local, onClose, onSaved }: { local: Partial<Location> | n
 
 function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { hora: Partial<WorkingHour> | null; locais: Location[]; durPadrao: number; intPadrao: number; onClose: () => void; onSaved: () => void }) {
   const toast = useToast();
+  const confirm = useConfirm();
   const [form, setForm] = useState<Partial<WorkingHour>>({});
   const [aberto, setAberto] = useState<Partial<WorkingHour> | null>(null);
   if (hora !== aberto) { setAberto(hora); setForm(hora ? { ...hora, start_time: hora.start_time?.slice(0, 5), end_time: hora.end_time?.slice(0, 5) } : {}); }
@@ -210,9 +201,9 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
   function enviar(e: FormEvent) { e.preventDefault(); salvar.mutate(); }
 
   return (
-    <Dialog open={!!hora} onClose={onClose} title={form.id ? 'Editar horário' : 'Novo horário'}
+    <Dialog open={!!hora} onClose={onClose} title={form.id ? 'Editar bloco da grade' : 'Novo bloco da grade'}
       footer={<>
-        {form.id && <Button variant="ghost" className="mr-auto text-vermelho" onClick={() => excluir.mutate()} busy={excluir.isPending}>Excluir</Button>}
+        {form.id && <Button variant="ghost" className="mr-auto text-vermelho" busy={excluir.isPending} onClick={async () => { if (await confirm({ title: 'Excluir este bloco da grade?', body: 'Os horários livres deste bloco saem da agenda. Sessões já marcadas continuam.', confirmLabel: 'Excluir', danger: true })) excluir.mutate(); }}>Excluir</Button>}
         <Button variant="secondary" onClick={onClose}>Cancelar</Button>
         <Button type="submit" form="form-hora" busy={salvar.isPending}>Salvar</Button>
       </>}>
@@ -261,103 +252,140 @@ function Escolha({ rotulo, valores, valor, sufixo, onChange }: { rotulo: string;
   );
 }
 
-/** Assistente: escolhe sala, dias, períodos, duração e intervalo; cria um bloco por dia × período. */
-function CriarHorariosDialog({ open, locais, durPadrao, intPadrao, onClose, onSaved }: {
-  open: boolean; locais: Location[]; durPadrao: number; intPadrao: number; onClose: () => void; onSaved: () => void;
+/** Gerador de grade (layout Stitch): sala, dias, turno com início/término, duração, intervalo e pré-visualização. */
+function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
+  locais: Location[]; durPadrao: number; intPadrao: number; onNovaSala: () => void; onSaved: () => void;
 }) {
   const toast = useToast();
+  const ativas = locais.filter((l) => l.active);
   const [localId, setLocalId] = useState('');
   const [novoLocal, setNovoLocal] = useState('Sala 1');
-  const [dias, setDias] = useState<number[]>([]);
-  const [periodos, setPeriodos] = useState<PeriodoId[]>([]);
-  const [dur, setDur] = useState(60);
+  const [dias, setDias] = useState<number[]>([1]);
+  const [turno, setTurno] = useState<PeriodoId>('manha');
+  const [ini, setIni] = useState(PERIODOS[0].inicio);
+  const [fim, setFim] = useState(PERIODOS[0].fim);
+  const [dur, setDur] = useState(durPadrao >= 60 ? 60 : durPadrao);
   const [int, setInt] = useState(intPadrao);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
-  const [estavaAberto, setEstavaAberto] = useState(false);
-  if (open !== estavaAberto) {
-    setEstavaAberto(open);
-    if (open) { setLocalId(locais.find((l) => l.active)?.id ?? ''); setDias([]); setPeriodos([]); setDur(durPadrao >= 60 ? 60 : durPadrao); setInt(intPadrao); setErro(null); }
-  }
-  const alterna = <T,>(lista: T[], v: T) => (lista.includes(v) ? lista.filter((x) => x !== v) : [...lista, v]);
-  const semLocal = locais.length === 0;
+  const salaSel = ativas.find((l) => l.id === localId) ?? ativas[0] ?? null;
+  const semSala = ativas.length === 0;
+  const alterna = (v: number) => setDias((d) => (d.includes(v) ? d.filter((x) => x !== v) : [...d, v]));
+  const escolheTurno = (t: PeriodoId) => { const p = PERIODOS.find((x) => x.id === t)!; setTurno(t); setIni(p.inicio); setFim(p.fim); };
+  const restaurar = () => { escolheTurno('manha'); setDias([1]); setDur(durPadrao >= 60 ? 60 : durPadrao); setInt(intPadrao); setErro(null); };
+
+  const inicios = ini && fim ? gerarInicios(ini, fim, dur, int) : [];
+  const fimDe = (t: string) => hhmm(Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)) + dur);
+  const util = inicios.length * dur;
 
   async function salvar() {
     setErro(null);
-    if (semLocal && !novoLocal.trim()) return setErro('Dê um nome para a sala.');
-    if (dias.length === 0) return setErro('Escolha pelo menos um dia da semana.');
-    if (periodos.length === 0) return setErro('Escolha pelo menos um período.');
+    if (semSala && !novoLocal.trim()) return setErro('Dê um nome para a sala.');
+    if (dias.length === 0) return setErro('Escolha pelo menos um dia.');
+    if (!ini || !fim || fim <= ini) return setErro('O término precisa ser depois do início.');
+    if (inicios.length === 0) return setErro('Nenhum horário cabe nesse turno com essa duração.');
     setSalvando(true);
     try {
-      const id = semLocal ? (await api.saveLocation({ name: novoLocal.trim(), modality: 'presencial', color: CORES[0] })).id : localId;
+      const id = semSala ? (await api.saveLocation({ name: novoLocal.trim(), modality: 'presencial', color: CORES[0] })).id : salaSel!.id;
       const falhas: string[] = [];
       let criados = 0;
       for (const d of ORDEM_DIAS.filter((x) => dias.includes(x))) {
-        for (const p of PERIODOS.filter((x) => periodos.includes(x.id))) {
-          try {
-            await api.saveWorkingHour({ location_id: id, weekday: d, start_time: p.inicio, end_time: p.fim, session_minutes: dur, buffer_minutes: int });
-            criados++;
-          } catch (e) { falhas.push(`${DIAS_SEMANA[d]} · ${p.nome}: ${errorMessage(e)}`); }
-        }
+        try {
+          await api.saveWorkingHour({ location_id: id, weekday: d, start_time: ini, end_time: fim, session_minutes: dur, buffer_minutes: int });
+          criados++;
+        } catch (e) { falhas.push(`${DIAS_SEMANA[d]}: ${errorMessage(e)}`); }
       }
       onSaved();
-      if (falhas.length === 0) { toast(`${criados} ${criados === 1 ? 'bloco criado' : 'blocos criados'}`); onClose(); }
-      else setErro(`Criados: ${criados}. Não deu para criar: ${falhas.join(' · ')}`);
+      if (falhas.length === 0) toast(`Grade gerada: ${criados} ${criados === 1 ? 'dia' : 'dias'} × ${inicios.length} horários`);
+      else setErro(`Gerados: ${criados}. Não deu para gerar em ${falhas.join(' · ')}`);
     } catch (e) { setErro(errorMessage(e)); } finally { setSalvando(false); }
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title="Adicionar horários"
-      footer={<>
-        <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-        <Button onClick={salvar} busy={salvando}>Criar horários</Button>
-      </>}>
-      <div className="flex flex-col gap-5">
-        {erro && <ErrorBox>{erro}</ErrorBox>}
-        {semLocal ? (
-          <TextField label="Sala" required maxLength={80} value={novoLocal} onChange={(e) => setNovoLocal(e.target.value)} hint="Ex.: Sala 1, Sala 2 ou On-line. Dá para criar outras depois." />
+    <section className="flex flex-col gap-4" aria-labelledby="t-gerar">
+      <div>
+        <span className="inline-flex h-7 items-center rounded-full bg-livre-fundo px-3 text-[12px] font-bold text-livre">Gerador de horários</span>
+        <h2 id="t-gerar" className="mt-2 text-[20px] font-bold leading-tight">Configurar regras de atendimento</h2>
+      </div>
+      {erro && <ErrorBox>{erro}</ErrorBox>}
+
+      {/* Sala */}
+      <div>
+        <div className="mb-2 flex items-center justify-between"><p className="font-bold">Consultório e sala</p>{!semSala && <span className="text-sm text-anil-escuro">{salaSel?.name}</span>}</div>
+        {semSala ? (
+          <TextField label="Nome da sala" required maxLength={80} value={novoLocal} onChange={(e) => setNovoLocal(e.target.value)} hint="Ex.: Sala 1, Sala 2 ou On-line." />
         ) : (
-          <label className="flex flex-col gap-1.5">
-            <span className="rotulo">Sala</span>
-            <Select value={localId} onChange={(e) => setLocalId(e.target.value)}>
-              {locais.filter((l) => l.active).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-            </Select>
-          </label>
-        )}
-        <fieldset>
-          <legend className="rotulo mb-2">Dias da semana</legend>
-          <div className="flex flex-wrap gap-2">
-            {ORDEM_DIAS.map((d) => (
-              <button key={d} type="button" aria-pressed={dias.includes(d)} onClick={() => setDias(alterna(dias, d))}
-                className={cx('min-h-11 min-w-14 rounded-full border px-3 font-bold', dias.includes(d) ? 'border-anil bg-anil-claro text-sobre-anil-claro' : 'border-linha-forte text-tinta-2')}>
-                {DIAS_SEMANA[d].slice(0, 3)}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <fieldset>
-          <legend className="rotulo mb-2">Períodos</legend>
-          <div className="grid grid-cols-3 gap-2">
-            {PERIODOS.map((p) => (
-              <button key={p.id} type="button" aria-pressed={periodos.includes(p.id)} onClick={() => setPeriodos(alterna(periodos, p.id))}
-                className={cx('flex min-h-14 flex-col items-center justify-center rounded-campo border px-2 font-bold', periodos.includes(p.id) ? 'border-anil bg-anil-claro text-sobre-anil-claro' : 'border-linha-forte text-tinta-2')}>
-                {p.nome}<span className="num text-[12px] font-normal">{p.inicio}–{p.fim}</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
-        <Escolha rotulo="Duração da sessão" valores={DURACOES} valor={dur} sufixo="min" onChange={setDur} />
-        <Escolha rotulo="Intervalo entre sessões" valores={INTERVALOS} valor={int} sufixo="min" onChange={setInt} />
-        {periodos.length > 0 && (
-          <div className="rounded-campo bg-afundado p-3 text-sm">
-            <p className="rotulo mb-1">Horários que serão criados</p>
-            {PERIODOS.filter((p) => periodos.includes(p.id)).map((p) => (
-              <p key={p.id} className="num"><b>{p.nome}:</b> {gerarInicios(p.inicio, p.fim, dur, int).join(', ')}</p>
-            ))}
-            {dias.length > 0 && <p className="mt-1 text-tinta-2">Em: {ORDEM_DIAS.filter((d) => dias.includes(d)).map((d) => DIAS_SEMANA[d]).join(', ')}.</p>}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {ativas.map((l) => {
+              const sel = l.id === salaSel?.id;
+              return (
+                <button key={l.id} type="button" aria-pressed={sel} onClick={() => setLocalId(l.id)}
+                  className={cx('flex min-h-16 min-w-36 shrink-0 items-center gap-2 rounded-cartao border px-3 text-left', sel ? 'btn-degrade border-transparent shadow-elevado' : 'border-linha bg-papel')}>
+                  <span className="size-2.5 shrink-0 rounded-full" style={{ background: sel ? 'currentColor' : l.color ?? 'var(--color-anil)' }} aria-hidden />
+                  <span className="min-w-0"><span className="block truncate font-bold">{l.name}</span><span className="block text-[12px] opacity-80">{l.modality === 'online' ? 'On-line' : 'Presencial'}</span></span>
+                </button>
+              );
+            })}
+            <button type="button" onClick={onNovaSala} className="flex min-h-16 shrink-0 items-center gap-1.5 rounded-cartao border border-dashed border-linha-forte px-3 font-bold text-anil-escuro"><IconPlus className="size-5" /> Sala</button>
           </div>
         )}
       </div>
-    </Dialog>
+
+      {/* Dias */}
+      <div>
+        <div className="mb-2 flex items-center justify-between"><p className="font-bold">Dias de aplicação</p><span className="text-sm text-anil-escuro">{dias.length} {dias.length === 1 ? 'dia ativo' : 'dias ativos'}</span></div>
+        <div className="grid grid-cols-7 gap-1.5">
+          {ORDEM_DIAS.map((d) => (
+            <button key={d} type="button" aria-pressed={dias.includes(d)} onClick={() => alterna(d)}
+              className={cx('flex min-h-12 flex-col items-center justify-center rounded-campo border text-sm font-bold', dias.includes(d) ? 'btn-degrade border-transparent' : 'border-linha bg-papel text-tinta-2')}>
+              {DIAS_SEMANA[d].slice(0, 3)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Turno */}
+      <div className="cartao flex flex-col gap-4 p-4">
+        <p className="rotulo">Turno de atendimento</p>
+        <div role="tablist" aria-label="Turno" className="grid grid-cols-3 gap-1 rounded-campo bg-afundado p-1">
+          {PERIODOS.map((p) => (
+            <button key={p.id} role="tab" type="button" aria-selected={turno === p.id} onClick={() => escolheTurno(p.id)}
+              className={cx('min-h-11 rounded-[calc(var(--r-field)-4px)] font-bold', turno === p.id ? 'bg-papel text-anil-escuro shadow-cartao' : 'text-tinta-2')}>{p.nome}</button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <TextField label="Início do turno" type="time" step={300} value={ini} onChange={(e) => setIni(e.target.value)} />
+          <TextField label="Término previsto" type="time" step={300} value={fim} onChange={(e) => setFim(e.target.value)} />
+        </div>
+        <Escolha rotulo={`Duração por consulta · ${dur} min`} valores={DURACOES} valor={dur} sufixo="min" onChange={setDur} />
+        <Escolha rotulo={`Intervalo entre sessões · ${int} min`} valores={INTERVALOS} valor={int} sufixo="min" onChange={setInt} />
+      </div>
+
+      {/* Pré-visualização */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between"><p className="text-[18px] font-bold">Pré-visualização da grade</p></div>
+        <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[15px] text-sobre-anil-claro">
+          <b className="num">{String(inicios.length).padStart(2, '0')} horários</b> de {dur} min{int ? <> com <b>{int} min</b> de intervalo</> : ' sem intervalo'}.
+          Total útil: <b className="num">{Math.floor(util / 60)}h{util % 60 ? `${util % 60}` : ''}</b> de agenda{dias.length ? `, em ${ORDEM_DIAS.filter((d) => dias.includes(d)).map((d) => DIAS_SEMANA[d].slice(0, 3)).join(', ')}` : ''}. Vale para todas as semanas.
+        </p>
+        <ol className="flex flex-col">
+          {inicios.map((t, i) => (
+            <li key={t}>
+              {i > 0 && int > 0 && <p className="num py-1 text-center text-[12px] text-tinta-3">{int} min de intervalo</p>}
+              <div className={cx('cartao flex items-center gap-3 border-l-4 border-l-livre px-4 py-3', i > 0 && int === 0 && 'mt-2')}>
+                <span className="min-w-0 flex-1">
+                  <span className="num block font-bold">{t} — {fimDe(t)}</span>
+                  <span className="block text-sm text-tinta-2">{salaSel?.name ?? (novoLocal || 'Sala')} · horário {i + 1}</span>
+                </span>
+                <span className="inline-flex items-center gap-1 text-sm text-livre"><IconCircleCheck className="size-4" /> Disponível</span>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <Button onClick={salvar} busy={salvando} className="min-h-14 w-full text-[16px]">Salvar e gerar grade</Button>
+      <Button variant="secondary" onClick={restaurar} className="w-full">Restaurar padrão</Button>
+    </section>
   );
 }

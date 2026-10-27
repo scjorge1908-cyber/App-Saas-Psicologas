@@ -18,7 +18,7 @@ Legenda de situação: **Publicado** (na Play/produção) · **Pronto, não publ
 ### A2. Botões "Editar grade" e "Encaixe" e linha do quinzenal com botões (27/10/2026)
 - **Pedido:** modernizar os botões "Editar grade" e "Adicionar encaixe" e explicar o fluxo do encaixe (16:42).
 - **Correção junto:** a linha apagada do paciente quinzenal, na semana em que ele não tem sessão, ganha os botões Mover e WhatsApp, valendo para a próxima sessão. O motivo é que os botões precisam estar sempre disponíveis, como pedido às 16:03.
-- **Situação:** pronto na branch `agenda/botoes-encaixe`, **não publicado**. O Jorge interrompeu o envio às 16:50. Aguardando autorização.
+- **Situação:** pronto na branch `agenda/botoes-encaixe`, com o **PR #5 aberto mas não juntado**. O PR foi criado pelo comando que o Jorge interrompeu às 16:50. **Não publicado.** Aguardando autorização; não juntar o PR #5 antes dela.
 
 ---
 

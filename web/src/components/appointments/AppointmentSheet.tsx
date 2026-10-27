@@ -1,5 +1,6 @@
 import { publicOrigin } from '../../lib/supabase';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AgendaItem } from '../../lib/types';
@@ -34,7 +35,7 @@ export async function openReminder(item: AgendaItem, tz: string, professional: s
 
 type Mode = 'view' | 'cancel' | 'reschedule' | 'noshow';
 
-export function AppointmentSheet({ item, onClose }: { item: AgendaItem | null; onClose: () => void }) {
+export function AppointmentSheet({ item, onClose, mover }: { item: AgendaItem | null; onClose: () => void; mover?: boolean }) {
   const { profile, tz } = useProfile();
   const invalidate = useInvalidateAgenda();
   const toast = useToast();
@@ -47,6 +48,16 @@ export function AppointmentSheet({ item, onClose }: { item: AgendaItem | null; o
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
   const [reminder, setReminder] = useState<{ link: string; text: string; wa: string | null } | null>(null);
+  const [newLocation, setNewLocation] = useState('');
+  const locais = useQuery({ queryKey: ['locations'], queryFn: api.listLocations, enabled: !!item });
+
+  // Aberto pelo botão "Mover": já entra no modo de mudar dia, horário e sala
+  useEffect(() => {
+    if (!item) return;
+    const l = zonedParts(item.starts_at, tz);
+    setNewDate(l.date); setNewTime(l.time); setNewLocation(item.location_id ?? '');
+    setMode(mover ? 'reschedule' : 'view');
+  }, [item, mover, tz]);
 
   if (!item) return null;
   const started = new Date(item.starts_at).getTime() <= Date.now();
@@ -90,8 +101,11 @@ export function AppointmentSheet({ item, onClose }: { item: AgendaItem | null; o
       <Button busy={busy} disabled={!newDate || !newTime} onClick={() => {
         const s = zonedToUtc(newDate, newTime, tz);
         const e = new Date(new Date(s).getTime() + duration * 60000).toISOString();
-        void run(() => api.updateAppointment(item.id, { starts_at: s, ends_at: e }), 'Sessão remarcada');
-      }}>Remarcar</Button>
+        const loc = locais.data?.find((x) => x.id === newLocation);
+        const patch: Record<string, unknown> = { starts_at: s, ends_at: e, location_id: newLocation || null };
+        if (loc) patch.modality = loc.modality;
+        void run(() => api.updateAppointment(item.id, patch), 'Sessão movida');
+      }}>Mover sessão</Button>
     </>;
     return null;
   })();
@@ -146,7 +160,7 @@ export function AppointmentSheet({ item, onClose }: { item: AgendaItem | null; o
           <div className="flex flex-wrap gap-2 border-t border-linha pt-4">
             <Link to={`/pacientes/${item.patient_id}?aba=prontuario&sessao=${item.id}`} className="inline-flex min-h-11 items-center rounded-[var(--radius-campo)] px-3 font-bold text-anil hover:bg-anil-claro">Registrar no prontuário</Link>
             <Link to={`/pacientes/${item.patient_id}`} className="inline-flex min-h-11 items-center rounded-[var(--radius-campo)] px-3 font-bold text-anil hover:bg-anil-claro">Ver paciente</Link>
-            {active && <Button variant="ghost" onClick={() => { setNewDate(local.date); setNewTime(local.time); setMode('reschedule'); }}>Remarcar</Button>}
+            {active && <Button variant="ghost" onClick={() => { setNewDate(local.date); setNewTime(local.time); setNewLocation(item.location_id ?? ''); setMode('reschedule'); }}>Mover (dia, horário ou sala)</Button>}
             {active && <Button variant="ghost" onClick={() => { setCancelBy('paciente'); setMode('cancel'); }}>Cancelar</Button>}
             {item.status === 'cancelado' && (
               <Button variant="ghost" busy={busy} onClick={() => run(() => api.setStatus(item.id, 'agendado'), 'Sessão reativada')}>Reativar</Button>
@@ -202,6 +216,14 @@ export function AppointmentSheet({ item, onClose }: { item: AgendaItem | null; o
         <div className="grid grid-cols-2 gap-3">
           <Field label="Nova data">{(id) => <Input id={id} type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} />}</Field>
           <TextField label="Novo horário" type="time" step={300} value={newTime} onChange={(e) => setNewTime(e.target.value)} />
+          {(locais.data?.length ?? 0) > 0 && (
+            <Field label="Sala / local" className="col-span-2">{(id) => (
+              <Select id={id} value={newLocation} onChange={(e) => setNewLocation(e.target.value)}>
+                <option value="">Sem local</option>
+                {locais.data!.filter((l) => l.active || l.id === newLocation).map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+              </Select>
+            )}</Field>
+          )}
           <p className="col-span-2 text-sm text-tinta-3">A sessão mantém a duração de {duration} minutos. Se estava confirmada, precisará de nova confirmação.</p>
         </div>
       )}

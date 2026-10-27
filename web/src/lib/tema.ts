@@ -2,10 +2,11 @@
 // Fica no <html> como data-theme / data-mode; os tokens vêm de styles/temas.css.
 import { useSyncExternalStore } from 'react';
 
-export type Tema = 'lavanda' | 'indigo' | 'salvia';
+export type Tema = 'petroleo' | 'lavanda' | 'indigo' | 'salvia';
 export type Modo = 'sistema' | 'claro' | 'escuro';
 
 export const TEMAS: Array<{ id: Tema; nome: string; descricao: string; cores: [string, string, string] }> = [
+  { id: 'petroleo', nome: 'Azul-petróleo', descricao: 'Profissional e discreto (padrão)', cores: ['#146C70', '#216A5C', '#F6F9FA'] },
   { id: 'lavanda', nome: 'Lavanda serena', descricao: 'Acolhedor, sombras suaves', cores: ['#674698', '#8D5375', '#F6F5FB'] },
   { id: 'indigo', nome: 'Índigo noturno', descricao: 'Sóbrio, linhas finas', cores: ['#44549D', '#A64831', '#F2F6FD'] },
   { id: 'salvia', nome: 'Sálvia terrosa', descricao: 'Natural, cantos redondos', cores: ['#4F6236', '#9C522E', '#EFF0E7'] },
@@ -23,7 +24,7 @@ function ler<T extends string>(k: string, validos: readonly T[], padrao: T): T {
 }
 
 let atual = {
-  tema: ler<Tema>(KT, ['lavanda', 'indigo', 'salvia'], 'lavanda'),
+  tema: ler<Tema>(KT, ['petroleo', 'lavanda', 'indigo', 'salvia'], 'petroleo'),
   modo: ler<Modo>(KM, ['sistema', 'claro', 'escuro'], 'sistema'),
 };
 

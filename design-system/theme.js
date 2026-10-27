@@ -5,10 +5,10 @@
    <html data-theme="lavanda|indigo|salvia" data-mode="light|dark"> */
 (function(){
   var KT='psi-ds-theme', KM='psi-ds-mode', root=document.documentElement;
-  var THEMES=[['lavanda','Lavanda serena'],['indigo','Índigo noturno'],['salvia','Sálvia terrosa']];
+  var THEMES=[['petroleo','Azul-petróleo'],['lavanda','Lavanda serena'],['indigo','Índigo noturno'],['salvia','Sálvia terrosa']];
   var t=null, m=null;
   try{ t=localStorage.getItem(KT); m=localStorage.getItem(KM); }catch(e){}
-  if(!t || !THEMES.some(function(x){return x[0]===t;})) t='lavanda';          /* primeira direção = padrão */
+  if(!t || !THEMES.some(function(x){return x[0]===t;})) t='petroleo';          /* primeira direção = padrão */
   if(m!=='light' && m!=='dark') m=(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light';
   function apply(){ root.setAttribute('data-theme',t); root.setAttribute('data-mode',m); }
   apply();

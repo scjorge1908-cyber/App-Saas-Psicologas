@@ -9,8 +9,10 @@ import { FeedbackProvider } from './components/ui';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { escutarRetornoGoogle } from './lib/google';
 import { aplicarTema } from './lib/tema';
+import { ativarAtualizacaoAutomatica } from './lib/atualizacao';
 
 aplicarTema(); // antes de desenhar, para não piscar o tema errado
+ativarAtualizacaoAutomatica(); // Android: instala versão nova da Play sozinho
 
 // Android/iOS: o login com Google volta ao app por br.com.clinicahope.psi://auth
 escutarRetornoGoogle((msg) => window.dispatchEvent(new CustomEvent('psi:erro-login', { detail: msg })));

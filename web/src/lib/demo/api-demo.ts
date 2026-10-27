@@ -76,7 +76,7 @@ function montarStore(): Store {
     blobs: new Map(), documents: [], charges: [], payments: [], expenses: [], invoices: [], locations: [], hours: [] };
 
   // locais e horários de atendimento: sala de seg a sex (manhã e tarde) e on-line à noite
-  const sala: Location = { id: uid(), name: 'Sala 1 · Centro', modality: 'presencial', address: 'Rua Fictícia, 100, sala 1', color: '#6750A4', active: true };
+  const sala: Location = { id: uid(), name: 'Sala 1 · Centro', modality: 'presencial', address: 'Rua Fictícia, 100, sala 1', color: '#146C70', active: true };
   const online: Location = { id: uid(), name: 'On-line', modality: 'online', address: null, color: '#0B6E8A', active: true };
   s.locations.push(sala, online);
   for (let d = 1; d <= 5; d++) {

@@ -251,7 +251,7 @@ function AparenciaPanel() {
     <Panel title="Aparência">
       <fieldset>
         <legend className="rotulo mb-2">Tema</legend>
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2">
           {TEMAS.map((t) => (
             <label key={t.id} className={`pressionar flex min-h-16 cursor-pointer items-center gap-3 rounded-campo border-[1.5px] px-3 py-2 ${tema === t.id ? 'border-anil bg-anil-claro/50' : 'border-linha'}`}>
               <input type="radio" name="tema" value={t.id} checked={tema === t.id} onChange={() => definirAparencia({ tema: t.id })} className="sr-only" />

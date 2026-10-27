@@ -11,7 +11,7 @@ import { Button, Dialog, ErrorBox, Loading, Select, TextField, cx, useConfirm, u
 import { IconChevronLeft, IconPlus } from '../components/icons';
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na segunda
-const CORES = ['#6750A4', '#0B6E8A', '#B3541E', '#2F7D5B', '#9C2F6B', '#5B6472'];
+const CORES = ['#146C70', '#0B6E8A', '#B3541E', '#2F7D5B', '#9C2F6B', '#5B6472'];
 
 export function HorariosPage() {
   const qc = useQueryClient();

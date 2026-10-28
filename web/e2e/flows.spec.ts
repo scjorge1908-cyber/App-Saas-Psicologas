@@ -301,6 +301,7 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await expect(page.getByText(/horários de 50 min/)).toBeVisible();
   await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
   await expect(page.getByText(/Grade gerada/)).toBeVisible();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Consultório criado com sucesso!' }) }).getByRole('button', { name: 'OK' }).click();
   // Grade atual: lápis e lixeira em cada horário (muda/exclui só aquele horário)
   await page.getByRole('button', { name: /^Excluir o horário das 19:00 de / }).first().click();
   await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Excluir o horário das 19:00?' }) }).getByRole('button', { name: 'Excluir horário' }).click();
@@ -357,6 +358,14 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.getByRole('tab', { name: 'Manhã' }).click();
   await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
   await expect(page.getByText(/Grade gerada: 7 dias/)).toBeVisible();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Consultório criado com sucesso!' }) }).getByRole('button', { name: 'OK' }).click();
+  // No cartão do dia: "+ Tarde" abre o Turno de atendimento já com o dia e a sala; Aplicar cria e mostra o popup
+  await page.getByRole('button', { name: /^Criar tarde na / }).first().click();
+  const nt = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: /^Criar tarde · / }) });
+  await expect(nt.getByLabel('Início do turno')).toHaveValue('13:00');
+  await nt.getByRole('button', { name: 'Aplicar' }).click();
+  await expect(page.getByRole('heading', { name: 'Consultório criado com sucesso!' })).toBeVisible();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Consultório criado com sucesso!' }) }).getByRole('button', { name: 'OK' }).click();
   const comPaciente = page.getByText(/^\d+ pacientes?$/).first();
   await expect(comPaciente).toBeVisible();
   await comPaciente.locator('xpath=..').getByRole('button', { name: 'Ajustar turno' }).click();

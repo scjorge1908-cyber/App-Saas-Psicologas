@@ -54,6 +54,11 @@ export function HorariosPage() {
   const [travado, setTravado] = useState<{ titulo: string; texto: string; pacientes: PacienteNoTurno[] } | null>(null);
   const [moverItem, setMoverItem] = useState<AgendaItem | null>(null);
   const [alta, setAlta] = useState(false);
+  // Criar outro turno no mesmo dia e sala (27/10): "+ Tarde", "+ Noite" no cartão abrem o Turno de atendimento
+  const [novoTurno, setNovoTurno] = useState<{ weekday: number; location_id: string; periodo: PeriodoId } | null>(null);
+  const [sucesso, setSucesso] = useState<string | null>(null);
+  /** Períodos que ainda cabem no dia (a agenda é individual: não pode bater com turno de nenhuma sala). */
+  const periodosLivres = (d: number) => PERIODOS.filter((p) => !(horas.data ?? []).some((x) => x.weekday === d && mins(x.start_time) < mins(p.fim) && mins(x.end_time) > mins(p.inicio)));
   const travarTurno = (h: WorkingHour, ps: PacienteNoTurno[]) => setTravado({
     titulo: `Este turno tem ${ps.length} ${ps.length === 1 ? 'paciente' : 'pacientes'}`,
     texto: `O turno de ${DIAS_SEMANA[h.weekday]} (${faixaTexto(h)}) não pode ser mudado nem excluído inteiro enquanto tiver paciente. Para mudar: crie uma nova sala, passe estes pacientes para ela (botão Mover) e depois ajuste esta sala. Para excluir tudo: dê alta aos pacientes antes.`,
@@ -130,7 +135,7 @@ export function HorariosPage() {
       {(locais.isLoading || horas.isLoading) && <Loading />}
 
       {locais.data && horas.data && (
-        <GeradorGrade locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onNovaSala={() => setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] })} onSaved={atualizar} />
+        <GeradorGrade locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onNovaSala={() => setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] })} onSaved={atualizar} onSucesso={setSucesso} />
       )}
 
       {/* Grade atual (27/10): cartão igual ao da agenda (dia + sala, com o turno) e, em cada horário,
@@ -186,6 +191,17 @@ export function HorariosPage() {
                       </div>
                     );
                   })}
+                  {periodosLivres(d).length > 0 && (
+                    <div className="flex flex-wrap gap-2 border-t border-linha pt-2">
+                      {periodosLivres(d).map((p) => (
+                        <button key={p.id} type="button" onClick={() => setNovoTurno({ weekday: d, location_id: sid, periodo: p.id })}
+                          aria-label={`Criar ${p.nome.toLowerCase()} na ${DIAS_SEMANA[d]}`}
+                          className="pressionar inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-dashed border-ag-livre-borda bg-ag-livre-fundo px-3 text-[0.9375rem] font-bold text-ag-livre">
+                          <IconPlus className="size-4" strokeWidth={2.4} /> {p.nome}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             });
@@ -258,6 +274,14 @@ export function HorariosPage() {
       <LocalDialog local={editLocal} ocupados={editLocal?.id ? ocupSala(editLocal.id) : []} onClose={() => setEditLocal(null)} onSaved={atualizar}
         onTravado={(ps) => setTravado({ titulo: `Esta sala tem ${ps.length} ${ps.length === 1 ? 'paciente' : 'pacientes'}`,
           texto: 'A sala não pode ser excluída enquanto tiver paciente. Crie uma nova sala e passe estes pacientes para ela (botão Mover), ou dê alta. Depois exclua esta sala.', pacientes: ps })} />
+      <NovoTurnoDialog alvo={novoTurno} locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onClose={() => setNovoTurno(null)}
+        onCriado={(msg) => { setNovoTurno(null); atualizar(); setSucesso(msg); }} />
+      <Dialog open={!!sucesso} onClose={() => setSucesso(null)} title="Consultório criado com sucesso!" footer={<Button onClick={() => setSucesso(null)} className="w-full">OK</Button>}>
+        <div className="flex flex-col items-center gap-3 py-2 text-center">
+          <span className="grid size-16 place-items-center rounded-full bg-livre-fundo text-livre"><IconCircleCheck className="size-9" /></span>
+          <p className="text-[0.9375rem] text-tinta-2">{sucesso}</p>
+        </div>
+      </Dialog>
       <HoraDialog hora={editHora} locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onClose={() => setEditHora(null)} onSaved={atualizar} />
     </div>
   );
@@ -411,10 +435,9 @@ function Passo({ rotulo, valor, min, max, onChange }: { rotulo: string; valor: n
 }
 
 /** Gerador de grade (layout Stitch): sala, dias, turno com início/término, duração, intervalo e pré-visualização. */
-function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
-  locais: Location[]; durPadrao: number; intPadrao: number; onNovaSala: () => void; onSaved: () => void;
+function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSucesso }: {
+  locais: Location[]; durPadrao: number; intPadrao: number; onNovaSala: () => void; onSaved: () => void; onSucesso: (msg: string) => void;
 }) {
-  const toast = useToast();
   const ativas = locais.filter((l) => l.active);
   const [localId, setLocalId] = useState('');
   const [novoLocal, setNovoLocal] = useState('Sala 1');
@@ -456,7 +479,7 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
         } catch (e) { falhas.push(`${DIAS_SEMANA[d]}: ${errorMessage(e)}`); }
       }
       onSaved();
-      if (falhas.length === 0) toast(`Grade gerada: ${criados} ${criados === 1 ? 'dia' : 'dias'} × ${inicios.length} horários`);
+      if (falhas.length === 0) onSucesso(`Grade gerada: ${criados} ${criados === 1 ? 'dia' : 'dias'} × ${inicios.length} horários. Veja em "Grade atual".`);
       else setErro(`Gerados: ${criados}. Não deu para gerar em ${falhas.join(' · ')}`);
     } catch (e) { setErro(errorMessage(e)); } finally { setSalvando(false); }
   }
@@ -555,5 +578,59 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
       <Button onClick={salvar} busy={salvando} className="min-h-14 w-full text-[1rem]">Aplicar</Button>
       <Button variant="secondary" onClick={restaurar} className="w-full">Restaurar padrão</Button>
     </section>
+  );
+}
+
+/** "+ Tarde" / "+ Noite" no cartão da Grade atual (27/10): o mesmo Turno de atendimento, já com o dia, a sala e o período. */
+function NovoTurnoDialog({ alvo, locais, durPadrao, intPadrao, onClose, onCriado }: {
+  alvo: { weekday: number; location_id: string; periodo: PeriodoId } | null; locais: Location[]; durPadrao: number; intPadrao: number;
+  onClose: () => void; onCriado: (msg: string) => void;
+}) {
+  const [aberto, setAberto] = useState<typeof alvo>(null);
+  const [ini, setIni] = useState(''); const [fim, setFim] = useState('');
+  const [dur, setDur] = useState(durPadrao); const [int, setInt] = useState(intPadrao);
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  if (alvo !== aberto) {
+    setAberto(alvo);
+    if (alvo) { const p = PERIODOS.find((x) => x.id === alvo.periodo)!; setIni(p.inicio); setFim(p.fim); setDur(durPadrao >= 60 ? 60 : durPadrao); setInt(intPadrao); setErro(null); }
+  }
+  const p = alvo ? PERIODOS.find((x) => x.id === alvo.periodo)! : null;
+  const sala = locais.find((l) => l.id === alvo?.location_id);
+  const inicios = ini && fim ? gerarInicios(ini, fim, dur, int) : [];
+  async function aplicar() {
+    if (!alvo) return;
+    setErro(null);
+    if (!ini || !fim || fim <= ini) return setErro('O término precisa ser depois do início.');
+    const limite = foraDaGrade(ini, fim);
+    if (limite) return setErro(limite);
+    if (inicios.length === 0) return setErro('Nenhum horário cabe nesse turno com essa duração.');
+    setSalvando(true);
+    try {
+      await api.saveWorkingHour({ location_id: alvo.location_id, weekday: alvo.weekday, start_time: ini, end_time: fim, session_minutes: dur, buffer_minutes: int });
+      onCriado(`${p!.nome} de ${DIAS_SEMANA[alvo.weekday]} na ${sala?.name ?? 'sala'}: ${inicios.length} horários (${ini}–${fim}).`);
+    } catch (e) { setErro(errorMessage(e)); } finally { setSalvando(false); }
+  }
+  return (
+    <Dialog open={!!alvo} onClose={onClose} title={p && alvo ? `Criar ${p.nome.toLowerCase()} · ${DIAS_SEMANA[alvo.weekday]}` : ''} footer={<>
+      <Button variant="secondary" onClick={onClose}>Voltar</Button>
+      <Button busy={salvando} onClick={aplicar}>Aplicar</Button>
+    </>}>
+      {alvo && p && (
+        <div className="flex flex-col gap-4">
+          {erro && <ErrorBox>{erro}</ErrorBox>}
+          <p className="rotulo">Turno de atendimento · {sala?.name ?? 'Sala'}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <TextField label="Início do turno" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={ini} onChange={(e) => setIni(e.target.value)} />
+            <TextField label="Término previsto" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={fim} onChange={(e) => setFim(e.target.value)} />
+          </div>
+          <Passo rotulo="Duração por consulta" valor={dur} min={10} max={300} onChange={setDur} />
+          <Passo rotulo="Intervalo entre sessões" valor={int} min={0} max={120} onChange={setInt} />
+          <p className="num rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
+            <b>{inicios.length} horários</b>{inicios.length ? `: ${inicios.join(', ')}` : ' — nenhum cabe nesse período'}
+          </p>
+        </div>
+      )}
+    </Dialog>
   );
 }

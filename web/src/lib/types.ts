@@ -300,3 +300,18 @@ export interface FinancialReportRow {
   sessions_attended: number;
   no_shows: number;
 }
+
+// Agendamento pelo paciente (28/10): link com horários escolhidos; o pedido espera a aprovação da psicóloga.
+export type BookingFrequency = 'nao' | 'semanal' | 'quinzenal';
+export interface BookingSlot { starts_at: string; ends_at: string; location_id: string | null }
+export interface BookingLink {
+  id: string; label: string | null; frequency: BookingFrequency; occurrences: number | null; session_minutes: number; price: number | null;
+  expires_at: string; canceled_at: string | null; created_at: string; slots: BookingSlot[];
+}
+export type BookingStatus = 'pendente' | 'aprovado' | 'recusado';
+export interface BookingRequest {
+  id: string; link_id: string; starts_at: string; ends_at: string; location_id: string | null;
+  /** Cadastro que o paciente mandou (só os campos permitidos, em texto). */
+  patient_data: Record<string, string>;
+  status: BookingStatus; patient_id: string | null; decided_at: string | null; created_at: string;
+}

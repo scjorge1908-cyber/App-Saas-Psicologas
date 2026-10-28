@@ -22,6 +22,8 @@ import { useProfile } from '../auth/AuthProvider';
 import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
 import { WhatsAppCard } from '../components/appointments/WhatsAppCard';
 import { DarAltaDialog } from '../components/patients/DarAltaDialog';
+import { GerarLinkDialog, PedidosDialog, useLinksPaciente } from '../components/agenda/LinkPaciente';
+import { pedidosComoOcupados } from '../lib/agendamento-link';
 import { AjustarSemHorario, proximaData } from '../components/patients/AjustarSemHorario';
 import { JanelaPendencias, usePendenciasRegistro } from '../components/appointments/PendenciasRegistro';
 import { NewAppointmentDialog } from '../components/appointments/NewAppointmentDialog';
@@ -101,6 +103,11 @@ export function AgendaPage() {
   const bloqueios = useQuery({ queryKey: ['blocks'], queryFn: api.listBlocks });
   const horas = useQuery({ queryKey: ['working-hours'], queryFn: api.listWorkingHours });
   const dash = useQuery({ queryKey: ['dashboard'], queryFn: api.dashboard });
+  // Agendamento pelo paciente (28/10): pedidos pendentes reservam o horário até aprovar ou recusar
+  const { pendentes } = useLinksPaciente();
+  const [gerarLink, setGerarLink] = useState(false);
+  const [pedidosAbertos, setPedidosAbertos] = useState(false);
+  const [pedidoVer, setPedidoVer] = useState<string | null>(null);
   const semGrade = horas.data !== undefined && horas.data.length === 0;
 
   // Blocos da semana: dia + bloco da grade (sala + período); sessões fora da grade em "Outros horários"
@@ -113,7 +120,8 @@ export function AgendaPage() {
       const faixas: WorkingHour[] = horas.data.filter((h) => h.weekday === weekday(d))
         .filter((h) => (locais.data ?? []).find((l) => l.id === h.location_id)?.active !== false)
         .sort((a, b) => a.start_time.localeCompare(b.start_time));
-      const livres = horariosLivres({ date: d, hours: faixas, locations: locais.data ?? [], items: q.data.filter((it) => zonedParts(it.starts_at, tz).date === d),
+      const pedidosDia = pendentes.filter((r) => zonedParts(r.starts_at, tz).date === d);
+      const livres = horariosLivres({ date: d, hours: faixas, locations: locais.data ?? [], items: [...q.data, ...pedidosComoOcupados(pedidosDia)].filter((it) => zonedParts(it.starts_at, tz).date === d),
         sessionMinutes: profile.session_minutes, bufferMinutes: profile.buffer_minutes, tz, bloqueios: bloqueios.data });
       const usados = new Set<string>();
       const doDia: Bloco[] = [];
@@ -175,6 +183,15 @@ export function AgendaPage() {
         if (alvo) alvo.linhas = [...alvo.linhas, { tipo: 'sessao' as const, hora, item: it }].sort((a, b) => a.hora.localeCompare(b.hora));
         else outros.push({ tipo: 'sessao' as const, hora, item: it });
       }
+      // Pedidos pelo link: no horário pedido, no cartão da sala e período
+      for (const r of pedidosDia) {
+        const hora = formatTime(r.starts_at, tz);
+        const linha: Linha = { tipo: 'pedido', hora, pedido: r };
+        const alvo = doDia.find((b) => { const [i, f] = (b.faixa ?? '').split('–'); return b.faixa && hora >= i && hora < f && (!r.location_id || r.location_id === b.sala?.id); })
+          ?? doDia.find((b) => b.titulo === periodoDe(hora).nome);
+        if (alvo) alvo.linhas = [...alvo.linhas, linha].sort((a, b) => a.hora.localeCompare(b.hora));
+        else outros.push(linha);
+      }
       // Bloqueios do dia: uma linha no topo do primeiro cartão (o dia aparece mesmo sem horário livre)
       for (const bq of bloqueiosDoDia(bloqueios.data, d)) {
         const ini = bq.start_time ? bq.start_time.slice(0, 5) : '00:00'; const fim = bq.end_time ? bq.end_time.slice(0, 5) : '24:00';
@@ -188,7 +205,7 @@ export function AgendaPage() {
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q.data, qx.data, qa.data, pacientes.data, horas.data, locais.data, bloqueios.data, profile, tz, semana]);
+  }, [q.data, qx.data, qa.data, pacientes.data, horas.data, locais.data, bloqueios.data, pendentes, profile, tz, semana]);
 
   // Semana: dias de hoje em diante (e dias passados que tiveram sessão). Dia: só o dia escolhido.
   const colunasBase = agruparColunas(blocos.filter((b) => (visao === 'dia' ? b.date === date : b.date >= hoje || b.linhas.some((l) => l.tipo === 'sessao'))));
@@ -324,6 +341,18 @@ export function AgendaPage() {
                         <button onClick={() => setWhats(l.item)} aria-label={`Enviar WhatsApp para ${nomeCurto(l.item.patient_social_name || l.item.patient_name)} (sessão de ${ddmm(l.proxima)})`} title="Enviar WhatsApp"
                           className="pressionar grid size-11 shrink-0 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-5" /></button>
                       </li>
+                    ) : l.tipo === 'pedido' ? (
+                      // Pedido pelo link (28/10): reservado até aprovar ou recusar
+                      <li key={`p-${l.pedido.id}`}>
+                        <button onClick={() => setPedidoVer(l.pedido.id)} aria-label={`${l.hora}, pedido pelo link de ${l.pedido.patient_data.full_name}: ver para aprovar`}
+                          className="pressionar flex min-h-12 w-full items-center gap-2 rounded-campo border-l-4 border-l-ocre-forte bg-ocre-fundo/60 pl-2.5 pr-2 text-left">
+                          <span className="num shrink-0 px-1 text-[1rem] font-extrabold text-tinta">{l.hora}</span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-bold text-tinta">{nomeCurto(l.pedido.patient_data.full_name ?? '')}</span>
+                            <span className="flex items-center gap-1.5 text-[0.8125rem] font-bold text-ocre"><span aria-hidden className="size-2 shrink-0 animate-pulse rounded-full bg-ocre-forte" />Pedido pelo link · aprovar</span>
+                          </span>
+                        </button>
+                      </li>
                     ) : l.tipo === 'bloqueio' ? (
                       // Férias / feriado / folga: sem horários livres na faixa; sessões já marcadas pedem ajuste
                       <li key={`b-${l.bloqueio.id}-${c.date}`} className="flex flex-col gap-0.5 rounded-campo border border-linha-forte bg-afundado px-3 py-2">
@@ -404,6 +433,23 @@ export function AgendaPage() {
         <span aria-hidden className={cx('grid min-w-7 place-items-center rounded-full px-2 text-[0.8125rem] font-extrabold leading-7', nPend > 0 ? 'bg-vermelho-forte text-white' : 'bg-afundado text-tinta-3')}>{nPend}</span>
       </button>
       <JanelaPendencias open={pendAberta} onClose={() => { setPendAberta(false); if (params.get('pendencias')) { params.delete('pendencias'); setParams(params, { replace: true }); } }} />
+
+      {/* Agendamento pelo paciente (28/10): gerar link com horários escolhidos e ver os pedidos */}
+      <div className="grid grid-cols-2 gap-3">
+        <button onClick={() => setGerarLink(true)}
+          className="pressionar flex min-h-14 items-center justify-center gap-2 rounded-cartao border border-linha bg-papel px-3 text-center text-[0.9375rem] font-extrabold leading-tight text-tinta shadow-cartao hover:border-anil">
+          <span aria-hidden className="grid size-8 shrink-0 place-items-center rounded-full bg-[#25D366] text-[#0B3B1E]"><IconWhats className="size-[1.125rem]" /></span>
+          Link para agendar
+        </button>
+        <button onClick={() => setPedidosAbertos(true)} aria-label={`Pedidos pelo link: ${pendentes.length}`}
+          className={cx('pressionar flex min-h-14 items-center justify-center gap-2 rounded-cartao border px-3 text-center text-[0.9375rem] font-extrabold leading-tight shadow-cartao',
+            pendentes.length ? 'border-ocre-forte/40 bg-ocre-fundo text-ocre' : 'border-linha bg-papel text-tinta-3')}>
+          Pedidos pelo link
+          <span aria-hidden className={cx('grid min-w-7 place-items-center rounded-full px-2 text-[0.8125rem] font-extrabold leading-7', pendentes.length ? 'bg-vermelho-forte text-white' : 'bg-afundado text-tinta-3')}>{pendentes.length}</span>
+        </button>
+      </div>
+      <GerarLinkDialog open={gerarLink} onClose={() => setGerarLink(false)} />
+      <PedidosDialog open={pedidosAbertos || !!pedidoVer} inicial={pedidoVer} onClose={() => { setPedidosAbertos(false); setPedidoVer(null); }} />
 
       {/* Ações da agenda (pedido do Jorge, 27/10): Prontuário no lugar de Editar grade (a Grade foi para o rodapé)
           e Dar alta no lugar do Encaixe (o Encaixe foi para o Resumo do dia) */}

@@ -24,7 +24,7 @@ select tests.eq((
   select array_agg(p.proname::text order by p.proname)
   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE')),
-  array['get_confirmation', 'respond_confirmation'], 'L2: anon só executa get_confirmation e respond_confirmation');
+  array['get_booking', 'get_confirmation', 'request_booking', 'respond_confirmation'], 'L2: anon só executa as RPCs públicas (confirmação e agendamento pelo link)');
 
 -- H2: histórico de sessões
 select tests.login(tests.id('A'));

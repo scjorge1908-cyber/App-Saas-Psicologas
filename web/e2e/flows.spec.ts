@@ -637,3 +637,66 @@ test('bloqueio de agenda: folga amanhã some com os horários livres e avisa a s
   await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Tirar este bloqueio?' }) }).getByRole('button', { name: 'Tirar bloqueio' }).click();
   await expect(page.getByText('Bloqueio retirado')).toBeVisible();
 });
+
+test('agendamento pelo paciente: link com horários escolhidos, cadastro e aprovação', async ({ browser }) => {
+  // Psicóloga escolhe 2 horários livres e gera o link (semanal, 4 sessões)
+  await irParaAgenda(page);
+  await page.getByRole('button', { name: 'Link para agendar' }).click();
+  const dlg = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Link para o paciente agendar' }) });
+  const horarios = dlg.getByRole('button', { name: / às \d\d:\d\d/ });
+  await horarios.nth(0).click();
+  await horarios.nth(1).click();
+  await dlg.getByLabel('Quantidade de sessões').fill('4');
+  await dlg.getByLabel('Para quem (opcional)').fill('Lia (teste)');
+  await dlg.getByRole('button', { name: 'Gerar link (2)' }).click();
+  await expect(page.getByRole('heading', { name: 'Link pronto' })).toBeVisible();
+  const url = await page.getByRole('dialog').locator('p.break-all').innerText();
+  const token = url.match(/\/agendar\/([A-Za-z0-9_-]{32})$/)?.[1];
+  expect(token).toBeTruthy();
+  await expect(page.getByRole('button', { name: 'Enviar pelo WhatsApp' })).toBeVisible();
+  await page.getByRole('button', { name: 'Concluir' }).click();
+
+  // Paciente abre o link sem login: só os 2 horários, escolhe um e preenche o cadastro
+  const anon = await browser.newContext({ viewport: { width: 390, height: 800 }, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo' });
+  const p2 = await anon.newPage();
+  await p2.route('https://viacep.com.br/**', (r) => r.fulfill({ json: { logradouro: 'Rua Fictícia', bairro: 'Centro', localidade: 'Palhoça', uf: 'SC' } }));
+  await p2.goto(`http://127.0.0.1:5173/agendar/${token}`);
+  await expect(p2.getByRole('heading', { name: 'Escolha seu horário' })).toBeVisible();
+  const opcoes = p2.getByRole('region', { name: 'Horários disponíveis' }).getByRole('button');
+  await expect(opcoes).toHaveCount(2);
+  await opcoes.first().click();
+  const campo = (name: string) => p2.getByRole('textbox', { name, exact: true }).first();
+  await p2.getByRole('button', { name: 'Enviar pedido' }).click();
+  await expect(p2.getByText(/Falta: nome completo/)).toBeVisible();
+  await campo('Nome completo').fill('Lia Fictícia Link');
+  await campo('Celular (WhatsApp)').fill('48999990077');
+  await p2.getByLabel('Data de nascimento').fill('1992-05-10');
+  await campo('E-mail').fill('lia@exemplo.invalid');
+  await campo('CPF').fill('111.444.777-35');
+  await campo('CEP').fill('88132150');
+  await expect(campo('Rua')).toHaveValue('Rua Fictícia');
+  await campo('Número').fill('77');
+  await p2.screenshot({ path: `${SHOTS}/25-link-paciente.png`, fullPage: true });
+  await p2.getByRole('button', { name: 'Enviar pedido' }).click();
+  await expect(p2.getByRole('heading', { name: 'Pedido enviado' })).toBeVisible();
+  // Link de uma pessoa: depois do pedido não abre de novo para escolher
+  await p2.reload();
+  await expect(p2.getByRole('heading', { name: 'Pedido enviado' })).toBeVisible();
+  await anon.close();
+
+  // Psicóloga vê o pedido (o horário fica reservado) e aprova: paciente e sessões entram na agenda
+  await page.reload();
+  await irParaAgenda(page);
+  await expect(page.getByRole('button', { name: /pedido pelo link de Lia Fictícia Link/ }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pedidos pelo link: 1' })).toBeVisible();
+  await page.getByRole('button', { name: 'Pedidos pelo link: 1' }).click();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Pedidos pelo link' }) }).getByRole('button', { name: /Lia Fictícia Link/ }).click();
+  const ap = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Pedido pelo link' }) });
+  await expect(ap.getByText('lia@exemplo.invalid')).toBeVisible();
+  await expect(ap.getByText(/Semanal · 4 sessões/)).toBeVisible();
+  await ap.getByRole('button', { name: 'Aprovar' }).click();
+  await expect(page.getByText(/Pedido aprovado|Aprovado\./)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pedidos pelo link: 0' })).toBeVisible();
+  await page.goto('/pacientes');
+  await expect(page.getByText('Lia Fictícia Link')).toBeVisible();
+});

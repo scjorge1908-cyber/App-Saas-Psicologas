@@ -2,7 +2,7 @@
 import { supabase, STORAGE_BUCKET } from './supabase';
 import type {
   AgendaItem, AppointmentStatus, Attachment, AttachmentCategory, ChargeBalance, DashboardSummary, DocumentRow,
-  Expense, FinancialReportRow, InvoiceItem, Location, Patient, PaymentItem, RecordEntry, RecordEntryVersion, SeriesFrequency, Modality, WorkingHour, ScheduleBlock } from './types';
+  Expense, FinancialReportRow, InvoiceItem, Location, Patient, PaymentItem, RecordEntry, RecordEntryVersion, SeriesFrequency, Modality, WorkingHour, ScheduleBlock, BookingFrequency, BookingLink, BookingRequest, BookingSlot, BookingStatus } from './types';
 import { sha256Hex } from './hash';
 import { resumirProntuarios, type ProntuarioResumo } from './prontuario';
 
@@ -255,4 +255,28 @@ export async function saveWorkingHour(h: Partial<WorkingHour> & Omit<WorkingHour
 }
 export async function deleteWorkingHour(id: string) {
   check(await supabase.from('working_hours').delete().eq('id', id));
+}
+
+// ------------------------------------------------- agendamento pelo paciente ---
+/** Gera o link (devolve o token, mostrado uma vez). */
+export async function createBookingLink(o: { slots: BookingSlot[]; frequency: BookingFrequency; occurrences: number | null; minutes: number; price: number | null; label: string | null; days: number }): Promise<string> {
+  return check(await supabase.rpc('create_booking_link', {
+    p_slots: o.slots, p_frequency: o.frequency, p_occurrences: o.occurrences, p_minutes: o.minutes, p_price: o.price, p_label: o.label, p_days: o.days,
+  }));
+}
+export async function listBookingLinks(): Promise<BookingLink[]> {
+  const links = check(await supabase.from('booking_links').select('id, label, frequency, occurrences, session_minutes, price, expires_at, canceled_at, created_at').order('created_at', { ascending: false }).limit(100)) as Omit<BookingLink, 'slots'>[];
+  const slots = links.length ? check(await supabase.from('booking_link_slots').select('link_id, starts_at, ends_at, location_id').in('link_id', links.map((l) => l.id)).order('starts_at')) as Array<BookingSlot & { link_id: string }> : [];
+  return links.map((l) => ({ ...l, price: l.price != null ? Number(l.price) : null, slots: slots.filter((s) => s.link_id === l.id).map(({ link_id: _, ...s }) => s) }));
+}
+export async function cancelBookingLink(id: string) {
+  check(await supabase.from('booking_links').update({ canceled_at: new Date().toISOString() }).eq('id', id));
+}
+export async function listBookingRequests(): Promise<BookingRequest[]> {
+  return check(await supabase.from('booking_requests').select('*').order('starts_at'));
+}
+export async function decideBookingRequest(id: string, status: Exclude<BookingStatus, 'pendente'>, patientId: string | null) {
+  // Só decide o que ainda está pendente (duas abas não aprovam duas vezes)
+  const r = check(await supabase.from('booking_requests').update({ status, patient_id: patientId, decided_at: new Date().toISOString() }).eq('id', id).eq('status', 'pendente').select('id'));
+  if (!r || r.length === 0) throw new Error('Este pedido já foi decidido. Atualize a tela.');
 }

@@ -4,7 +4,7 @@
 import type {
   AgendaItem, AppointmentStatus, Attachment, AttachmentCategory, ChargeBalance, DashboardSummary, DocumentRow,
   Expense, FinancialReportRow, InvoiceItem, Location, Modality, Patient, PaymentItem, Profile, RecordEntry, RecordEntryVersion,
-  SeriesFrequency, WorkingHour, ScheduleBlock } from '../types';
+  SeriesFrequency, WorkingHour, ScheduleBlock, BookingFrequency, BookingLink, BookingRequest, BookingSlot, BookingStatus } from '../types';
 import { DEFAULT_TZ, addDays, todayIn, zonedParts, zonedToUtc } from '../format';
 import { sha256Hex } from '../hash';
 import { DEMO_USER_ID } from './modo';
@@ -35,6 +35,8 @@ interface Store {
   locations: Location[];
   hours: WorkingHour[];
   blocks: ScheduleBlock[];
+  bookingLinks?: BookingLink[];
+  bookingRequests?: BookingRequest[];
 }
 
 const uid = () => crypto.randomUUID();
@@ -653,4 +655,33 @@ export async function saveWorkingHour(h: Partial<WorkingHour> & Omit<WorkingHour
 export async function deleteWorkingHour(id: string) {
   await atraso();
   db().hours = db().hours.filter((x) => x.id !== id);
+}
+
+// ------------------------------------------------- agendamento pelo paciente ---
+// Na demonstração o link é gerado e listado, mas não abre para paciente (não há servidor).
+export async function createBookingLink(o: { slots: BookingSlot[]; frequency: BookingFrequency; occurrences: number | null; minutes: number; price: number | null; label: string | null; days: number }): Promise<string> {
+  await atraso();
+  if (!o.slots.length) throw new Error('Escolha pelo menos um horário.');
+  db().bookingLinks ??= [];
+  db().bookingLinks!.unshift({ id: uid(), label: o.label, frequency: o.frequency, occurrences: o.frequency === 'nao' ? null : o.occurrences, session_minutes: o.minutes,
+    price: o.price, expires_at: new Date(Date.now() + o.days * 86400000).toISOString(), canceled_at: null, created_at: agora(), slots: o.slots });
+  return 'demonstracao-sem-link-real-000000'.slice(0, 32);
+}
+export async function listBookingLinks(): Promise<BookingLink[]> {
+  await atraso();
+  return [...(db().bookingLinks ?? [])];
+}
+export async function cancelBookingLink(id: string) {
+  await atraso();
+  const l = (db().bookingLinks ?? []).find((x) => x.id === id);
+  if (l) l.canceled_at = agora();
+}
+export async function listBookingRequests(): Promise<BookingRequest[]> {
+  await atraso();
+  return [...(db().bookingRequests ?? [])];
+}
+export async function decideBookingRequest(id: string, status: Exclude<BookingStatus, 'pendente'>, patientId: string | null) {
+  await atraso();
+  const r = (db().bookingRequests ?? []).find((x) => x.id === id);
+  if (r) Object.assign(r, { status, patient_id: patientId, decided_at: agora() });
 }

@@ -61,3 +61,8 @@ export const deleteBlock: typeof real.deleteBlock = (...a) => (fonte().deleteBlo
 export const listWorkingHours: typeof real.listWorkingHours = (...a) => (fonte().listWorkingHours as typeof real.listWorkingHours)(...a);
 export const saveWorkingHour: typeof real.saveWorkingHour = (...a) => (fonte().saveWorkingHour as typeof real.saveWorkingHour)(...a);
 export const deleteWorkingHour: typeof real.deleteWorkingHour = (...a) => (fonte().deleteWorkingHour as typeof real.deleteWorkingHour)(...a);
+export const createBookingLink: typeof real.createBookingLink = (...a) => (fonte().createBookingLink as typeof real.createBookingLink)(...a);
+export const listBookingLinks: typeof real.listBookingLinks = (...a) => (fonte().listBookingLinks as typeof real.listBookingLinks)(...a);
+export const cancelBookingLink: typeof real.cancelBookingLink = (...a) => (fonte().cancelBookingLink as typeof real.cancelBookingLink)(...a);
+export const listBookingRequests: typeof real.listBookingRequests = (...a) => (fonte().listBookingRequests as typeof real.listBookingRequests)(...a);
+export const decideBookingRequest: typeof real.decideBookingRequest = (...a) => (fonte().decideBookingRequest as typeof real.decideBookingRequest)(...a);

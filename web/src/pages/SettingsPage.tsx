@@ -236,7 +236,7 @@ function SecurityPanel() {
           <TextField label="Repita a nova senha" required type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
         </div>
         <Button busy={busy} onClick={change} className="w-full">Alterar senha</Button>
-        <Button variant="ghost" busy={enviando} onClick={esqueci} className="w-full">Esqueci a senha (receber link no e-mail)</Button>
+        <Button variant="ghost" busy={enviando} onClick={esqueci} className="w-full">Esqueci a senha</Button>
         <Button variant="secondary" onClick={() => signOut()} className="w-full">Sair da conta</Button>
       </div>
     </Panel>

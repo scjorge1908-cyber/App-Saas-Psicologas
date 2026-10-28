@@ -79,6 +79,21 @@ test('cadastro, perfil e tela inicial', async () => {
   await expect(page.getByText('Monte sua grade de horários')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Primeiros passos' })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/01-agenda-vazia.png`, fullPage: true });
+  // Configurações: sem o cartão "Agenda e atendimento"; trocar a senha pede a senha atual; "Esqueci a senha" manda o link
+  await page.goto('/configuracoes');
+  await expect(page.getByText('Agenda e atendimento')).toHaveCount(0);
+  await page.getByText('Segurança', { exact: true }).click();
+  const campo = (name: string) => page.getByRole('textbox', { name, exact: true });
+  await campo('Senha atual').fill('Senha-Errada-2026');
+  await campo('Nova senha').fill('Senha-Nova-Ficticia-2026');
+  await campo('Repita a nova senha').fill('Senha-Nova-Ficticia-2026');
+  await page.getByRole('button', { name: 'Alterar senha' }).click();
+  await expect(page.getByText(/Senha atual incorreta/)).toBeVisible();
+  await page.getByRole('button', { name: /Esqueci a senha/ }).click();
+  await expect(page.getByText(/um link para criar uma nova senha/)).toBeVisible();
+  await campo('Senha atual').fill('Senha-Ficticia-2026');
+  await page.getByRole('button', { name: 'Alterar senha' }).click();
+  await expect(page.getByText('Senha alterada')).toBeVisible();
 });
 
 test('cadastro de paciente com validação (o paciente nasce pelo agendamento)', async () => {

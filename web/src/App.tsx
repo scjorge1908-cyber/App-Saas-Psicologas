@@ -53,6 +53,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/c/:token" element={<PublicConfirmPage />} />
+      <Route path="/agendar/:token" element={<PublicBookingPage />} />
       <Route path="/a/:token" element={<PublicBookingPage />} />
       <Route path="/termos" element={<TermsPage />} />
       <Route path="/boas-vindas" element={<PublicOnly><WelcomePage /></PublicOnly>} />

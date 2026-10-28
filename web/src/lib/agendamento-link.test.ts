@@ -12,7 +12,7 @@ const pedido: BookingRequest = {
 describe('agendamento pelo paciente', () => {
   it('link e texto do convite', () => {
     const url = linkAgendamentoUrl('https://app.exemplo/', 'abc');
-    expect(url).toBe('https://app.exemplo/a/abc');
+    expect(url).toBe('https://app.exemplo/agendar/abc');
     expect(textoConviteLink(url, 'Ana Fictícia')).toContain(url);
   });
   it('cadastro do pedido: só campos permitidos, com valor, duração e modalidade do link', () => {

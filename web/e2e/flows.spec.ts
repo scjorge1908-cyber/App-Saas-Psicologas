@@ -651,7 +651,7 @@ test('agendamento pelo paciente: link com horários escolhidos, cadastro e aprov
   await dlg.getByRole('button', { name: 'Gerar link (2)' }).click();
   await expect(page.getByRole('heading', { name: 'Link pronto' })).toBeVisible();
   const url = await page.getByRole('dialog').locator('p.break-all').innerText();
-  const token = url.match(/\/a\/([A-Za-z0-9_-]{32})$/)?.[1];
+  const token = url.match(/\/agendar\/([A-Za-z0-9_-]{32})$/)?.[1];
   expect(token).toBeTruthy();
   await expect(page.getByRole('button', { name: 'Enviar pelo WhatsApp' })).toBeVisible();
   await page.getByRole('button', { name: 'Concluir' }).click();
@@ -660,7 +660,7 @@ test('agendamento pelo paciente: link com horários escolhidos, cadastro e aprov
   const anon = await browser.newContext({ viewport: { width: 390, height: 800 }, locale: 'pt-BR', timezoneId: 'America/Sao_Paulo' });
   const p2 = await anon.newPage();
   await p2.route('https://viacep.com.br/**', (r) => r.fulfill({ json: { logradouro: 'Rua Fictícia', bairro: 'Centro', localidade: 'Palhoça', uf: 'SC' } }));
-  await p2.goto(`http://127.0.0.1:5173/a/${token}`);
+  await p2.goto(`http://127.0.0.1:5173/agendar/${token}`);
   await expect(p2.getByRole('heading', { name: 'Escolha seu horário' })).toBeVisible();
   const opcoes = p2.getByRole('region', { name: 'Horários disponíveis' }).getByRole('button');
   await expect(opcoes).toHaveCount(2);

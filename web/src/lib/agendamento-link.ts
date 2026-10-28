@@ -4,7 +4,7 @@ import type { AgendaItem, BookingFrequency, BookingRequest, Modality, Patient } 
 export const FREQUENCIA_LINK: Record<BookingFrequency, string> = { nao: 'Avulsa (uma sessão)', semanal: 'Semanal', quinzenal: 'Quinzenal' };
 
 /** Endereço do link que o paciente abre. */
-export const linkAgendamentoUrl = (origin: string, token: string) => `${origin.replace(/\/$/, '')}/a/${token}`;
+export const linkAgendamentoUrl = (origin: string, token: string) => `${origin.replace(/\/$/, '')}/agendar/${token}`;
 
 /** Texto pronto para o WhatsApp (a psicóloga revisa e envia). */
 export function textoConviteLink(url: string, profissional: string): string {

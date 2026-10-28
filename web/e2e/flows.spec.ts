@@ -295,8 +295,17 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   for (const d of ['Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']) await page.getByRole('button', { name: d, exact: true }).click();
   await page.getByRole('tab', { name: 'Noite' }).click();
   await expect(page.getByText(/horários de 50 min/)).toBeVisible();
-  await page.getByRole('button', { name: 'Salvar e gerar grade' }).click();
+  await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
   await expect(page.getByText(/Grade gerada/)).toBeVisible();
+  // Grade atual: lápis e lixeira em cada horário (muda/exclui só aquele horário)
+  await page.getByRole('button', { name: /^Excluir o horário das 19:00 de / }).first().click();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Excluir o horário das 19:00?' }) }).getByRole('button', { name: 'Excluir horário' }).click();
+  await expect(page.getByText('Horário das 19:00 excluído')).toBeVisible();
+  await page.getByRole('button', { name: /^Mudar o horário das 21:00 de / }).first().click();
+  const mh = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Mudar o horário das 21:00' }) });
+  await mh.getByLabel('Novo horário').fill('21:05');
+  await mh.getByRole('button', { name: 'Salvar horário' }).click();
+  await expect(page.getByText('Horário mudado de 21:00 para 21:05')).toBeVisible();
 
   await irParaAgenda(page);
   await expect(page.getByText('Carlos Silva').first()).toBeVisible(); // nome e último sobrenome

@@ -5,11 +5,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { Location, Modality, WorkingHour } from '../lib/types';
 import { DIAS_SEMANA, faixaTexto } from '../lib/horarios';
-import { DURACOES, INTERVALOS, PERIODOS, gerarInicios, hhmm, periodoDe, type PeriodoId } from '../lib/periodos';
+import { PERIODOS, gerarInicios, hhmm, periodoDe, type PeriodoId } from '../lib/periodos';
 import { useProfile } from '../auth/AuthProvider';
 import { errorMessage } from '../lib/errors';
-import { Button, Dialog, ErrorBox, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
-import { IconCircleCheck, IconPlus } from '../components/icons';
+import { Button, Dialog, ErrorBox, Field, Input, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
+import { IconCircleCheck, IconPencil, IconPlus, IconTrash } from '../components/icons';
 import { BloqueiosSecao } from '../components/agenda/Bloqueios';
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na segunda
@@ -22,6 +22,47 @@ export function HorariosPage() {
   const [editLocal, setEditLocal] = useState<Partial<Location> | null>(null);
   const [editHora, setEditHora] = useState<Partial<WorkingHour> | null>(null);
   const [info, setInfo] = useState(false);
+  const [editSlot, setEditSlot] = useState<{ h: WorkingHour; t: string; novo: string } | null>(null);
+  const [slotBusy, setSlotBusy] = useState(false);
+  const confirmar = useConfirm();
+  const avisar = useToast();
+  const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+
+  /** Tira só o horário t do bloco: o bloco vira até dois pedaços (antes e depois), com a mesma duração e intervalo. */
+  async function tirarHorario(h: WorkingHour, t: string) {
+    const dur = h.session_minutes ?? durPadrao; const int = h.buffer_minutes ?? intPadrao;
+    const ini = h.start_time.slice(0, 5); const fim = h.end_time.slice(0, 5);
+    const pedacos = [{ ini, fim: t }, { ini: hhmm(mins(t) + dur + int), fim }].filter((p) => gerarInicios(p.ini, p.fim, dur, int).length > 0);
+    const base = { location_id: h.location_id, weekday: h.weekday, session_minutes: h.session_minutes ?? null, buffer_minutes: h.buffer_minutes ?? null };
+    if (pedacos.length === 0) { await api.deleteWorkingHour(h.id); return; }
+    await api.saveWorkingHour({ id: h.id, ...base, start_time: pedacos[0].ini, end_time: pedacos[0].fim });
+    if (pedacos[1]) await api.saveWorkingHour({ ...base, start_time: pedacos[1].ini, end_time: pedacos[1].fim });
+  }
+  async function excluirHorario(h: WorkingHour, t: string, d: number) {
+    if (!(await confirmar({ title: `Excluir o horário das ${t}?`, body: `Só este horário sai da grade de ${DIAS_SEMANA[d]}. Os outros continuam. Sessões já marcadas não são apagadas.`, confirmLabel: 'Excluir horário', danger: true }))) return;
+    try { await tirarHorario(h, t); atualizar(); avisar(`Horário das ${t} excluído`); } catch (e) { avisar(errorMessage(e), 'erro'); }
+  }
+  async function mudarHorario() {
+    if (!editSlot) return;
+    const { h, t, novo } = editSlot;
+    if (!novo || novo === t) { setEditSlot(null); return; }
+    const dur = h.session_minutes ?? durPadrao; const int = h.buffer_minutes ?? intPadrao;
+    // Confere antes de mexer: o novo horário não pode bater com outro turno do mesmo dia (a regra do banco
+    // compara as faixas inteiras), considerando o turno atual já sem o horário que sai
+    const nIni = mins(novo); const nFim = nIni + dur;
+    const ini = h.start_time.slice(0, 5); const fim = h.end_time.slice(0, 5);
+    const pedacos = [[mins(ini), mins(t)], [mins(t) + dur + int, mins(fim)]].filter(([a, b]) => b > a);
+    const outras = (horas.data ?? []).filter((x) => x.weekday === h.weekday && x.id !== h.id).map((x) => [mins(x.start_time), mins(x.end_time)]);
+    if ([...pedacos, ...outras].some(([a, b]) => a < nFim && b > nIni)) {
+      avisar(`O horário das ${novo} bate com outro horário de ${DIAS_SEMANA[h.weekday]}. Escolha outro, ou exclua o horário vizinho antes.`, 'erro'); return;
+    }
+    setSlotBusy(true);
+    try {
+      await tirarHorario(h, t);
+      await api.saveWorkingHour({ location_id: h.location_id, weekday: h.weekday, start_time: novo, end_time: hhmm(mins(novo) + dur), session_minutes: dur, buffer_minutes: 0 });
+      atualizar(); avisar(`Horário mudado de ${t} para ${novo}`); setEditSlot(null);
+    } catch (e) { atualizar(); avisar(errorMessage(e), 'erro'); } finally { setSlotBusy(false); }
+  }
   const { profile } = useProfile();
   const durPadrao = profile?.session_minutes ?? 50;
   const intPadrao = profile?.buffer_minutes ?? 10;
@@ -54,40 +95,52 @@ export function HorariosPage() {
         <GeradorGrade locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onNovaSala={() => setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] })} onSaved={atualizar} />
       )}
 
-      {/* Grade atual: um card por bloco (sala + turno), por dia */}
+      {/* Grade atual (27/10): cartão igual ao da agenda (dia + sala, com o turno) e, em cada horário,
+          lápis para mudar só aquele horário e lixeira para excluir só ele — não o bloco todo */}
       {(horas.data ?? []).length > 0 && (
         <section aria-labelledby="t-semana" className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between">
-            <h2 id="t-semana" className="text-[1.125rem] font-bold">Grade atual</h2>
-            <span className="text-sm text-tinta-2">Toque num bloco para mudar ou excluir</span>
-          </div>
-          {ORDEM_DIAS.map((d) => {
+          <h2 id="t-semana" className="text-[1.125rem] font-bold">Grade atual</h2>
+          {ORDEM_DIAS.flatMap((d) => {
             const doDia = (horas.data ?? []).filter((h) => h.weekday === d);
-            if (doDia.length === 0) return null;
-            return (
-              <div key={d}>
-                <h3 className="mb-1.5 font-bold">{DIAS_SEMANA[d]}</h3>
-                <ul className="grid gap-2 sm:grid-cols-2">
-                  {doDia.map((h) => {
-                    const l = nomeLocal(h.location_id);
+            const salas = [...new Set(doDia.map((h) => h.location_id))];
+            return salas.map((sid) => {
+              const l = nomeLocal(sid);
+              const faixas = doDia.filter((h) => h.location_id === sid).sort((a, b) => a.start_time.localeCompare(b.start_time));
+              return (
+                <div key={`${d}-${sid}`} className="cartao flex flex-col gap-2 p-2.5 sm:p-3">
+                  <header className="flex items-center gap-2 border-b border-linha pb-2">
+                    <h3 className="text-[1.0625rem] font-extrabold">{DIAS_SEMANA[d]}</h3>
+                    <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-afundado px-2.5 py-0.5 text-[0.8125rem] font-bold text-tinta-2">
+                      <span aria-hidden className="size-2 rounded-full" style={{ background: l?.color ?? 'var(--color-anil)' }} />{l?.name ?? 'Sala'}
+                    </span>
+                  </header>
+                  {faixas.map((h) => {
                     const dur = h.session_minutes ?? durPadrao; const int = h.buffer_minutes ?? intPadrao;
                     const inicios = gerarInicios(h.start_time.slice(0, 5), h.end_time.slice(0, 5), dur, int);
                     return (
-                      <li key={h.id}>
-                        <button type="button" onClick={() => setEditHora(h)} className="cartao pressionar flex w-full flex-col gap-1 border-l-4 border-l-livre px-4 py-3 text-left">
-                          <span className="flex items-center gap-2 font-bold">
-                            <span className="size-2.5 rounded-full" style={{ background: l?.color ?? 'var(--color-anil)' }} aria-hidden />
-                            {l?.name ?? 'Local'} · {periodoDe(h.start_time).nome}
-                          </span>
-                          <span className="num text-sm text-tinta-2">{faixaTexto(h)} · {dur} min{int ? ` + ${int} de intervalo` : ''}</span>
-                          <span className="num text-sm text-tinta-3">{inicios.length} {inicios.length === 1 ? 'horário' : 'horários'}: {inicios.join(', ')}</span>
-                        </button>
-                      </li>
+                      <div key={h.id} className="flex flex-col gap-1.5">
+                        <div className="flex items-baseline gap-x-1.5">
+                          <h4 className="rotulo text-tinta-3">{periodoDe(h.start_time).nome} <span className="num font-semibold normal-case tracking-normal">{faixaTexto(h)}</span></h4>
+                          <button type="button" onClick={() => setEditHora(h)} className="ml-auto min-h-9 px-1 text-[0.8125rem] font-bold text-anil-escuro underline-offset-2 hover:underline">Ajustar turno</button>
+                        </div>
+                        <ul className="flex flex-col gap-1.5">
+                          {inicios.map((t) => (
+                            <li key={t} className="flex min-h-12 items-center gap-2 rounded-campo border-l-4 border-l-ag-livre-borda bg-ag-livre-fundo pl-2.5 pr-1.5 text-ag-livre">
+                              <span className="num text-[1.0625rem] font-extrabold">{t}</span>
+                              <span className="num flex-1 text-[0.8125rem] font-semibold opacity-80">até {hhmm(Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)) + dur)}</span>
+                              <button type="button" onClick={() => setEditSlot({ h, t, novo: t })} aria-label={`Mudar o horário das ${t} de ${DIAS_SEMANA[d]}`} title="Mudar só este horário"
+                                className="pressionar grid size-10 place-items-center rounded-full border border-ag-livre-borda/45 bg-papel text-ag-livre"><IconPencil className="size-[1.125rem]" /></button>
+                              <button type="button" onClick={() => excluirHorario(h, t, d)} aria-label={`Excluir o horário das ${t} de ${DIAS_SEMANA[d]}`} title="Excluir só este horário"
+                                className="pressionar grid size-10 place-items-center rounded-full border border-vermelho-forte/40 bg-papel text-vermelho"><IconTrash className="size-[1.125rem]" /></button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     );
                   })}
-                </ul>
-              </div>
-            );
+                </div>
+              );
+            });
           })}
         </section>
       )}
@@ -118,6 +171,17 @@ export function HorariosPage() {
       {/* Férias, feriados e folgas (27/10) */}
       <BloqueiosSecao />
 
+      <Dialog open={!!editSlot} onClose={() => setEditSlot(null)} title={editSlot ? `Mudar o horário das ${editSlot.t}` : ''} footer={<>
+        <Button variant="secondary" onClick={() => setEditSlot(null)}>Voltar</Button>
+        <Button busy={slotBusy} onClick={mudarHorario}>Salvar horário</Button>
+      </>}>
+        {editSlot && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-tinta-2">Muda só este horário de {DIAS_SEMANA[editSlot.h.weekday]}. Os outros horários do turno continuam iguais.</p>
+            <TextField label="Novo horário" type="time" step={300} value={editSlot.novo} onChange={(e) => setEditSlot({ ...editSlot, novo: e.target.value })} />
+          </div>
+        )}
+      </Dialog>
       <LocalDialog local={editLocal} onClose={() => setEditLocal(null)} onSaved={atualizar} />
       <HoraDialog hora={editHora} locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onClose={() => setEditHora(null)} onSaved={atualizar} />
     </div>
@@ -231,8 +295,8 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
             {locais.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </Select>
         </label>
-        <Escolha rotulo="Duração da sessão" valores={DURACOES} valor={form.session_minutes ?? durPadrao} sufixo="min" onChange={(v) => setForm({ ...form, session_minutes: v })} />
-        <Escolha rotulo="Intervalo entre sessões" valores={INTERVALOS} valor={form.buffer_minutes ?? intPadrao} sufixo="min" onChange={(v) => setForm({ ...form, buffer_minutes: v })} />
+        <Passo rotulo="Duração da sessão" valor={form.session_minutes ?? durPadrao} min={10} max={300} onChange={(v) => setForm({ ...form, session_minutes: v })} />
+        <Passo rotulo="Intervalo entre sessões" valor={form.buffer_minutes ?? intPadrao} min={0} max={120} onChange={(v) => setForm({ ...form, buffer_minutes: v })} />
         {form.start_time && form.end_time && (
           <p className="num text-sm text-tinta-2">Horários: {gerarInicios(form.start_time, form.end_time, form.session_minutes ?? durPadrao, form.buffer_minutes ?? intPadrao).join(', ') || 'nenhum cabe nesse período'}</p>
         )}
@@ -242,19 +306,24 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
 }
 
 /** Linha de botões de escolha única (duração, intervalo). */
-function Escolha({ rotulo, valores, valor, sufixo, onChange }: { rotulo: string; valores: number[]; valor: number; sufixo: string; onChange: (v: number) => void }) {
+/** Campo de minutos com – e + (pedido do Jorge, 27/10): digita ou sobe/desce de 5 em 5. */
+function Passo({ rotulo, valor, min, max, onChange }: { rotulo: string; valor: number; min: number; max: number; onChange: (v: number) => void }) {
+  const limitar = (v: number) => Math.min(max, Math.max(min, Number.isFinite(v) ? Math.round(v) : min));
+  const btn = 'pressionar grid size-12 shrink-0 place-items-center rounded-full border border-linha-forte bg-papel text-[1.375rem] font-bold text-anil-escuro disabled:opacity-40';
   return (
-    <fieldset>
-      <legend className="rotulo mb-2">{rotulo}</legend>
-      <div className="flex flex-wrap gap-2">
-        {valores.map((v) => (
-          <button key={v} type="button" aria-pressed={valor === v} onClick={() => onChange(v)}
-            className={cx('num min-h-11 min-w-16 rounded-full border px-3 font-bold', valor === v ? 'border-anil bg-anil-claro text-sobre-anil-claro' : 'border-linha-forte text-tinta-2')}>
-            {v === 0 ? 'Sem' : `${v} ${sufixo}`}
-          </button>
-        ))}
-      </div>
-    </fieldset>
+    <Field label={rotulo}>
+      {(id) => (
+        <div className="flex items-center gap-2">
+          <button type="button" className={btn} aria-label={`Diminuir ${rotulo.toLowerCase()}`} disabled={valor <= min} onClick={() => onChange(limitar(valor - 5))}>–</button>
+          <div className="relative min-w-0 flex-1">
+            <Input id={id} type="number" inputMode="numeric" min={min} max={max} step={5} value={valor}
+              onChange={(e) => onChange(limitar(Number(e.target.value)))} className="num pr-12 text-center text-[1.125rem] font-bold" />
+            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-tinta-3">min</span>
+          </div>
+          <button type="button" className={btn} aria-label={`Aumentar ${rotulo.toLowerCase()}`} disabled={valor >= max} onClick={() => onChange(limitar(valor + 5))}>+</button>
+        </div>
+      )}
+    </Field>
   );
 }
 
@@ -369,8 +438,8 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
           <TextField label="Início do turno" type="time" step={300} value={ini} onChange={(e) => setIni(e.target.value)} />
           <TextField label="Término previsto" type="time" step={300} value={fim} onChange={(e) => setFim(e.target.value)} />
         </div>
-        <Escolha rotulo={`Duração por consulta · ${dur} min`} valores={DURACOES} valor={dur} sufixo="min" onChange={setDur} />
-        <Escolha rotulo={`Intervalo entre sessões · ${int} min`} valores={INTERVALOS} valor={int} sufixo="min" onChange={setInt} />
+        <Passo rotulo="Duração por consulta" valor={dur} min={10} max={300} onChange={setDur} />
+        <Passo rotulo="Intervalo entre sessões" valor={int} min={0} max={120} onChange={setInt} />
       </div>
 
       {/* Pré-visualização */}
@@ -396,7 +465,8 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
         </ol>
       </div>
 
-      <Button onClick={salvar} busy={salvando} className="min-h-14 w-full text-[1rem]">Salvar e gerar grade</Button>
+      {/* "Aplicar" (27/10): cria os horários; eles aparecem logo abaixo, em "Grade atual", com lápis e lixeira em cada um */}
+      <Button onClick={salvar} busy={salvando} className="min-h-14 w-full text-[1rem]">Aplicar</Button>
       <Button variant="secondary" onClick={restaurar} className="w-full">Restaurar padrão</Button>
     </section>
   );

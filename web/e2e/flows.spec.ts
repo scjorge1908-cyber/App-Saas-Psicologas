@@ -396,6 +396,11 @@ test('sessão registrada (atendida ou falta) sai da agenda e fica no histórico 
 });
 
 test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
+  // CEP que demora a responder (como no GitHub): o que foi digitado durante a busca não pode ser apagado
+  await page.route('https://viacep.com.br/**', async (r) => {
+    await new Promise((ok) => setTimeout(ok, 1500));
+    await r.fulfill({ json: { logradouro: 'Rua Najla Carone Guedert', bairro: 'Pagani', localidade: 'Palhoça', uf: 'SC' } });
+  });
   await page.goto(patientUrl);
   await page.getByRole('button', { name: 'Editar cadastro' }).click();
   const dlg = page.getByRole('dialog');
@@ -409,12 +414,16 @@ test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
   await dlg.getByRole('button', { name: /Repetir celular, e-mail e endereço/ }).click();
   await expect(dlg.getByLabel('Celular', { exact: true })).toHaveValue(/9999\D?0001$/);
   await dlg.getByLabel('E-mail (recebe a nota)').fill('maria@exemplo.invalid');
+  const cepPronto = page.waitForResponse(/viacep\.com\.br/);
   await dlg.getByRole('textbox', { name: 'CEP', exact: true }).last().fill('88132150');
   await dlg.getByRole('textbox', { name: 'Rua', exact: true }).last().fill('Rua Fictícia');
   await dlg.getByRole('textbox', { name: 'Número', exact: true }).last().fill('10');
   await dlg.getByRole('textbox', { name: 'Bairro', exact: true }).last().fill('Centro');
   await dlg.getByRole('textbox', { name: 'Cidade', exact: true }).last().fill('Palhoça');
   await dlg.getByRole('textbox', { name: 'UF', exact: true }).last().fill('SC');
+  await cepPronto;
+  await expect(dlg.getByRole('textbox', { name: 'Rua', exact: true }).last()).toHaveValue('Rua Fictícia');
+  await expect(dlg.getByRole('textbox', { name: 'Número', exact: true }).last()).toHaveValue('10');
   await expect(dlg.getByText('Dados completos para a nota fiscal (PF).')).toBeVisible();
   await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
   await expect(dlg).toBeHidden();

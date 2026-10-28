@@ -1,5 +1,5 @@
 // Endereço do paciente: digita o CEP e o resto vem preenchido (dá para corrigir).
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { buscarCep, formatarCep } from '../../lib/cep';
 import { Spinner, TextField } from '../ui';
 
@@ -9,6 +9,9 @@ export const ENDERECO_VAZIO: Endereco = { cep: '', street: '', address_number: '
 export function EnderecoCampos({ valor, onChange, obrigatorio }: { valor: Endereco; onChange: (e: Endereco) => void; obrigatorio?: boolean }) {
   const [buscando, setBuscando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  // O que está na tela agora: a busca do CEP demora e a psicóloga pode digitar enquanto isso (28/10)
+  const atual = useRef(valor);
+  atual.current = valor;
   const set = (k: keyof Endereco) => (e: React.ChangeEvent<HTMLInputElement>) => onChange({ ...valor, [k]: e.target.value });
 
   async function mudarCep(e: React.ChangeEvent<HTMLInputElement>) {
@@ -20,8 +23,16 @@ export function EnderecoCampos({ valor, onChange, obrigatorio }: { valor: Endere
     setBuscando(true);
     const r = await buscarCep(cep);
     setBuscando(false);
+    const agora = atual.current;
+    if (agora.cep !== cep) return; // o CEP mudou durante a busca: vale a busca nova
     if (!r) { setAviso('CEP não encontrado. Preencha o endereço.'); return; }
-    onChange({ ...novo, street: r.street || novo.street, neighborhood: r.neighborhood || novo.neighborhood, city: r.city, uf: r.uf });
+    // Campo mexido durante a busca fica como foi digitado; os outros recebem o endereço do CEP, como antes
+    const mexeu = (k: keyof Endereco) => agora[k] !== novo[k];
+    onChange({ ...agora,
+      street: mexeu('street') ? agora.street : r.street || novo.street,
+      neighborhood: mexeu('neighborhood') ? agora.neighborhood : r.neighborhood || novo.neighborhood,
+      city: mexeu('city') ? agora.city : r.city,
+      uf: mexeu('uf') ? agora.uf : r.uf });
   }
 
   return (

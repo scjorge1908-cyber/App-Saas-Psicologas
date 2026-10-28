@@ -199,7 +199,7 @@ export function HorariosPage() {
                         <div className="flex items-baseline gap-x-1.5">
                           <h4 className="rotulo text-tinta-3">{PERIODOS.find((p) => p.id === g.periodo)!.nome} <span className="num font-semibold normal-case tracking-normal">{g.ini}–{g.fim}</span></h4>
                           {doGrupo.size > 0 && <span className="num text-[0.75rem] font-bold text-ag-pac">{doGrupo.size} {doGrupo.size === 1 ? 'paciente' : 'pacientes'}</span>}
-                          <button type="button" disabled={carregandoOcup} onClick={() => (noTurno.length ? travarTurno(h, noTurno) : setEditHora(h))} className="ml-auto min-h-9 px-1 text-[0.8125rem] font-bold text-anil-escuro underline-offset-2 hover:underline">Ajustar turno</button>
+                          <button type="button" disabled={carregandoOcup} onClick={() => (noTurno.length ? travarTurno(h, noTurno) : setEditHora(h))} className="ml-auto min-h-9 px-1 text-[0.8125rem] font-bold text-anil-escuro underline-offset-2 hover:underline">Ajustar horário</button>
                         </div>
                         <ul className="flex flex-col gap-1.5">
                           {g.inicios.map((t) => {

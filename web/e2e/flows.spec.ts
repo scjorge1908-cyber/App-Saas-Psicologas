@@ -379,7 +379,7 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Consultório criado com sucesso!' }) }).getByRole('button', { name: 'OK' }).click();
   const comPaciente = page.getByText(/^\d+ pacientes?$/).first();
   await expect(comPaciente).toBeVisible();
-  await comPaciente.locator('xpath=..').getByRole('button', { name: 'Ajustar turno' }).click();
+  await comPaciente.locator('xpath=..').getByRole('button', { name: 'Ajustar horário' }).click();
   const tv = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: /^Este turno tem \d+ pacientes?$/ }) });
   await expect(tv.getByRole('button', { name: 'Criar nova sala' })).toBeVisible();
   await expect(tv.getByRole('button', { name: 'Dar alta' })).toBeVisible();

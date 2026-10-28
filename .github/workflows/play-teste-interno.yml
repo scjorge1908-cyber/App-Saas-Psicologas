@@ -57,6 +57,15 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
       - name: Testes unitários
         run: npx vitest run
+      - name: Firebase (notificação no celular)
+        env:
+          GSJ: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          # 28/10: sem o segredo o app sai igual, só sem notificação no celular
+          if [ -z "$GSJ" ]; then echo "::warning::GOOGLE_SERVICES_JSON não cadastrado: app sem notificação no celular."; exit 0; fi
+          printf '%s' "$GSJ" | sed 's/^\xEF\xBB\xBF//' > android/app/google-services.json
+          node -e "const j=require('./android/app/google-services.json'); if(!j.client?.some(c=>c.client_info?.android_client_info?.package_name==='br.com.clinicahope.psi')) { console.error('::error::google-services.json não é do app br.com.clinicahope.psi'); process.exit(1) }"
+          echo "VITE_PUSH=1" >> "$GITHUB_ENV"
       - name: Build web
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || 'https://sstuqkxatcbusxkqpfvx.supabase.co' }}

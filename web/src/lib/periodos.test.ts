@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PERIODOS, gerarInicios, periodoDe } from './periodos';
+import { PERIODOS, foraDaGrade, gerarInicios, periodoDe } from './periodos';
 
 describe('períodos de atendimento', () => {
   it('manhã 07–12, tarde 13–17, noite 18–22', () => {
@@ -16,5 +16,14 @@ describe('períodos de atendimento', () => {
     expect(periodoDe('08:10').nome).toBe('Manhã');
     expect(periodoDe('13:00:00').nome).toBe('Tarde');
     expect(periodoDe('19:00').nome).toBe('Noite');
+  });
+});
+
+describe('limite da grade (07:00–23:00)', () => {
+  it('aceita dentro e recusa fora', () => {
+    expect(foraDaGrade('07:00', '23:00')).toBeNull();
+    expect(foraDaGrade('18:00', '22:00')).toBeNull();
+    expect(foraDaGrade('06:30', '12:00')).toMatch(/07:00 às 23:00/);
+    expect(foraDaGrade('20:00', '23:30')).toMatch(/07:00 às 23:00/);
   });
 });

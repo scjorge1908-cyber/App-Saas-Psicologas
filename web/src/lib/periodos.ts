@@ -9,6 +9,14 @@ export const PERIODOS: Array<{ id: PeriodoId; nome: string; inicio: string; fim:
   { id: 'noite', nome: 'Noite', inicio: '18:00', fim: '22:00' },
 ];
 
+/** A grade vai das 07:00 às 23:00 (regra do Jorge, 27/10/2026). Dentro disso a psicóloga cria quantos turnos quiser. */
+export const GRADE_INICIO = '07:00';
+export const GRADE_FIM = '23:00';
+/** Mensagem de erro se a faixa sai do limite da grade; null se está dentro. */
+export function foraDaGrade(inicio: string, fim: string): string | null {
+  return inicio < GRADE_INICIO || fim > GRADE_FIM ? `A grade vai das ${GRADE_INICIO} às ${GRADE_FIM}. Ajuste o início e o término dentro desse horário.` : null;
+}
+
 export const DURACOES = [30, 40, 45, 50, 60, 90];
 export const INTERVALOS = [0, 10, 15, 20, 30];
 

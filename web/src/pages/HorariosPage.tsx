@@ -5,12 +5,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { Location, Modality, WorkingHour } from '../lib/types';
 import { DIAS_SEMANA, faixaTexto } from '../lib/horarios';
-import { PERIODOS, gerarInicios, hhmm, periodoDe, type PeriodoId } from '../lib/periodos';
+import { GRADE_FIM, GRADE_INICIO, PERIODOS, foraDaGrade, gerarInicios, hhmm, periodoDe, type PeriodoId } from '../lib/periodos';
 import { useProfile } from '../auth/AuthProvider';
 import { errorMessage } from '../lib/errors';
 import { Button, Dialog, ErrorBox, Field, Input, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
 import { IconCircleCheck, IconPencil, IconPlus, IconTrash } from '../components/icons';
 import { BloqueiosSecao } from '../components/agenda/Bloqueios';
+import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
+import { DarAltaDialog } from '../components/patients/DarAltaDialog';
+import type { AgendaItem } from '../lib/types';
+import { referenciasDosAtivos } from '../lib/agenda-ativos';
+import { pacientesNoHorario, pacientesNoTurno, type PacienteNoTurno } from '../lib/grade-ocupada';
+import { addDays, todayIn, zonedToUtc } from '../lib/format';
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na segunda
 const CORES = ['#146C70', '#0B6E8A', '#B3541E', '#2F7D5B', '#9C2F6B', '#5B6472'];
@@ -27,6 +33,37 @@ export function HorariosPage() {
   const confirmar = useConfirm();
   const avisar = useToast();
   const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  // Pacientes na grade (27/10): turno com paciente não muda nem sai inteiro; horário com paciente não muda nem sai
+  const { profile, tz } = useProfile();
+  const hoje = todayIn(tz);
+  const fromA = zonedToUtc(addDays(hoje, -183), '00:00', tz);
+  const toA = zonedToUtc(addDays(hoje, 400), '00:00', tz);
+  const agenda = useQuery({ queryKey: ['agenda', fromA, toA], queryFn: () => api.listAgenda(fromA, toA) });
+  const pacientes = useQuery({ queryKey: ['patients'], queryFn: api.listPatients });
+  const agora = Date.now();
+  const itensAg = agenda.data ?? [];
+  const refs = referenciasDosAtivos((pacientes.data ?? []).filter((p) => p.status === 'ativo').map((p) => p.id), itensAg, agora, tz);
+  const ocupTurno = (h: WorkingHour) => pacientesNoTurno(h, itensAg, refs, agora, tz);
+  const ocupHorario = (h: WorkingHour, t: string, dur: number) => pacientesNoHorario(h, t, dur, itensAg, refs, agora, tz);
+  const ocupSala = (id: string) => {
+    const vistos = new Map<string, PacienteNoTurno>();
+    for (const d of ORDEM_DIAS) for (const p of pacientesNoTurno({ weekday: d, location_id: id, start_time: '00:00', end_time: '23:59' }, itensAg.filter((a) => a.location_id === id), refs, agora, tz)) vistos.set(p.patient_id, p);
+    return [...vistos.values()];
+  };
+  const carregandoOcup = agenda.isLoading || pacientes.isLoading;
+  const [travado, setTravado] = useState<{ titulo: string; texto: string; pacientes: PacienteNoTurno[] } | null>(null);
+  const [moverItem, setMoverItem] = useState<AgendaItem | null>(null);
+  const [alta, setAlta] = useState(false);
+  const travarTurno = (h: WorkingHour, ps: PacienteNoTurno[]) => setTravado({
+    titulo: `Este turno tem ${ps.length} ${ps.length === 1 ? 'paciente' : 'pacientes'}`,
+    texto: `O turno de ${DIAS_SEMANA[h.weekday]} (${faixaTexto(h)}) não pode ser mudado nem excluído inteiro enquanto tiver paciente. Para mudar: crie uma nova sala, passe estes pacientes para ela (botão Mover) e depois ajuste esta sala. Para excluir tudo: dê alta aos pacientes antes.`,
+    pacientes: ps,
+  });
+  const travarHorario = (t: string, d: number, ps: PacienteNoTurno[]) => setTravado({
+    titulo: `O horário das ${t} tem paciente`,
+    texto: `Este horário de ${DIAS_SEMANA[d]} não pode ser mudado nem excluído enquanto tiver paciente. Passe o paciente para outro horário ou sala (botão Mover), ou dê alta.`,
+    pacientes: ps,
+  });
 
   /** Tira só o horário t do bloco: o bloco vira até dois pedaços (antes e depois), com a mesma duração e intervalo. */
   async function tirarHorario(h: WorkingHour, t: string) {
@@ -50,11 +87,13 @@ export function HorariosPage() {
     // Confere antes de mexer: o novo horário não pode bater com outro turno do mesmo dia (a regra do banco
     // compara as faixas inteiras), considerando o turno atual já sem o horário que sai
     const nIni = mins(novo); const nFim = nIni + dur;
+    const limite = foraDaGrade(novo, hhmm(nFim));
+    if (limite) { avisar(limite, 'erro'); return; }
     const ini = h.start_time.slice(0, 5); const fim = h.end_time.slice(0, 5);
     const pedacos = [[mins(ini), mins(t)], [mins(t) + dur + int, mins(fim)]].filter(([a, b]) => b > a);
     const outras = (horas.data ?? []).filter((x) => x.weekday === h.weekday && x.id !== h.id).map((x) => [mins(x.start_time), mins(x.end_time)]);
     if ([...pedacos, ...outras].some(([a, b]) => a < nFim && b > nIni)) {
-      avisar(`O horário das ${novo} bate com outro horário de ${DIAS_SEMANA[h.weekday]}. Escolha outro, ou exclua o horário vizinho antes.`, 'erro'); return;
+      avisar(`O horário das ${novo} bate com outro horário de ${DIAS_SEMANA[h.weekday]} (a agenda é individual, vale para todas as salas). Escolha outro, ou exclua o horário vizinho antes.`, 'erro'); return;
     }
     setSlotBusy(true);
     try {
@@ -63,7 +102,6 @@ export function HorariosPage() {
       atualizar(); avisar(`Horário mudado de ${t} para ${novo}`); setEditSlot(null);
     } catch (e) { atualizar(); avisar(errorMessage(e), 'erro'); } finally { setSlotBusy(false); }
   }
-  const { profile } = useProfile();
   const durPadrao = profile?.session_minutes ?? 50;
   const intPadrao = profile?.buffer_minutes ?? 10;
   const atualizar = () => {
@@ -117,23 +155,33 @@ export function HorariosPage() {
                   {faixas.map((h) => {
                     const dur = h.session_minutes ?? durPadrao; const int = h.buffer_minutes ?? intPadrao;
                     const inicios = gerarInicios(h.start_time.slice(0, 5), h.end_time.slice(0, 5), dur, int);
+                    const noTurno = ocupTurno(h);
                     return (
                       <div key={h.id} className="flex flex-col gap-1.5">
                         <div className="flex items-baseline gap-x-1.5">
                           <h4 className="rotulo text-tinta-3">{periodoDe(h.start_time).nome} <span className="num font-semibold normal-case tracking-normal">{faixaTexto(h)}</span></h4>
-                          <button type="button" onClick={() => setEditHora(h)} className="ml-auto min-h-9 px-1 text-[0.8125rem] font-bold text-anil-escuro underline-offset-2 hover:underline">Ajustar turno</button>
+                          {noTurno.length > 0 && <span className="num text-[0.75rem] font-bold text-ag-pac">{noTurno.length} {noTurno.length === 1 ? 'paciente' : 'pacientes'}</span>}
+                          <button type="button" disabled={carregandoOcup} onClick={() => (noTurno.length ? travarTurno(h, noTurno) : setEditHora(h))} className="ml-auto min-h-9 px-1 text-[0.8125rem] font-bold text-anil-escuro underline-offset-2 hover:underline">Ajustar turno</button>
                         </div>
                         <ul className="flex flex-col gap-1.5">
-                          {inicios.map((t) => (
-                            <li key={t} className="flex min-h-12 items-center gap-2 rounded-campo border-l-4 border-l-ag-livre-borda bg-ag-livre-fundo pl-2.5 pr-1.5 text-ag-livre">
+                          {inicios.map((t) => {
+                            const ps = ocupHorario(h, t, dur);
+                            const ocupado = ps.length > 0;
+                            const abrir = (acao: () => void) => () => (ocupado ? travarHorario(t, d, ps) : acao());
+                            return (
+                            <li key={t} className={cx('flex min-h-12 items-center gap-2 rounded-campo border-l-4 pl-2.5 pr-1.5',
+                              ocupado ? 'border-l-ag-pac-borda bg-ag-pac-fundo text-ag-pac' : 'border-l-ag-livre-borda bg-ag-livre-fundo text-ag-livre')}>
                               <span className="num text-[1.0625rem] font-extrabold">{t}</span>
-                              <span className="num flex-1 text-[0.8125rem] font-semibold opacity-80">até {hhmm(Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)) + dur)}</span>
-                              <button type="button" onClick={() => setEditSlot({ h, t, novo: t })} aria-label={`Mudar o horário das ${t} de ${DIAS_SEMANA[d]}`} title="Mudar só este horário"
-                                className="pressionar grid size-10 place-items-center rounded-full border border-ag-livre-borda/45 bg-papel text-ag-livre"><IconPencil className="size-[1.125rem]" /></button>
-                              <button type="button" onClick={() => excluirHorario(h, t, d)} aria-label={`Excluir o horário das ${t} de ${DIAS_SEMANA[d]}`} title="Excluir só este horário"
-                                className="pressionar grid size-10 place-items-center rounded-full border border-vermelho-forte/40 bg-papel text-vermelho"><IconTrash className="size-[1.125rem]" /></button>
+                              <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold opacity-80">
+                                {ocupado ? ps.map((p) => p.nome).join(', ') : <span className="num">até {hhmm(Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)) + dur)}</span>}
+                              </span>
+                              <button type="button" disabled={carregandoOcup} onClick={abrir(() => setEditSlot({ h, t, novo: t }))} aria-label={`Mudar o horário das ${t} de ${DIAS_SEMANA[d]}`} title="Mudar só este horário"
+                                className="pressionar grid size-10 place-items-center rounded-full border border-current/30 bg-papel disabled:opacity-40"><IconPencil className="size-[1.125rem]" /></button>
+                              <button type="button" disabled={carregandoOcup} onClick={abrir(() => excluirHorario(h, t, d))} aria-label={`Excluir o horário das ${t} de ${DIAS_SEMANA[d]}`} title="Excluir só este horário"
+                                className="pressionar grid size-10 place-items-center rounded-full border border-vermelho-forte/40 bg-papel text-vermelho disabled:opacity-40"><IconTrash className="size-[1.125rem]" /></button>
                             </li>
-                          ))}
+                            );
+                          })}
                         </ul>
                       </div>
                     );
@@ -182,13 +230,40 @@ export function HorariosPage() {
           </div>
         )}
       </Dialog>
-      <LocalDialog local={editLocal} onClose={() => setEditLocal(null)} onSaved={atualizar} />
+      <Dialog open={!!travado} onClose={() => setTravado(null)} title={travado?.titulo ?? ''} footer={<>
+        <Button variant="secondary" onClick={() => setTravado(null)}>Voltar</Button>
+        <Button variant="secondary" onClick={() => { setTravado(null); setAlta(true); }}>Dar alta</Button>
+        <Button onClick={() => { setTravado(null); setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] }); }}><IconPlus /> Criar nova sala</Button>
+      </>}>
+        {travado && (
+          <div className="flex flex-col gap-3">
+            <p className="text-[0.9375rem] text-tinta-2">{travado.texto}</p>
+            <ul className="flex flex-col gap-1.5">
+              {travado.pacientes.map((p) => (
+                <li key={p.patient_id} className="flex min-h-12 items-center gap-2 rounded-campo border-l-4 border-l-ag-pac-borda bg-ag-pac-fundo pl-2.5 pr-1.5 text-ag-pac">
+                  <span className="num font-extrabold">{p.hora}</span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block truncate">{p.nome}</strong>
+                    {p.semHorario && <span className="block text-[0.75rem]">sem próximo horário</span>}
+                  </span>
+                  {!p.semHorario && <Button size="sm" variant="secondary" onClick={() => { setTravado(null); setMoverItem(p.item); }}>Mover</Button>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Dialog>
+      <AppointmentSheet item={moverItem} mover onClose={() => { setMoverItem(null); atualizar(); }} />
+      <DarAltaDialog open={alta} onClose={() => { setAlta(false); atualizar(); }} />
+      <LocalDialog local={editLocal} ocupados={editLocal?.id ? ocupSala(editLocal.id) : []} onClose={() => setEditLocal(null)} onSaved={atualizar}
+        onTravado={(ps) => setTravado({ titulo: `Esta sala tem ${ps.length} ${ps.length === 1 ? 'paciente' : 'pacientes'}`,
+          texto: 'A sala não pode ser excluída enquanto tiver paciente. Crie uma nova sala e passe estes pacientes para ela (botão Mover), ou dê alta. Depois exclua esta sala.', pacientes: ps })} />
       <HoraDialog hora={editHora} locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onClose={() => setEditHora(null)} onSaved={atualizar} />
     </div>
   );
 }
 
-function LocalDialog({ local, onClose, onSaved }: { local: Partial<Location> | null; onClose: () => void; onSaved: () => void }) {
+function LocalDialog({ local, ocupados, onClose, onSaved, onTravado }: { local: Partial<Location> | null; ocupados: PacienteNoTurno[]; onClose: () => void; onSaved: () => void; onTravado: (ps: PacienteNoTurno[]) => void }) {
   const confirm = useConfirm();
   const toast = useToast();
   const [form, setForm] = useState<Partial<Location>>({});
@@ -205,6 +280,7 @@ function LocalDialog({ local, onClose, onSaved }: { local: Partial<Location> | n
   });
 
   async function pedirExclusao() {
+    if (ocupados.length) { onClose(); onTravado(ocupados); return; }
     const ok = await confirm({ title: 'Excluir este local?', confirmLabel: 'Excluir', danger: true,
       body: 'Os horários deste local saem da semana. As sessões já marcadas continuam na agenda, só sem o local.' });
     if (ok) excluir.mutate();
@@ -268,7 +344,13 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
     mutationFn: () => api.deleteWorkingHour(form.id!),
     onSuccess: () => { onSaved(); toast('Horário excluído'); onClose(); },
   });
-  function enviar(e: FormEvent) { e.preventDefault(); salvar.mutate(); }
+  const [limite, setLimite] = useState<string | null>(null);
+  function enviar(e: FormEvent) {
+    e.preventDefault();
+    const fora = foraDaGrade(form.start_time ?? '', form.end_time ?? '');
+    setLimite(fora);
+    if (!fora) salvar.mutate();
+  }
 
   return (
     <Dialog open={!!hora} onClose={onClose} title={form.id ? 'Editar bloco da grade' : 'Novo bloco da grade'}
@@ -278,6 +360,7 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
         <Button type="submit" form="form-hora" busy={salvar.isPending}>Salvar</Button>
       </>}>
       <form id="form-hora" onSubmit={enviar} className="flex flex-col gap-4" noValidate>
+        {limite && <ErrorBox>{limite}</ErrorBox>}
         {(salvar.error || excluir.error) && <ErrorBox>{errorMessage(salvar.error ?? excluir.error)}</ErrorBox>}
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-bold text-tinta-2">Dia da semana</span>
@@ -286,8 +369,8 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
           </Select>
         </label>
         <div className="grid grid-cols-2 gap-3">
-          <TextField label="Início" type="time" step={300} required value={form.start_time ?? ''} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
-          <TextField label="Fim" type="time" step={300} required value={form.end_time ?? ''} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+          <TextField label="Início" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} required value={form.start_time ?? ''} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+          <TextField label="Fim" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} required value={form.end_time ?? ''} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
         </div>
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-bold text-tinta-2">Local</span>
@@ -358,6 +441,8 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
     if (semSala && !novoLocal.trim()) return setErro('Dê um nome para a sala.');
     if (dias.length === 0) return setErro('Escolha pelo menos um dia.');
     if (!ini || !fim || fim <= ini) return setErro('O término precisa ser depois do início.');
+    const limite = foraDaGrade(ini, fim);
+    if (limite) return setErro(limite);
     if (inicios.length === 0) return setErro('Nenhum horário cabe nesse turno com essa duração.');
     setSalvando(true);
     try {
@@ -435,9 +520,10 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
           ))}
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <TextField label="Início do turno" type="time" step={300} value={ini} onChange={(e) => setIni(e.target.value)} />
-          <TextField label="Término previsto" type="time" step={300} value={fim} onChange={(e) => setFim(e.target.value)} />
+          <TextField label="Início do turno" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={ini} onChange={(e) => setIni(e.target.value)} />
+          <TextField label="Término previsto" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={fim} onChange={(e) => setFim(e.target.value)} />
         </div>
+        <p className="-mt-2 text-[0.8125rem] text-tinta-3">A grade vai das {GRADE_INICIO} às {GRADE_FIM}. Pode criar manhã, tarde e noite na mesma sala; sem espaço no dia, use outro dia.</p>
         <Passo rotulo="Duração por consulta" valor={dur} min={10} max={300} onChange={setDur} />
         <Passo rotulo="Intervalo entre sessões" valor={int} min={0} max={120} onChange={setInt} />
       </div>

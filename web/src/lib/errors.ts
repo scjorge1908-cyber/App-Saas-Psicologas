@@ -28,7 +28,7 @@ export function errorMessage(err: unknown, fallback = 'Não foi possível conclu
 
   switch (e.code) {
     case '23P01':
-      if (/working_hours/i.test(msg)) return 'Esse horário de atendimento se sobrepõe a outro no mesmo dia. Ajuste o início ou o fim.';
+      if (/working_hours/i.test(msg)) return 'Esse horário bate com outro turno do mesmo dia (em qualquer sala). A agenda é individual: não dá para atender dois pacientes no mesmo dia e hora. Escolha outro horário ou outro dia.';
       return 'Este horário já está ocupado por outra sessão. Escolha outro horário ou cancele a sessão existente.';
     case '23505':
       if (/locations/i.test(msg)) return 'Já existe um local com esse nome.';

@@ -293,6 +293,10 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.goto('/agenda/horarios');
   await page.getByLabel('Nome da sala').fill('Sala Fictícia');
   for (const d of ['Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']) await page.getByRole('button', { name: d, exact: true }).click();
+  // A grade vai das 07:00 às 23:00
+  await page.getByLabel('Início do turno').fill('06:00');
+  await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
+  await expect(page.getByText('A grade vai das 07:00 às 23:00. Ajuste o início e o término dentro desse horário.')).toBeVisible();
   await page.getByRole('tab', { name: 'Noite' }).click();
   await expect(page.getByText(/horários de 50 min/)).toBeVisible();
   await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
@@ -346,6 +350,20 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await expect(wz.getByRole('button', { name: 'Abrir no WhatsApp' })).toBeVisible();
   await wz.getByRole('button', { name: 'Voltar' }).click();
   await wz.getByRole('button', { name: 'Fechar' }).first().click();
+  // Turno com paciente não muda nem sai inteiro: pede nova sala (Mover) ou alta
+  // Na mesma sala dá para criar outro turno (manhã) além da noite; o do Carlos (9h/10h) fica com paciente
+  await page.goto('/agenda/horarios');
+  for (const d of ['Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']) await page.getByRole('button', { name: d, exact: true }).click();
+  await page.getByRole('tab', { name: 'Manhã' }).click();
+  await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
+  await expect(page.getByText(/Grade gerada: 7 dias/)).toBeVisible();
+  const comPaciente = page.getByText(/^\d+ pacientes?$/).first();
+  await expect(comPaciente).toBeVisible();
+  await comPaciente.locator('xpath=..').getByRole('button', { name: 'Ajustar turno' }).click();
+  const tv = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: /^Este turno tem \d+ pacientes?$/ }) });
+  await expect(tv.getByRole('button', { name: 'Criar nova sala' })).toBeVisible();
+  await expect(tv.getByRole('button', { name: 'Dar alta' })).toBeVisible();
+  await tv.getByRole('button', { name: 'Voltar' }).click();
 });
 
 test('sessão registrada (atendida ou falta) sai da agenda e fica no histórico do paciente', async () => {

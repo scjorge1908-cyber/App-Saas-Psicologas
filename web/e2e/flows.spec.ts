@@ -294,6 +294,9 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.getByLabel('Nome da sala').fill('Sala Fictícia');
   for (const d of ['Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']) await page.getByRole('button', { name: d, exact: true }).click();
   // A grade vai das 07:00 às 23:00
+  await expect(page.getByText(/Pode criar manhã, tarde e noite/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Sobre o turno de atendimento' }).click();
+  await expect(page.getByText(/Pode criar manhã, tarde e noite/)).toBeVisible();
   await page.getByLabel('Início do turno').fill('06:00');
   await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
   await expect(page.getByText('A grade vai das 07:00 às 23:00. Ajuste o início e o término dentro desse horário.')).toBeVisible();

@@ -449,6 +449,7 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
   const [int, setInt] = useState(intPadrao);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [infoTurno, setInfoTurno] = useState(false);
   const salaSel = ativas.find((l) => l.id === localId) ?? ativas[0] ?? null;
   const semSala = ativas.length === 0;
   const alterna = (v: number) => setDias((d) => (d.includes(v) ? d.filter((x) => x !== v) : [...d, v]));
@@ -535,7 +536,15 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
 
       {/* Turno */}
       <div className="cartao flex flex-col gap-4 p-4">
-        <p className="rotulo">Turno de atendimento</p>
+        {/* Explicação na bolinha "i" ao lado do título (27/10), não fixa no cartão */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <p className="rotulo">Turno de atendimento</p>
+            <button type="button" onClick={() => setInfoTurno((v) => !v)} aria-expanded={infoTurno} aria-label="Sobre o turno de atendimento"
+              className="grid size-7 shrink-0 place-items-center rounded-full border border-linha-forte bg-papel font-titulo text-[0.8125rem] font-bold italic text-anil-escuro hover:bg-anil-claro/50">i</button>
+          </div>
+          {infoTurno && <p className="text-[0.8125rem] text-tinta-2">A grade vai das {GRADE_INICIO} às {GRADE_FIM}. Pode criar manhã, tarde e noite na mesma sala; sem espaço no dia, use outro dia.</p>}
+        </div>
         <div role="tablist" aria-label="Turno" className="grid grid-cols-3 gap-1 rounded-campo bg-afundado p-1">
           {PERIODOS.map((p) => (
             <button key={p.id} role="tab" type="button" aria-selected={turno === p.id} onClick={() => escolheTurno(p.id)}
@@ -546,7 +555,6 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
           <TextField label="Início do turno" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={ini} onChange={(e) => setIni(e.target.value)} />
           <TextField label="Término previsto" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={fim} onChange={(e) => setFim(e.target.value)} />
         </div>
-        <p className="-mt-2 text-[0.8125rem] text-tinta-3">A grade vai das {GRADE_INICIO} às {GRADE_FIM}. Pode criar manhã, tarde e noite na mesma sala; sem espaço no dia, use outro dia.</p>
         <Passo rotulo="Duração por consulta" valor={dur} min={10} max={300} onChange={setDur} />
         <Passo rotulo="Intervalo entre sessões" valor={int} min={0} max={120} onChange={setInt} />
       </div>

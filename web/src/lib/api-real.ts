@@ -2,8 +2,7 @@
 import { supabase, STORAGE_BUCKET } from './supabase';
 import type {
   AgendaItem, AppointmentStatus, Attachment, AttachmentCategory, ChargeBalance, DashboardSummary, DocumentRow,
-  Expense, FinancialReportRow, InvoiceItem, Location, Patient, PaymentItem, RecordEntry, RecordEntryVersion, SeriesFrequency, Modality, WorkingHour,
-} from './types';
+  Expense, FinancialReportRow, InvoiceItem, Location, Patient, PaymentItem, RecordEntry, RecordEntryVersion, SeriesFrequency, Modality, WorkingHour, ScheduleBlock } from './types';
 import { sha256Hex } from './hash';
 import { resumirProntuarios, type ProntuarioResumo } from './prontuario';
 
@@ -234,6 +233,17 @@ export async function saveLocation(l: Partial<Location> & { name: string }): Pro
 }
 export async function deleteLocation(id: string) {
   check(await supabase.from('locations').delete().eq('id', id));
+}
+export async function listBlocks(): Promise<ScheduleBlock[]> {
+  return check(await supabase.from('schedule_blocks').select('id, kind, starts_on, ends_on, start_time, end_time, reason').order('starts_on'));
+}
+export async function saveBlock(b: Partial<ScheduleBlock> & Omit<ScheduleBlock, 'id'>): Promise<ScheduleBlock> {
+  const { id, ...rest } = b;
+  if (id) return check(await supabase.from('schedule_blocks').update(rest).eq('id', id).select('id, kind, starts_on, ends_on, start_time, end_time, reason').single());
+  return check(await supabase.from('schedule_blocks').insert(rest).select('id, kind, starts_on, ends_on, start_time, end_time, reason').single());
+}
+export async function deleteBlock(id: string) {
+  check(await supabase.from('schedule_blocks').delete().eq('id', id));
 }
 export async function listWorkingHours(): Promise<WorkingHour[]> {
   return check(await supabase.from('working_hours').select('id, location_id, weekday, start_time, end_time, session_minutes, buffer_minutes').order('weekday').order('start_time'));

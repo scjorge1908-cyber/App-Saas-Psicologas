@@ -45,13 +45,19 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Carrega os dados ao abrir. Se os dados do paciente chegarem atualizados depois (ex.: logo após salvar),
+  // só recarrega enquanto nada foi digitado — nunca apaga o que a psicóloga está preenchendo.
+  const [sujo, setSujo] = useState(false);
   useEffect(() => {
-    if (open) {
-      setF(toForm(patient)); setNota(notaDoPaciente(patient)); setError(null);
-    }
-  }, [open, patient]);
+    if (open) { setF(toForm(patient)); setNota(notaDoPaciente(patient)); setError(null); setSujo(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+  useEffect(() => {
+    if (open && !sujo) { setF(toForm(patient)); setNota(notaDoPaciente(patient)); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patient]);
 
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF((x) => ({ ...x, [k]: e.target.value }));
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => { setSujo(true); setF((x) => ({ ...x, [k]: e.target.value })); };
   const minor = isMinor(f.birth_date || null, todayIn(tz));
 
   const dadosPac: DadosPaciente = { full_name: f.full_name, cpf: f.cpf, email: f.email, phone: f.phone, end: f as unknown as Endereco };
@@ -94,6 +100,8 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
     setBusy(true);
     try {
       const saved = await api.savePatient(payload);
+      // Guarda na hora o que foi salvo: reabrir "Editar cadastro" logo em seguida já mostra os dados novos
+      qc.setQueryData(['patient', saved.id], saved);
       await qc.invalidateQueries({ queryKey: ['patients'] });
       await qc.invalidateQueries({ queryKey: ['patient', saved.id] });
       onSaved?.(saved);
@@ -127,7 +135,7 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
             <TextField label="Celular (WhatsApp)" inputMode="tel" placeholder="(48) 99999-9999" value={f.phone} onChange={set('phone')} />
             <TextField label="E-mail" type="email" value={f.email} onChange={set('email')} />
           </div>
-          <EnderecoCampos valor={f as unknown as Endereco} onChange={(e) => setF((x) => ({ ...x, ...e }))} />
+          <EnderecoCampos valor={f as unknown as Endereco} onChange={(e) => { setSujo(true); setF((x) => ({ ...x, ...e })); }} />
           {f.address && !f.street && <TextField label="Endereço anterior (texto livre)" value={f.address} onChange={set('address')} />}
           <div className="grid gap-3 sm:grid-cols-2">
             <TextField label="Contato de emergência" value={f.emergency_contact_name} onChange={set('emergency_contact_name')} />
@@ -163,7 +171,7 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
         </Group>
 
         <Group title="Nota fiscal">
-          <NotaFiscalCampos valor={nota} onChange={setNota} paciente={dadosPac} />
+          <NotaFiscalCampos valor={nota} onChange={(n) => { setSujo(true); setNota(n); }} paciente={dadosPac} />
         </Group>
 
         <Group title="Situação">

@@ -79,8 +79,9 @@ export function ConfirmarAgendaDialog({ open, onClose }: { open: boolean; onClos
                     {comecou && ativa && (
                       <div className="flex flex-wrap gap-2 pl-16">
                         {/* Só os dois registros que fazem sentido aqui (27/10); "Compareceu" serve para homem e mulher */}
-                        <Button size="sm" onClick={() => atendida(it)}><IconCheck className="size-4" /> Compareceu</Button>
-                        <Button size="sm" variant="secondary" onClick={() => setSessao({ item: it, falta: true })}>Falta</Button>
+                        {/* Pergunta, para não parecer que já foi registrado (pedido do Jorge, 27/10) */}
+                        <Button size="sm" onClick={() => atendida(it)}><IconCheck className="size-4" /> Compareceu?</Button>
+                        <Button size="sm" variant="secondary" onClick={() => setSessao({ item: it, falta: true })}>Registrar falta</Button>
                       </div>
                     )}
                   </li>

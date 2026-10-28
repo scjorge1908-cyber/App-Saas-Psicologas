@@ -11,6 +11,7 @@ import { useProfile } from '../auth/AuthProvider';
 import { errorMessage } from '../lib/errors';
 import { Button, Dialog, ErrorBox, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
 import { IconChevronLeft, IconCircleCheck, IconPlus } from '../components/icons';
+import { BloqueiosSecao } from '../components/agenda/Bloqueios';
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na segunda
 const CORES = ['#146C70', '#0B6E8A', '#B3541E', '#2F7D5B', '#9C2F6B', '#5B6472'];
@@ -111,6 +112,9 @@ export function HorariosPage() {
           </ul>
         </section>
       )}
+
+      {/* Férias, feriados e folgas (27/10) */}
+      <BloqueiosSecao />
 
       <LocalDialog local={editLocal} onClose={() => setEditLocal(null)} onSaved={atualizar} />
       <HoraDialog hora={editHora} locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onClose={() => setEditHora(null)} onSaved={atualizar} />

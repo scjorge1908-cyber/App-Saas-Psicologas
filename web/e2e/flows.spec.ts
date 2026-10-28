@@ -50,7 +50,7 @@ async function signup(page: Page, name: string, email: string, crp: string) {
   await page.getByLabel('Cidade').fill('Palhoça');
   await page.getByLabel('UF').fill('SC');
   await page.getByRole('button', { name: 'Começar a usar' }).click();
-  await expect(page.getByRole('heading', { name: 'Agenda', exact: true })).toBeAttached(); // tela inicial = agenda
+  await expect(page).toHaveURL(/\/(resumo)?$/); // entra no app (tela inicial = Resumo do dia; a agenda fica no rodapé)
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -378,7 +378,7 @@ test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
   await dlg.getByRole('radio', { name: /^Empresa/ }).click();
   await dlg.getByLabel('Razão social').fill('Empresa Fictícia Ltda');
   await dlg.getByLabel('CNPJ').fill('11.222.333/0001-82');
-  await expect(dlg.getByText(/falta: CNPJ válido/)).toBeVisible();
+  await expect(dlg.getByText(/falta: CNPJ válido/i)).toBeVisible();
   await dlg.getByLabel('CNPJ').fill('11.222.333/0001-81');
   await expect(dlg.getByText('Dados completos para a nota fiscal (PJ).')).toBeVisible();
   await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
@@ -523,4 +523,34 @@ test('paciente ativo sempre na agenda: "Começa dd/mm" e avulso sem próximo hor
   await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: /^Dar alta a / }) }).getByRole('button', { name: 'Dar alta' }).click();
   await expect(page.getByText(/Fernanda Fictícia foi para Inativos/)).toBeVisible();
   await expect(page.getByRole('button', { name: /Fernanda.*sem próximo horário/ })).toHaveCount(0);
+});
+
+test('bloqueio de agenda: folga amanhã some com os horários livres e avisa a sessão marcada', async () => {
+  const amanha = tzDate(1);
+  const ddmm = `${amanha.slice(8, 10)}/${amanha.slice(5, 7)}`;
+  await page.goto('/agenda/horarios');
+  await page.getByRole('button', { name: 'Novo bloqueio' }).click();
+  const dlg = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Novo bloqueio' }) });
+  await dlg.getByLabel('Tipo').selectOption('folga');
+  await dlg.getByLabel('Primeiro dia').fill(amanha);
+  await dlg.getByLabel('Último dia').fill(amanha);
+  await dlg.getByLabel('Motivo (opcional)').fill('Consulta médica');
+  await dlg.getByRole('button', { name: 'Salvar bloqueio' }).click();
+  await expect(page.getByText(/Bloqueio salvo/)).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Bloqueios' }).getByText('Folga · dia inteiro · Consulta médica')).toBeVisible();
+  // Feriados nacionais em um toque
+  await page.getByRole('button', { name: /^Feriados nacionais de \d{4}$/ }).last().click();
+  await expect(page.getByText(/feriados? nacionais? adicionados?|já estão na agenda/)).toBeVisible();
+
+  await irParaAgenda(page);
+  const dia = page.locator('section').filter({ hasText: ddmm }).first();
+  await expect(dia.getByText('Bloqueado · Folga · dia inteiro · Consulta médica')).toBeVisible();
+  await expect(dia.getByRole('button', { name: /^Horário livre/ })).toHaveCount(0);
+  await page.screenshot({ path: `${SHOTS}/24-bloqueio-folga.png`, fullPage: true });
+
+  // Tira o bloqueio: os horários voltam
+  await page.goto('/agenda/horarios');
+  await page.getByRole('list', { name: 'Bloqueios' }).getByRole('listitem').filter({ hasText: 'Consulta médica' }).getByRole('button', { name: 'Tirar' }).click();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Tirar este bloqueio?' }) }).getByRole('button', { name: 'Tirar bloqueio' }).click();
+  await expect(page.getByText('Bloqueio retirado')).toBeVisible();
 });

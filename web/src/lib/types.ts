@@ -142,6 +142,18 @@ export interface WorkingHour {
   buffer_minutes?: number | null;
 }
 
+/** Bloqueio de agenda (férias, feriado, folga). Sem horário = dia inteiro. */
+export type BlockKind = 'ferias' | 'feriado' | 'folga' | 'outro';
+export interface ScheduleBlock {
+  id: string;
+  kind: BlockKind;
+  starts_on: string; // AAAA-MM-DD
+  ends_on: string;
+  start_time: string | null; // HH:MM[:SS] ou vazio (dia inteiro)
+  end_time: string | null;
+  reason: string | null;
+}
+
 export interface RecordEntry {
   id: string;
   patient_id: string;

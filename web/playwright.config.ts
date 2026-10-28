@@ -10,7 +10,11 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   fullyParallel: false,
   workers: 1,
-  reporter: [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
+  // No GitHub (CI), o relatório 'github' escreve o motivo de cada falha direto na página do PR (anotações),
+  // sem precisar baixar o log. Fora do CI fica igual.
+  reporter: process.env.CI
+    ? [['github'], ['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]]
+    : [['list'], ['html', { open: 'never', outputFolder: 'playwright-report' }]],
   use: {
     baseURL: process.env.E2E_BASE_URL || 'http://127.0.0.1:5173',
     locale: 'pt-BR',

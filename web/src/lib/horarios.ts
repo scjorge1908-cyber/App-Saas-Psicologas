@@ -1,6 +1,7 @@
 // Horários livres da agenda, calculados a partir das faixas de atendimento cadastradas.
 // Regra pura (sem rede): usada pela agenda real e pela demonstração, e coberta por testes.
-import type { AgendaItem, Location, WorkingHour } from './types';
+import type { AgendaItem, Location, ScheduleBlock, WorkingHour } from './types';
+import { bloqueioNoHorario } from './bloqueios';
 import { weekday, zonedToUtc } from './format';
 
 export interface HorarioLivre {
@@ -27,6 +28,8 @@ export function horariosLivres(args: {
   bufferMinutes: number;
   tz: string;
   agora?: Date;
+  /** Férias, feriados e folgas: horário bloqueado não aparece como livre. */
+  bloqueios?: ScheduleBlock[];
 }): HorarioLivre[] {
   const { date, hours, locations, items, sessionMinutes, bufferMinutes, tz } = args;
   const agoraMs = (args.agora ?? new Date()).getTime();
@@ -44,6 +47,7 @@ export function horariosLivres(args: {
       const fim = ini + dur * 60000;
       if (ini < agoraMs) continue;
       if (ocupadas.some(([a, b]) => a < fim && b > ini)) continue;
+      if (bloqueioNoHorario(args.bloqueios, date, m, m + dur)) continue;
       livres.push({ time: texto(m), location: local, minutes: dur, faixaId: f.id });
     }
   }

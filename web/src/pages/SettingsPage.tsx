@@ -81,22 +81,25 @@ function ProfileForm({ profile }: { profile: Profile }) {
     neighborhood: end.neighborhood, city: end.city, uf: end.uf };
   const falta = faltandoPerfil(dados);
   const salvoCompleto = faltandoPerfil(profile).length === 0;
+  const cartao = useRef<HTMLDetailsElement>(null);
 
   async function submit() {
     setError(null);
     if (falta.length) return setError(`Para salvar, falta: ${falta.join(', ')}.`);
     setBusy(true);
-    await save(profile.id, {
+    const ok = await save(profile.id, {
       full_name: f.full_name.trim(), crp: normalizeCrp(f.crp), cpf: onlyDigits(f.cpf), cnpj: f.fiscal_type === 'pj' ? onlyDigits(f.cnpj) : null, company_name: f.fiscal_type === 'pj' ? f.company_name.trim() : null,
       fiscal_type: f.fiscal_type as Profile['fiscal_type'], contact_email: f.contact_email.trim(), phone: onlyDigits(f.phone),
       cep: onlyDigits(end.cep), address: end.street.trim(), address_number: end.address_number.trim(), address_complement: end.address_complement.trim() || null,
       neighborhood: end.neighborhood.trim(), city: end.city.trim(), uf: end.uf.trim().toUpperCase(),
     }, setError);
     setBusy(false);
+    // Salvou (28/10): o cartão fecha e fica verde, mostrando que o perfil está ok
+    if (ok && cartao.current) cartao.current.open = false;
   }
 
   return (
-    <Panel recolhivel aberto title="Perfil profissional">
+    <Panel recolhivel aberto={!salvoCompleto} ok={salvoCompleto} okTexto="Completo" detalhesRef={cartao} title="Perfil profissional">
       <div className="flex flex-col gap-4">
         {!salvoCompleto && <Notice tone="ocre"><b>Complete o seu perfil profissional para liberar o app.</b> Todos os campos são obrigatórios (só o complemento é opcional).</Notice>}
         {error && <ErrorBox>{error}</ErrorBox>}

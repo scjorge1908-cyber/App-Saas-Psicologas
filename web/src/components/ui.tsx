@@ -1,7 +1,7 @@
 import {
   createContext, forwardRef, useCallback, useContext, useEffect, useId, useRef, useState,
   type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes,
-  type TextareaHTMLAttributes,
+  type Ref, type TextareaHTMLAttributes,
 } from 'react';
 import type { AppointmentStatus } from '../lib/types';
 
@@ -128,13 +128,18 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   );
 }
 
-export function Panel({ title, actions, children, className, recolhivel, aberto }: { title?: string; actions?: ReactNode; children: ReactNode; className?: string; recolhivel?: boolean; aberto?: boolean }) {
+export function Panel({ title, actions, children, className, recolhivel, aberto, ok, okTexto, detalhesRef }: { title?: string; actions?: ReactNode; children: ReactNode; className?: string; recolhivel?: boolean; aberto?: boolean;
+  /** Seção concluída (28/10): cartão verde com ✓ (ex.: Perfil profissional completo). */ ok?: boolean; okTexto?: string; detalhesRef?: Ref<HTMLDetailsElement> }) {
   if (recolhivel && title) {
     // Seção que abre e fecha (Configurações): menos rolagem, uma coisa por vez
     return (
-      <details className={cx('cartao group', className)} open={aberto}>
+      <details ref={detalhesRef} className={cx('cartao group', ok && 'border-livre bg-livre-fundo', className)} open={aberto}>
         <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
-          <h2 className="text-[1.0625rem] font-bold">{title}</h2>
+          <h2 className={cx('flex items-center gap-2 text-[1.0625rem] font-bold', ok && 'text-livre')}>
+            {ok && <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M8 12.3l2.6 2.6L16 9.5" /></svg>}
+            {title}
+            {ok && <span className="rounded-full bg-livre px-2 py-0.5 text-[0.75rem] font-bold text-papel">{okTexto ?? 'OK'}</span>}
+          </h2>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0 text-tinta-3 transition-transform group-open:rotate-90" aria-hidden><path d="M9 5l7 7-7 7" /></svg>
         </summary>
         <div className="border-t border-linha/70 p-4">{actions && <div className="mb-3">{actions}</div>}{children}</div>

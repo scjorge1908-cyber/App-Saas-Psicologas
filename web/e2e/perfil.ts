@@ -15,5 +15,8 @@ export async function completarPerfil(page: Page) {
   await campo('Número').fill('10');
   await page.getByRole('button', { name: 'Salvar perfil' }).click();
   await expect(page.getByText('Complete o seu perfil profissional para liberar o app.')).toHaveCount(0);
+  // Salvou: o cartão fecha e fica verde com "Completo"
+  await expect(page.getByRole('button', { name: 'Salvar perfil' })).toBeHidden();
+  await expect(page.getByText('Completo', { exact: true })).toBeVisible();
   await page.unroute('https://viacep.com.br/**');
 }

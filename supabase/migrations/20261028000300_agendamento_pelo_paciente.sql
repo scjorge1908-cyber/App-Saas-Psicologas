@@ -81,6 +81,47 @@ grant select on public.booking_links, public.booking_link_slots, public.booking_
 grant update (canceled_at) on public.booking_links to authenticated;           -- cancelar o link
 grant update (status, patient_id, decided_at) on public.booking_requests to authenticated; -- aprovar ou recusar
 
+-- Pedido só sai de "pendente" uma vez (aprovado ou recusado); ao decidir, o cadastro guardado no pedido é apagado
+-- (LGPD: aprovado, os dados já estão no paciente; recusado, não há motivo para guardar). Revisão de segurança, 28/10.
+create or replace function public.tg_booking_requests_decidir()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if old.status <> 'pendente' then
+    raise exception 'Este pedido já foi decidido.' using errcode = 'P0001';
+  end if;
+  if new.status not in ('aprovado', 'recusado') then
+    raise exception 'Pedido só pode ser aprovado ou recusado.' using errcode = '22023';
+  end if;
+  if new.status = 'aprovado' and new.patient_id is null then
+    raise exception 'Aprovar exige o paciente cadastrado.' using errcode = '22023';
+  end if;
+  new.decided_at := now();
+  new.patient_data := '{}'::jsonb;
+  return new;
+end $$;
+revoke execute on function public.tg_booking_requests_decidir() from public, anon, authenticated;
+create trigger booking_requests_decidir before update on public.booking_requests
+  for each row execute function public.tg_booking_requests_decidir();
+
+-- Link cancelado não volta a valer
+create or replace function public.tg_booking_links_cancelar()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if old.canceled_at is not null then
+    raise exception 'Este link já foi cancelado.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+revoke execute on function public.tg_booking_links_cancelar() from public, anon, authenticated;
+create trigger booking_links_cancelar before update on public.booking_links
+  for each row execute function public.tg_booking_links_cancelar();
+
 -- ----------------------------------------------------------------------------
 -- O horário está livre para a profissional? (sem sessão ativa, sem outro pedido
 -- pendente, sem bloqueio de agenda e no futuro)
@@ -245,10 +286,25 @@ begin
   select * into _s from public.booking_link_slots where link_id = _l.id and starts_at = p_starts_at;
   if not found then return jsonb_build_object('ok', false, 'state', 'horario_invalido'); end if;
 
-  -- Só os campos do cadastro, texto curto
+  -- Só os campos do cadastro, no mesmo formato que a tabela de pacientes aceita
+  -- (revisão de segurança, 28/10: um pedido que não pode ser aprovado gastaria o link)
   for _k, _v in select key, value #>> '{}' from jsonb_each(p_data) loop
     if _k = any(_permitidos) and _v is not null and btrim(_v) <> '' then
-      _d := _d || jsonb_build_object(_k, left(btrim(_v), 200));
+      _v := btrim(_v);
+      if (_k in ('payer_cpf') and _v !~ '^[0-9]{11}$')
+         or (_k = 'payer_cnpj' and _v !~ '^[0-9]{14}$')
+         or (_k = 'payer_phone' and _v !~ '^[0-9]{10,11}$')
+         or (_k = 'payer_cep' and _v !~ '^[0-9]{8}$')
+         or (_k = 'payer_uf' and _v !~ '^[A-Z]{2}$')
+         or (_k = 'payer_email' and _v !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$')
+         or (_k = 'nf_tomador' and _v not in ('paciente', 'outro'))
+         or (_k = 'payer_tipo' and _v not in ('pf', 'pj'))
+         or (_k in ('address_number', 'payer_number', 'payer_im') and char_length(_v) > 20)
+         or (_k in ('address_complement', 'neighborhood', 'city', 'payer_complement', 'payer_neighborhood', 'payer_city') and char_length(_v) > 100)
+         or char_length(_v) > 200 then
+        return jsonb_build_object('ok', false, 'state', 'dados_incompletos');
+      end if;
+      _d := _d || jsonb_build_object(_k, _v);
     end if;
   end loop;
 
@@ -263,9 +319,13 @@ begin
      or coalesce(_d->>'uf', '') !~ '^[A-Z]{2}$' then
     return jsonb_build_object('ok', false, 'state', 'dados_incompletos');
   end if;
-  if (_d->>'birth_date')::date > current_date or (_d->>'birth_date')::date < date '1900-01-01' then
-    return jsonb_build_object('ok', false, 'state', 'dados_incompletos');
-  end if;
+  begin
+    if (_d->>'birth_date')::date > current_date or (_d->>'birth_date')::date < date '1900-01-01' then
+      return jsonb_build_object('ok', false, 'state', 'dados_incompletos');
+    end if;
+  exception when others then
+    return jsonb_build_object('ok', false, 'state', 'dados_incompletos'); -- data que não existe (ex.: 31/02)
+  end;
 
   -- Trava a agenda da profissional enquanto confere (dois pedidos ao mesmo tempo)
   perform pg_advisory_xact_lock(hashtext(_l.owner_id::text));

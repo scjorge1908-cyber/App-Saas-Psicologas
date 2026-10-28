@@ -276,5 +276,7 @@ export async function listBookingRequests(): Promise<BookingRequest[]> {
   return check(await supabase.from('booking_requests').select('*').order('starts_at'));
 }
 export async function decideBookingRequest(id: string, status: Exclude<BookingStatus, 'pendente'>, patientId: string | null) {
-  check(await supabase.from('booking_requests').update({ status, patient_id: patientId, decided_at: new Date().toISOString() }).eq('id', id));
+  // Só decide o que ainda está pendente (duas abas não aprovam duas vezes)
+  const r = check(await supabase.from('booking_requests').update({ status, patient_id: patientId, decided_at: new Date().toISOString() }).eq('id', id).eq('status', 'pendente').select('id'));
+  if (!r || r.length === 0) throw new Error('Este pedido já foi decidido. Atualize a tela.');
 }

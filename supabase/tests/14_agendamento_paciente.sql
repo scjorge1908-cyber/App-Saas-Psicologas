@@ -44,6 +44,10 @@ create temp table dados as select jsonb_build_object(
   'city', 'Palhoça', 'uf', 'SC', 'status', 'inativo', 'owner_id', '00000000-0000-0000-0000-000000000000') as d;
 select tests.eq((public.request_booking((select t from tests.lk where k = 'L1'), (select (r -> 'slots' -> 0 ->> 'starts_at')::timestamptz from g),
   (select d - 'cpf' from dados)) ->> 'state'), 'dados_incompletos', 'Cadastro sem CPF é recusado');
+select tests.eq((public.request_booking((select t from tests.lk where k = 'L1'), date_trunc('day', now()) + interval '2 days 12 hours',
+  (select d || '{"payer_tipo": "xx", "nf_tomador": "outro"}'::jsonb from dados)) ->> 'state'), 'dados_incompletos', 'Campo da nota fora do formato é recusado (o pedido não poderia ser aprovado)');
+select tests.eq((public.request_booking((select t from tests.lk where k = 'L1'), date_trunc('day', now()) + interval '2 days 12 hours',
+  (select d || '{"birth_date": "1990-02-31"}'::jsonb from dados)) ->> 'state'), 'dados_incompletos', 'Data que não existe é recusada sem erro');
 select tests.eq((public.request_booking((select t from tests.lk where k = 'L1'), date_trunc('day', now()) + interval '2 days 13 hours', (select d from dados)) ->> 'state'),
   'ocupado', 'Horário ocupado por sessão é recusado');
 select tests.eq((public.request_booking((select t from tests.lk where k = 'L1'), date_trunc('day', now()) + interval '9 days', (select d from dados)) ->> 'state'),
@@ -64,7 +68,12 @@ select tests.eq((select count(*)::int from public.booking_requests where status 
 select tests.ok((select not (patient_data ? 'status') and not (patient_data ? 'owner_id') from public.booking_requests), 'Só os campos do cadastro são guardados');
 select tests.eq((select patient_data ->> 'full_name' from public.booking_requests), 'Maria Fictícia Souza', 'Cadastro guardado');
 select tests.throws($q$update public.booking_requests set starts_at = now() + interval '20 days'$q$, '42501', 'Não muda o horário do pedido (só aprova ou recusa)');
+select tests.throws($q$update public.booking_requests set status = 'aprovado'$q$, '22023', 'Aprovar sem paciente é recusado');
 select tests.eq(tests.affected($q$update public.booking_requests set status = 'recusado', decided_at = now()$q$), 1, 'Recusar o pedido');
+select tests.eq((select patient_data from public.booking_requests), '{}'::jsonb, 'Ao decidir, o cadastro guardado no pedido é apagado (LGPD)');
+select tests.throws($q$update public.booking_requests set status = 'pendente'$q$, 'P0001', 'Pedido decidido não volta para pendente');
+update public.booking_links set canceled_at = now() where id = (select link_id from public.booking_requests);
+select tests.throws($q$update public.booking_links set canceled_at = null where canceled_at is not null$q$, 'P0001', 'Link cancelado não volta a valer');
 reset role;
 select tests.login_anon();
 select tests.eq((jsonb_array_length(public.get_booking((select t from tests.lk where k = 'L2')) -> 'slots')), 1, 'Recusado: o horário volta a ficar livre');

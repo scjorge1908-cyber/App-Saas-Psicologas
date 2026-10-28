@@ -100,6 +100,8 @@ export function PatientForm({ open, onClose, patient, onSaved }: { open: boolean
     setBusy(true);
     try {
       const saved = await api.savePatient(payload);
+      // Guarda na hora o que foi salvo: reabrir "Editar cadastro" logo em seguida já mostra os dados novos
+      qc.setQueryData(['patient', saved.id], saved);
       await qc.invalidateQueries({ queryKey: ['patients'] });
       await qc.invalidateQueries({ queryKey: ['patient', saved.id] });
       onSaved?.(saved);

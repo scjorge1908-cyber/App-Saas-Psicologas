@@ -133,7 +133,7 @@ export function Panel({ title, actions, children, className, recolhivel, aberto,
   if (recolhivel && title) {
     // Seção que abre e fecha (Configurações): menos rolagem, uma coisa por vez
     return (
-      <details ref={detalhesRef} className={cx('cartao group', ok && 'border-livre bg-livre-fundo', className)} open={aberto}>
+      <details ref={detalhesRef} className={cx('cartao group', ok && 'border-2 border-livre! bg-livre-fundo!', className)} open={aberto}>
         <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
           <h2 className={cx('flex items-center gap-2 text-[1.0625rem] font-bold', ok && 'text-livre')}>
             {ok && <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden><circle cx="12" cy="12" r="9" /><path d="M8 12.3l2.6 2.6L16 9.5" /></svg>}

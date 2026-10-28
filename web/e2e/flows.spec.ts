@@ -3,6 +3,7 @@
  * Executa contra o app real + gateway local + Postgres com as migrations reais.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { completarPerfil } from './perfil';
 import { readFileSync } from 'node:fs';
 import { unzipSync, strFromU8 } from 'fflate';
 
@@ -50,6 +51,10 @@ async function signup(page: Page, name: string, email: string, crp: string) {
   await page.getByLabel('Cidade').fill('Palhoça');
   await page.getByLabel('UF').fill('SC');
   await page.getByRole('button', { name: 'Começar a usar' }).click();
+  // Perfil profissional obrigatório: sem ele completo o app fica em Configurações
+  await page.goto('/resumo');
+  await completarPerfil(page);
+  await page.goto('/');
   await expect(page).toHaveURL(/\/(resumo)?$/); // entra no app (tela inicial = Resumo do dia; a agenda fica no rodapé)
 }
 
@@ -68,12 +73,27 @@ test.beforeAll(async ({ browser }) => {
 test('cadastro, perfil e tela inicial', async () => {
   await signup(page, 'Ana Fictícia Teste', `ana.e2e.${RUN}@exemplo.invalid`, '12/345678');
   // O app abre no Resumo do dia; sem grade, a agenda convida a criar os horários e mostra os primeiros passos
-  await page.waitForURL(/\/resumo$/);
+  await page.goto('/resumo');
   await page.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Agenda', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Voltar ao Resumo' })).toBeVisible();
   await expect(page.getByText('Monte sua grade de horários')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Primeiros passos' })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/01-agenda-vazia.png`, fullPage: true });
+  // Configurações: sem o cartão "Agenda e atendimento"; trocar a senha pede a senha atual; "Esqueci a senha" manda o link
+  await page.goto('/configuracoes');
+  await expect(page.getByText('Agenda e atendimento')).toHaveCount(0);
+  await page.getByText('Segurança', { exact: true }).click();
+  const campo = (name: string) => page.getByRole('textbox', { name, exact: true });
+  await campo('Senha atual').fill('Senha-Errada-2026');
+  await campo('Nova senha').fill('Senha-Nova-Ficticia-2026');
+  await campo('Repita a nova senha').fill('Senha-Nova-Ficticia-2026');
+  await page.getByRole('button', { name: 'Alterar senha' }).click();
+  await expect(page.getByText(/Senha atual incorreta/)).toBeVisible();
+  await page.getByRole('button', { name: /Esqueci a senha/ }).click();
+  await expect(page.getByText(/um link para criar uma nova senha/)).toBeVisible();
+  await campo('Senha atual').fill('Senha-Ficticia-2026');
+  await page.getByRole('button', { name: 'Alterar senha' }).click();
+  await expect(page.getByText('Senha alterada')).toBeVisible();
 });
 
 test('cadastro de paciente com validação (o paciente nasce pelo agendamento)', async () => {
@@ -432,10 +452,14 @@ test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
   // Empresa (PJ): razão social e CNPJ válidos
   await page.getByRole('button', { name: 'Editar cadastro' }).click();
   await dlg.getByRole('radio', { name: /^Empresa/ }).click();
-  await dlg.getByLabel('Razão social').fill('Empresa Fictícia Ltda');
+  // CNPJ digitado → razão social automática (BrasilAPI simulada)
+  await page.route('https://brasilapi.com.br/**', (r) => r.fulfill({ json: { razao_social: 'Empresa Fictícia Ltda', nome_fantasia: 'Fictícia' } }));
   await dlg.getByLabel('CNPJ').fill('11.222.333/0001-82');
-  await expect(dlg.getByText(/falta: CNPJ válido/i)).toBeVisible();
+  await expect(dlg.getByText(/falta: .*CNPJ válido/i)).toBeVisible();
+  await expect(dlg.getByText('CNPJ inválido. Confira os números.')).toBeVisible();
   await dlg.getByLabel('CNPJ').fill('11.222.333/0001-81');
+  await expect(dlg.getByLabel('Razão social')).toHaveValue('Empresa Fictícia Ltda');
+  await expect(dlg.getByText(/Nome da empresa preenchido pelo CNPJ/)).toBeVisible();
   await expect(dlg.getByText('Dados completos para a nota fiscal (PJ).')).toBeVisible();
   await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
   await expect(dlg).toBeHidden();
@@ -585,6 +609,9 @@ test('bloqueio de agenda: folga amanhã some com os horários livres e avisa a s
   const amanha = tzDate(1);
   const ddmm = `${amanha.slice(8, 10)}/${amanha.slice(5, 7)}`;
   await page.goto('/agenda/horarios');
+  await expect(page.getByRole('heading', { name: 'Bloquear: férias, feriados, aniversário ou folgas' })).toBeVisible();
+  await page.getByRole('button', { name: 'O que acontece nos dias bloqueados' }).click();
+  await expect(page.getByText('Nos dias bloqueados a agenda não mostra horários livres e não deixa marcar sessão nova.')).toBeVisible();
   await page.getByRole('button', { name: 'Novo bloqueio' }).click();
   const dlg = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Novo bloqueio' }) });
   await dlg.getByLabel('Tipo').selectOption('folga');

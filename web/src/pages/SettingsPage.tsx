@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { publicOrigin, supabase } from '../lib/supabase';
 import type { Profile } from '../lib/types';
 import { errorMessage } from '../lib/errors';
-import { isValidCpf, normalizeCrp, onlyDigits, parseMoney, todayIn } from '../lib/format';
+import { formatCnpj, formatCpf, formatPhone, normalizeCrp, onlyDigits, todayIn } from '../lib/format';
+import { faltandoPerfil } from '../lib/perfil';
+import { formatarCep } from '../lib/cep';
+import { ENDERECO_VAZIO, EnderecoCampos, type Endereco } from '../components/patients/EnderecoCampos';
 import type { BackupProgress } from '../lib/backup';
 import { signOut, useAuth, useProfile } from '../auth/AuthProvider';
-import { Button, ErrorBox, Field, Loading, Notice, PageHeader, Panel, Select, TextField, useConfirm, useToast } from '../components/ui';
+import { Button, ErrorBox, Field, Loading, Notice, PageHeader, Panel, Select, Spinner, TextField, useConfirm, useToast } from '../components/ui';
+import { useCnpjAutomatico } from '../components/useCnpjAutomatico';
+import { mascararCnpj } from '../lib/mascaras';
 import { saveBlob } from '../components/patients/DocumentsTab';
 import { isDemo } from '../lib/demo/modo';
 import { atualizarPerfilDemo } from '../lib/demo/api-demo';
@@ -21,7 +26,6 @@ export function SettingsPage() {
       <PageHeader title="Configurações" />
       <AparenciaPanel />
       <ProfileForm profile={profile} />
-      <AgendaForm profile={profile} />
       <BackupPanel />
       <SecurityPanel />
       <Panel recolhivel title="Sobre e privacidade">
@@ -50,109 +54,80 @@ function useSaveProfile() {
   };
 }
 
+/**
+ * Perfil profissional (28/10): todos os campos são obrigatórios (só o complemento é opcional) e, sem ele completo,
+ * o resto do app não abre. Endereço pelo CEP (rua, bairro, cidade e UF vêm sozinhos), com número e complemento.
+ * O botão Salvar fica no fim do cartão; dá para voltar e alterar quando quiser.
+ */
 function ProfileForm({ profile }: { profile: Profile }) {
   const save = useSaveProfile();
   const [f, setF] = useState<Record<string, string>>({});
+  const [end, setEnd] = useState<Endereco>(ENDERECO_VAZIO);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setF({
-      full_name: profile.full_name, crp: profile.crp ?? '', cpf: profile.cpf ?? '', cnpj: profile.cnpj ?? '', fiscal_type: profile.fiscal_type,
-      contact_email: profile.contact_email ?? '', phone: profile.phone ?? '', address: profile.address ?? '', city: profile.city ?? '', uf: profile.uf ?? '',
+      full_name: profile.full_name, crp: profile.crp ?? '', cpf: formatCpf(profile.cpf), cnpj: formatCnpj(profile.cnpj), company_name: profile.company_name ?? '', fiscal_type: profile.fiscal_type,
+      contact_email: profile.contact_email ?? '', phone: formatPhone(profile.phone),
     });
+    setEnd({ cep: formatarCep(profile.cep ?? ''), street: profile.address ?? '', address_number: profile.address_number ?? '', address_complement: profile.address_complement ?? '',
+      neighborhood: profile.neighborhood ?? '', city: profile.city ?? '', uf: profile.uf ?? '' });
   }, [profile]);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
+  // CNPJ → razão social automática (28/10)
+  const cnpjAuto = useCnpjAutomatico(f.cnpj ?? '', f.company_name ?? '', (company_name) => setF((x) => ({ ...x, company_name })));
+  const dados = { ...f, fiscal_type: f.fiscal_type as Profile['fiscal_type'], cep: end.cep, address: end.street, address_number: end.address_number,
+    neighborhood: end.neighborhood, city: end.city, uf: end.uf };
+  const falta = faltandoPerfil(dados);
+  const salvoCompleto = faltandoPerfil(profile).length === 0;
+  const cartao = useRef<HTMLDetailsElement>(null);
 
   async function submit() {
     setError(null);
-    const crp = normalizeCrp(f.crp);
-    if (!crp) return setError('CRP inválido. Use o formato 06/123456.');
-    if (f.cpf && !isValidCpf(f.cpf)) return setError('CPF inválido.');
-    const cnpj = onlyDigits(f.cnpj);
-    if (cnpj && cnpj.length !== 14) return setError('CNPJ deve ter 14 números.');
-    const phone = onlyDigits(f.phone);
-    if (phone && (phone.length < 10 || phone.length > 11)) return setError('Telefone inválido.');
+    if (falta.length) return setError(`Para salvar, falta: ${falta.join(', ')}.`);
     setBusy(true);
-    await save(profile.id, {
-      full_name: f.full_name.trim(), crp, cpf: onlyDigits(f.cpf) || null, cnpj: cnpj || null, fiscal_type: f.fiscal_type as Profile['fiscal_type'],
-      contact_email: f.contact_email.trim() || null, phone: phone || null, address: f.address.trim() || null, city: f.city.trim() || null, uf: f.uf.trim().toUpperCase() || null,
+    const ok = await save(profile.id, {
+      full_name: f.full_name.trim(), crp: normalizeCrp(f.crp), cpf: onlyDigits(f.cpf), cnpj: f.fiscal_type === 'pj' ? onlyDigits(f.cnpj) : null, company_name: f.fiscal_type === 'pj' ? f.company_name.trim() : null,
+      fiscal_type: f.fiscal_type as Profile['fiscal_type'], contact_email: f.contact_email.trim(), phone: onlyDigits(f.phone),
+      cep: onlyDigits(end.cep), address: end.street.trim(), address_number: end.address_number.trim(), address_complement: end.address_complement.trim() || null,
+      neighborhood: end.neighborhood.trim(), city: end.city.trim(), uf: end.uf.trim().toUpperCase(),
     }, setError);
     setBusy(false);
+    // Salvou (28/10): o cartão fecha e fica verde, mostrando que o perfil está ok
+    if (ok && cartao.current) cartao.current.open = false;
   }
 
   return (
-    <Panel recolhivel aberto title="Perfil profissional" actions={<Button size="sm" busy={busy} onClick={submit}>Salvar perfil</Button>}>
+    <Panel recolhivel aberto={!salvoCompleto} ok={salvoCompleto} okTexto="Completo" detalhesRef={cartao} title="Perfil profissional">
       <div className="flex flex-col gap-4">
+        {!salvoCompleto && <Notice tone="ocre"><b>Complete o seu perfil profissional para liberar o app.</b> Todos os campos são obrigatórios (só o complemento é opcional).</Notice>}
         {error && <ErrorBox>{error}</ErrorBox>}
         <div className="grid gap-3 sm:grid-cols-2">
-          <TextField label="Nome completo" value={f.full_name ?? ''} onChange={set('full_name')} />
-          <TextField label="CRP" value={f.crp ?? ''} onChange={set('crp')} placeholder="06/123456" />
-          <TextField label="CPF" inputMode="numeric" value={f.cpf ?? ''} onChange={set('cpf')} hint="Aparece nos recibos." />
-          <Field label="Atuação fiscal">{(id) => (
+          <TextField label="Nome completo" required value={f.full_name ?? ''} onChange={set('full_name')} />
+          <TextField label="CRP" required value={f.crp ?? ''} onChange={set('crp')} placeholder="06/123456" />
+          <TextField label="CPF" required inputMode="numeric" value={f.cpf ?? ''} onChange={set('cpf')} hint="Aparece nos recibos." />
+          <Field label="Atuação fiscal" required>{(id) => (
             <Select id={id} value={f.fiscal_type} onChange={set('fiscal_type')}>
               <option value="pf">Pessoa física (autônoma, Receita Saúde)</option>
               <option value="pj">Pessoa jurídica (NFS-e)</option>
             </Select>
           )}</Field>
-          {f.fiscal_type === 'pj' && <TextField label="CNPJ" inputMode="numeric" value={f.cnpj ?? ''} onChange={set('cnpj')} />}
-          <TextField label="E-mail profissional" type="email" value={f.contact_email ?? ''} onChange={set('contact_email')} />
-          <TextField label="Telefone" inputMode="tel" value={f.phone ?? ''} onChange={set('phone')} />
-          <TextField label="Endereço do consultório" value={f.address ?? ''} onChange={set('address')} className="sm:col-span-2" />
-          <TextField label="Cidade" value={f.city ?? ''} onChange={set('city')} />
-          <TextField label="UF" maxLength={2} value={f.uf ?? ''} onChange={set('uf')} />
+          {f.fiscal_type === 'pj' && <>
+            <TextField label="CNPJ" required inputMode="numeric" value={f.cnpj ?? ''}
+              hint={cnpjAuto.buscando ? <span className="inline-flex items-center gap-1.5"><Spinner small /> Buscando o nome da empresa…</span> : cnpjAuto.aviso ?? 'Digite o CNPJ: a razão social vem sozinha.'}
+              onChange={(e) => { const cnpj = mascararCnpj(e.target.value); setF({ ...f, cnpj }); void cnpjAuto.aoMudarCnpj(cnpj); }} />
+            <TextField label="Razão social" required value={f.company_name ?? ''} onChange={set('company_name')} />
+          </>}
+          <TextField label="E-mail profissional" required type="email" value={f.contact_email ?? ''} onChange={set('contact_email')} />
+          <TextField label="Telefone" required inputMode="tel" placeholder="(48) 99999-9999" value={f.phone ?? ''} onChange={set('phone')} />
         </div>
-      </div>
-    </Panel>
-  );
-}
-
-function AgendaForm({ profile }: { profile: Profile }) {
-  const save = useSaveProfile();
-  const [f, setF] = useState<Record<string, string>>({});
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    setF({
-      session_minutes: String(profile.session_minutes), buffer_minutes: String(profile.buffer_minutes),
-      default_price: profile.default_price != null ? String(profile.default_price).replace('.', ',') : '',
-      cancellation_hours: String(profile.cancellation_hours), agenda_start: profile.agenda_start.slice(0, 5), agenda_end: profile.agenda_end.slice(0, 5),
-      timezone: profile.timezone, retention_years: String(profile.retention_years),
-    });
-  }, [profile]);
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
-
-  async function submit() {
-    setError(null);
-    const price = f.default_price ? parseMoney(f.default_price) : null;
-    if (f.default_price && price === null) return setError('Valor padrão inválido.');
-    if (f.agenda_end <= f.agenda_start) return setError('O fim do expediente deve ser depois do início.');
-    setBusy(true);
-    await save(profile.id, {
-      session_minutes: Number(f.session_minutes), buffer_minutes: Number(f.buffer_minutes), default_price: price,
-      cancellation_hours: Number(f.cancellation_hours), agenda_start: f.agenda_start, agenda_end: f.agenda_end,
-      timezone: f.timezone, retention_years: Number(f.retention_years),
-    }, setError);
-    setBusy(false);
-  }
-
-  return (
-    <Panel recolhivel title="Agenda e atendimento" actions={<Button size="sm" busy={busy} onClick={submit}>Salvar</Button>}>
-      <div className="flex flex-col gap-4">
-        {error && <ErrorBox>{error}</ErrorBox>}
-        <div className="grid gap-3 sm:grid-cols-3">
-          <TextField label="Duração padrão (min)" type="number" min={10} max={300} value={f.session_minutes ?? ''} onChange={set('session_minutes')} />
-          <TextField label="Intervalo entre sessões (min)" type="number" min={0} max={120} value={f.buffer_minutes ?? ''} onChange={set('buffer_minutes')} />
-          <TextField label="Valor padrão (R$)" inputMode="decimal" value={f.default_price ?? ''} onChange={set('default_price')} />
-          <TextField label="Início do expediente" type="time" value={f.agenda_start ?? ''} onChange={set('agenda_start')} />
-          <TextField label="Fim do expediente" type="time" value={f.agenda_end ?? ''} onChange={set('agenda_end')} />
-          <TextField label="Antecedência para cancelar (h)" type="number" min={0} max={168} value={f.cancellation_hours ?? ''} onChange={set('cancellation_hours')} hint="Cancelamentos pelo link com menos antecedência ficam sinalizados." />
-          <Field label="Fuso horário">{(id) => (
-            <Select id={id} value={f.timezone} onChange={set('timezone')}>
-              {['America/Sao_Paulo', 'America/Manaus', 'America/Cuiaba', 'America/Rio_Branco', 'America/Noronha', 'America/Belem', 'America/Fortaleza', 'America/Recife', 'America/Bahia', 'Europe/Lisbon'].map((z) => <option key={z} value={z}>{z.replace('_', ' ')}</option>)}
-            </Select>
-          )}</Field>
-          <TextField label="Guarda do prontuário (anos)" type="number" min={5} max={30} value={f.retention_years ?? ''} onChange={set('retention_years')} hint="Mínimo de 5 anos (Res. CFP 001/2009)." />
-        </div>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm font-bold text-tinta-2">Endereço do consultório</legend>
+          <p className="text-[0.8125rem] text-tinta-3">Digite o CEP: rua, bairro, cidade e UF vêm preenchidos. Depois coloque o número e, se tiver, o complemento.</p>
+          <EnderecoCampos valor={end} onChange={setEnd} obrigatorio />
+        </fieldset>
+        {falta.length > 0 && <p className="text-[0.8125rem] text-tinta-3">Falta: {falta.join(', ')}.</p>}
+        <Button busy={busy} onClick={submit} className="w-full">Salvar perfil</Button>
       </div>
     </Panel>
   );
@@ -210,34 +185,59 @@ function BackupPanel() {
   );
 }
 
+/**
+ * Segurança (28/10): para trocar a senha é preciso a senha atual (ter o app aberto não basta).
+ * Quem não lembra toca em "Esqueci a senha" e recebe no e-mail o link para criar outra.
+ */
 function SecurityPanel() {
   const toast = useToast();
+  const { session } = useAuth();
+  const email = session?.user.email ?? '';
+  const [atual, setAtual] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
   const [busy, setBusy] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function change() {
     setError(null);
-    if (pw.length < 10) return setError('Use pelo menos 10 caracteres.');
-    if (pw !== pw2) return setError('As senhas não coincidem.');
+    if (!atual) return setError('Digite a sua senha atual.');
+    if (pw.length < 10) return setError('A nova senha precisa ter pelo menos 10 caracteres.');
+    if (pw !== pw2) return setError('As senhas novas não coincidem.');
+    if (pw === atual) return setError('A nova senha precisa ser diferente da atual.');
+    if (isDemo()) return setError('Na demonstração a senha não muda.');
     setBusy(true);
+    // Confere a senha atual antes de trocar
+    const conf = await supabase.auth.signInWithPassword({ email, password: atual });
+    if (conf.error) { setBusy(false); return setError('Senha atual incorreta. Se não lembra, toque em "Esqueci a senha".'); }
     const { error } = await supabase.auth.updateUser({ password: pw });
     setBusy(false);
     if (error) return setError(errorMessage(error));
-    setPw(''); setPw2(''); toast('Senha alterada');
+    setAtual(''); setPw(''); setPw2(''); toast('Senha alterada');
+  }
+  async function esqueci() {
+    setError(null);
+    if (isDemo()) return setError('Na demonstração não há envio de e-mail.');
+    setEnviando(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${publicOrigin()}/redefinir-senha` });
+    setEnviando(false);
+    if (error) return setError(errorMessage(error));
+    setEnviado(true);
   }
   return (
     <Panel recolhivel title="Segurança">
       <div className="flex flex-col gap-3">
         {error && <ErrorBox>{error}</ErrorBox>}
+        {enviado && <Notice>Enviamos para <b>{email}</b> um link para criar uma nova senha. Confira também a caixa de spam.</Notice>}
+        <TextField label="Senha atual" required type="password" autoComplete="current-password" value={atual} onChange={(e) => setAtual(e.target.value)} />
         <div className="grid gap-3 sm:grid-cols-2">
-          <TextField label="Nova senha" type="password" autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} />
-          <TextField label="Repita a nova senha" type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
+          <TextField label="Nova senha" required type="password" autoComplete="new-password" hint="Pelo menos 10 caracteres." value={pw} onChange={(e) => setPw(e.target.value)} />
+          <TextField label="Repita a nova senha" required type="password" autoComplete="new-password" value={pw2} onChange={(e) => setPw2(e.target.value)} />
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" busy={busy} onClick={change}>Alterar senha</Button>
-          <Button variant="ghost" onClick={() => signOut()}>Sair da conta</Button>
-        </div>
+        <Button busy={busy} onClick={change} className="w-full">Alterar senha</Button>
+        <Button variant="ghost" busy={enviando} onClick={esqueci} className="w-full">Esqueci a senha (receber link no e-mail)</Button>
+        <Button variant="secondary" onClick={() => signOut()} className="w-full">Sair da conta</Button>
       </div>
     </Panel>
   );

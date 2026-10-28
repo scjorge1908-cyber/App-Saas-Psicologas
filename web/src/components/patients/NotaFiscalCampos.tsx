@@ -4,8 +4,10 @@
 // Usado no "Editar cadastro" e no cadastro de paciente novo feito pelo horário livre.
 import type { Patient } from '../../lib/types';
 import { isValidCnpj, isValidCpf, onlyDigits } from '../../lib/format';
-import { mascararCpf, mascararTelefone } from '../../lib/mascaras';
-import { Button, Notice, TextField, cx } from '../ui';
+import { mascararCnpj, mascararCpf, mascararTelefone } from '../../lib/mascaras';
+import { useRef } from 'react';
+import { Button, Notice, Spinner, TextField, cx } from '../ui';
+import { useCnpjAutomatico } from '../useCnpjAutomatico';
 import { EnderecoCampos, enderecoFaltando, enderecoParaPaciente, ENDERECO_VAZIO, type Endereco } from './EnderecoCampos';
 
 export type Tomador = 'paciente' | 'pf' | 'pj';
@@ -67,13 +69,13 @@ export function notaParaPaciente(n: NotaFiscal): Partial<Patient> {
   };
 }
 
-const mascararCnpj = (v: string) => {
-  const d = onlyDigits(v).slice(0, 14);
-  return d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
-};
 
 export function NotaFiscalCampos({ valor, onChange, paciente }: { valor: NotaFiscal; onChange: (n: NotaFiscal) => void; paciente: DadosPaciente }) {
   const set = (patch: Partial<NotaFiscal>) => onChange({ ...valor, ...patch });
+  // CNPJ digitado → razão social automática (28/10); usa o valor mais recente porque a busca demora
+  const ultimo = useRef(valor);
+  ultimo.current = valor;
+  const cnpjAuto = useCnpjAutomatico(valor.doc, valor.nome, (nome) => onChange({ ...ultimo.current, nome }));
   const pj = valor.tomador === 'pj';
   const falta = faltandoNota(valor, paciente);
   const opcoes: Array<[Tomador, string, string]> = [['paciente', 'O paciente', 'Pessoa física'], ['pf', 'Outra pessoa', 'Pessoa física (CPF)'], ['pj', 'Empresa', 'Pessoa jurídica (CNPJ)']];
@@ -104,7 +106,8 @@ export function NotaFiscalCampos({ valor, onChange, paciente }: { valor: NotaFis
           <div className="grid gap-3 sm:grid-cols-2">
             <TextField label={pj ? 'Razão social' : 'Nome completo de quem paga'} required value={valor.nome} onChange={(e) => set({ nome: e.target.value })} className="sm:col-span-2" />
             <TextField label={pj ? 'CNPJ' : 'CPF de quem paga'} required inputMode="numeric" value={valor.doc}
-              onChange={(e) => set({ doc: pj ? mascararCnpj(e.target.value) : mascararCpf(e.target.value) })} />
+              hint={pj ? (cnpjAuto.buscando ? <span className="inline-flex items-center gap-1.5"><Spinner small /> Buscando o nome da empresa…</span> : cnpjAuto.aviso ?? 'Digite o CNPJ: a razão social vem sozinha.') : undefined}
+              onChange={(e) => { const doc = pj ? mascararCnpj(e.target.value) : mascararCpf(e.target.value); set({ doc }); if (pj) void cnpjAuto.aoMudarCnpj(doc); }} />
             {pj
               ? <TextField label="Inscrição municipal" hint="Opcional; alguns municípios pedem." value={valor.im} onChange={(e) => set({ im: e.target.value })} />
               : <TextField label="Celular" inputMode="tel" placeholder="(48) 99999-9999" value={valor.phone} onChange={(e) => set({ phone: mascararTelefone(e.target.value) })} />}

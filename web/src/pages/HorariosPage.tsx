@@ -11,6 +11,7 @@ import { errorMessage } from '../lib/errors';
 import { Button, Dialog, ErrorBox, Field, Input, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
 import { IconCircleCheck, IconPencil, IconPlus, IconTrash } from '../components/icons';
 import { BloqueiosSecao } from '../components/agenda/Bloqueios';
+import { Bolinha, useInfo } from '../components/Bolinha';
 import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
 import { DarAltaDialog } from '../components/patients/DarAltaDialog';
 import type { AgendaItem } from '../lib/types';
@@ -20,25 +21,6 @@ import { addDays, todayIn, zonedToUtc } from '../lib/format';
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na segunda
 const CORES = ['#146C70', '#0B6E8A', '#B3541E', '#2F7D5B', '#9C2F6B', '#5B6472'];
-
-/**
- * Bolinha "i" (pedido do Jorge, 27/10): passando o mouse já mostra o conteúdo; um toque/clique deixa aberto;
- * outro toque/clique fecha. No celular, o toque abre e o segundo toque fecha.
- */
-function useInfo() {
-  const [fixo, setFixo] = useState(false);
-  const [hover, setHover] = useState(false);
-  return { aberto: fixo || hover, fixo, alternar: () => { if (fixo) { setFixo(false); setHover(false); } else setFixo(true); }, setHover };
-}
-function Bolinha({ info, rotulo, grande }: { info: ReturnType<typeof useInfo>; rotulo: string; grande?: boolean }) {
-  return (
-    <button type="button" onClick={info.alternar} aria-expanded={info.aberto} aria-label={rotulo} title={rotulo}
-      onPointerEnter={(e) => { if (e.pointerType === 'mouse') info.setHover(true); }}
-      onPointerLeave={(e) => { if (e.pointerType === 'mouse') info.setHover(false); }}
-      className={cx('grid shrink-0 place-items-center rounded-full border font-titulo font-bold italic text-anil-escuro hover:bg-anil-claro/50',
-        grande ? 'size-8 text-[0.9375rem]' : 'size-7 text-[0.8125rem]', info.fixo ? 'border-anil bg-anil-claro/60' : 'border-linha-forte bg-papel')}>i</button>
-  );
-}
 
 /**
  * Grava o turno já dividido em manhã, tarde e noite (regra do Jorge, 27/10): 07:00–21:00 vira três turnos.

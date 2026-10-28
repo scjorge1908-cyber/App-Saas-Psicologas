@@ -22,6 +22,25 @@ const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na seg
 const CORES = ['#146C70', '#0B6E8A', '#B3541E', '#2F7D5B', '#9C2F6B', '#5B6472'];
 
 /**
+ * Bolinha "i" (pedido do Jorge, 27/10): passando o mouse já mostra o conteúdo; um toque/clique deixa aberto;
+ * outro toque/clique fecha. No celular, o toque abre e o segundo toque fecha.
+ */
+function useInfo() {
+  const [fixo, setFixo] = useState(false);
+  const [hover, setHover] = useState(false);
+  return { aberto: fixo || hover, fixo, alternar: () => { if (fixo) { setFixo(false); setHover(false); } else setFixo(true); }, setHover };
+}
+function Bolinha({ info, rotulo, grande }: { info: ReturnType<typeof useInfo>; rotulo: string; grande?: boolean }) {
+  return (
+    <button type="button" onClick={info.alternar} aria-expanded={info.aberto} aria-label={rotulo} title={rotulo}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') info.setHover(true); }}
+      onPointerLeave={(e) => { if (e.pointerType === 'mouse') info.setHover(false); }}
+      className={cx('grid shrink-0 place-items-center rounded-full border font-titulo font-bold italic text-anil-escuro hover:bg-anil-claro/50',
+        grande ? 'size-8 text-[0.9375rem]' : 'size-7 text-[0.8125rem]', info.fixo ? 'border-anil bg-anil-claro/60' : 'border-linha-forte bg-papel')}>i</button>
+  );
+}
+
+/**
  * Grava o turno já dividido em manhã, tarde e noite (regra do Jorge, 27/10): 07:00–21:00 vira três turnos.
  * Com id, o 1º pedaço atualiza o turno existente e os outros entram como novos. Devolve quantos turnos ficaram.
  */
@@ -40,7 +59,7 @@ export function HorariosPage() {
   const horas = useQuery({ queryKey: ['working-hours'], queryFn: api.listWorkingHours });
   const [editLocal, setEditLocal] = useState<Partial<Location> | null>(null);
   const [editHora, setEditHora] = useState<Partial<WorkingHour> | null>(null);
-  const [info, setInfo] = useState(false);
+  const info = useInfo();
   const [editSlot, setEditSlot] = useState<{ h: WorkingHour; t: string; novo: string } | null>(null);
   const [slotBusy, setSlotBusy] = useState(false);
   const confirmar = useConfirm();
@@ -138,10 +157,9 @@ export function HorariosPage() {
       <header className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <h1 className="titulo-display text-[1.625rem] leading-tight">Grade e horários</h1>
-          <button type="button" onClick={() => setInfo((v) => !v)} aria-expanded={info} aria-label="O que é a grade?"
-            className="grid size-8 shrink-0 place-items-center rounded-full border border-linha-forte bg-papel font-titulo text-[0.9375rem] font-bold italic text-anil-escuro hover:bg-anil-claro/50">i</button>
+          <Bolinha info={info} rotulo="O que é a grade?" grande />
         </div>
-        {info && <p className="text-[0.9375rem] text-tinta-2">Gere os horários da sua rotina com os intervalos certos. A agenda usa esta grade.</p>}
+        {info.aberto && <p className="text-[0.9375rem] text-tinta-2">Gere os horários da sua rotina com os intervalos certos. A agenda usa esta grade.</p>}
       </header>
 
       {erro && <ErrorBox>{errorMessage(erro)}</ErrorBox>}
@@ -465,8 +483,9 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
   const [int, setInt] = useState(intPadrao);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
-  const [infoTurno, setInfoTurno] = useState(false);
-  const [infoPrevia, setInfoPrevia] = useState(false);
+  const infoTurno = useInfo();
+  const infoPrevia = useInfo();
+  const infoDias = useInfo();
   const salaSel = ativas.find((l) => l.id === localId) ?? ativas[0] ?? null;
   const semSala = ativas.length === 0;
   const alterna = (v: number) => setDias((d) => (d.includes(v) ? d.filter((x) => x !== v) : [...d, v]));
@@ -540,7 +559,19 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
 
       {/* Dias */}
       <div>
-        <div className="mb-2 flex items-center justify-between"><p className="font-bold">Dias de aplicação</p><span className="text-sm text-anil-escuro">{dias.length} {dias.length === 1 ? 'dia ativo' : 'dias ativos'}</span></div>
+        <div className="mb-2 flex items-center gap-2">
+          <p className="font-bold">Dias de aplicação</p>
+          <Bolinha info={infoDias} rotulo="Como ativar a sala nos dias" />
+          <span className="ml-auto text-sm text-anil-escuro">{dias.length} {dias.length === 1 ? 'dia ativo' : 'dias ativos'}</span>
+        </div>
+        {infoDias.aberto && (
+          <ol className="mb-2 flex list-decimal flex-col gap-0.5 rounded-campo bg-anil-claro/60 py-2.5 pl-8 pr-3 text-[0.875rem] text-sobre-anil-claro">
+            <li>Escolha a sala acima.</li>
+            <li>Toque nos dias em que vai atender: pode marcar <b>vários dias</b> de uma vez.</li>
+            <li>Escolha o turno (manhã, tarde ou noite) e ajuste início, término, duração e intervalo.</li>
+            <li>Toque em <b>Aplicar</b>: a sala fica ativa nesses dias e os horários aparecem em "Grade atual".</li>
+          </ol>
+        )}
         <div className="grid grid-cols-7 gap-1.5">
           {ORDEM_DIAS.map((d) => (
             <button key={d} type="button" aria-pressed={dias.includes(d)} onClick={() => alterna(d)}
@@ -557,10 +588,9 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
             <p className="rotulo">Turno de atendimento</p>
-            <button type="button" onClick={() => setInfoTurno((v) => !v)} aria-expanded={infoTurno} aria-label="Sobre o turno de atendimento"
-              className="grid size-7 shrink-0 place-items-center rounded-full border border-linha-forte bg-papel font-titulo text-[0.8125rem] font-bold italic text-anil-escuro hover:bg-anil-claro/50">i</button>
+            <Bolinha info={infoTurno} rotulo="Sobre o turno de atendimento" />
           </div>
-          {infoTurno && <p className="text-[0.8125rem] text-tinta-2">A grade vai das {GRADE_INICIO} às {GRADE_FIM}. Pode criar manhã, tarde e noite na mesma sala; sem espaço no dia, use outro dia.</p>}
+          {infoTurno.aberto && <p className="text-[0.8125rem] text-tinta-2">A grade vai das {GRADE_INICIO} às {GRADE_FIM}. Pode criar manhã, tarde e noite na mesma sala; sem espaço no dia, use outro dia.</p>}
         </div>
         <div role="tablist" aria-label="Turno" className="grid grid-cols-3 gap-1 rounded-campo bg-afundado p-1">
           {PERIODOS.map((p) => (
@@ -581,10 +611,9 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
         {/* Resumo na bolinha "i" ao lado do título (27/10), não fixo */}
         <div className="flex items-center gap-2">
           <p className="text-[1.125rem] font-bold">Pré-visualização da grade</p>
-          <button type="button" onClick={() => setInfoPrevia((v) => !v)} aria-expanded={infoPrevia} aria-label="Resumo da pré-visualização"
-            className="grid size-7 shrink-0 place-items-center rounded-full border border-linha-forte bg-papel font-titulo text-[0.8125rem] font-bold italic text-anil-escuro hover:bg-anil-claro/50">i</button>
+          <Bolinha info={infoPrevia} rotulo="Resumo da pré-visualização" />
         </div>
-        {infoPrevia && <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
+        {infoPrevia.aberto && <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
           <b className="num">{String(inicios.length).padStart(2, '0')} horários</b> de {dur} min{int ? <> com <b>{int} min</b> de intervalo</> : ' sem intervalo'}.
           Total útil: <b className="num">{Math.floor(util / 60)}h{util % 60 ? `${util % 60}` : ''}</b> de agenda{dias.length ? `, em ${ORDEM_DIAS.filter((d) => dias.includes(d)).map((d) => DIAS_SEMANA[d].slice(0, 3)).join(', ')}` : ''}. Vale para todas as semanas.
           {(() => { const g = dividirPorPeriodo(ini, fim, dur, int); return g.length > 1 ? <> Fica dividido em <b>{g.map((x) => PERIODOS.find((p) => p.id === x.periodo)!.nome).join(', ')}</b>.</> : null; })()}

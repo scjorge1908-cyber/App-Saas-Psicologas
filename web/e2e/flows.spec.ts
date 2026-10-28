@@ -293,6 +293,12 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.goto('/agenda/horarios');
   await page.getByLabel('Nome da sala').fill('Sala Fictícia');
   for (const d of ['Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']) await page.getByRole('button', { name: d, exact: true }).click();
+  // Bolinha "i" dos dias: orientação de como ativar a sala (vários dias, turno, Aplicar)
+  await page.getByRole('button', { name: 'Como ativar a sala nos dias' }).click();
+  await expect(page.getByText(/pode marcar/)).toBeVisible();
+  await page.getByRole('button', { name: 'Como ativar a sala nos dias' }).click();
+  await page.mouse.move(0, 0);
+  await expect(page.getByText(/pode marcar/)).toHaveCount(0);
   // A grade vai das 07:00 às 23:00
   await expect(page.getByText(/Pode criar manhã, tarde e noite/)).toHaveCount(0);
   await page.getByRole('button', { name: 'Sobre o turno de atendimento' }).click();

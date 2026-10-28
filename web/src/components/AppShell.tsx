@@ -4,6 +4,8 @@ import { cx } from './ui';
 import { IconCalendar, IconChevronLeft, IconClock, IconDoc, IconLogout, IconMoney, IconMore, IconPeople, IconReceipt, IconHelp, IconSettings, IconToday } from './icons';
 import { signOut, useProfile } from '../auth/AuthProvider';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { ligarPush } from '../lib/push';
 import { useDemo } from '../lib/demo/modo';
 import { Versao } from './Versao';
 import { BotaoAjuda, Passeio } from './ajuda/Ajuda';
@@ -39,6 +41,19 @@ export function AppShell() {
     if (!abriuNoResumo) { abriuNoResumo = true; if (loc.pathname === '/') nav('/resumo', { replace: true }); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Notificação no celular (28/10): registra o aparelho; tocar no aviso de pedido abre o pedido na Agenda
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!profile) return;
+    let desligar = () => {};
+    void ligarPush({
+      aoAbrirPedido: (id) => { void qc.invalidateQueries({ queryKey: ['booking-requests'] }); nav(id ? `/?pedido=${id}` : '/?pedidos=1'); },
+      aoReceber: () => { void qc.invalidateQueries({ queryKey: ['booking-requests'] }); },
+    }).then((f) => { desligar = f; }).catch(() => { /* sem notificação: o app segue normal */ });
+    return () => desligar();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   // Leva o foco ao conteúdo ao trocar de página (leitores de tela)
   useEffect(() => { mainRef.current?.focus(); window.scrollTo(0, 0); }, [loc.pathname]);

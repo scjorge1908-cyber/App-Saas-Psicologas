@@ -466,6 +466,7 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [infoTurno, setInfoTurno] = useState(false);
+  const [infoPrevia, setInfoPrevia] = useState(false);
   const salaSel = ativas.find((l) => l.id === localId) ?? ativas[0] ?? null;
   const semSala = ativas.length === 0;
   const alterna = (v: number) => setDias((d) => (d.includes(v) ? d.filter((x) => x !== v) : [...d, v]));
@@ -577,12 +578,17 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
 
       {/* Pré-visualização */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between"><p className="text-[1.125rem] font-bold">Pré-visualização da grade</p></div>
-        <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
+        {/* Resumo na bolinha "i" ao lado do título (27/10), não fixo */}
+        <div className="flex items-center gap-2">
+          <p className="text-[1.125rem] font-bold">Pré-visualização da grade</p>
+          <button type="button" onClick={() => setInfoPrevia((v) => !v)} aria-expanded={infoPrevia} aria-label="Resumo da pré-visualização"
+            className="grid size-7 shrink-0 place-items-center rounded-full border border-linha-forte bg-papel font-titulo text-[0.8125rem] font-bold italic text-anil-escuro hover:bg-anil-claro/50">i</button>
+        </div>
+        {infoPrevia && <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
           <b className="num">{String(inicios.length).padStart(2, '0')} horários</b> de {dur} min{int ? <> com <b>{int} min</b> de intervalo</> : ' sem intervalo'}.
           Total útil: <b className="num">{Math.floor(util / 60)}h{util % 60 ? `${util % 60}` : ''}</b> de agenda{dias.length ? `, em ${ORDEM_DIAS.filter((d) => dias.includes(d)).map((d) => DIAS_SEMANA[d].slice(0, 3)).join(', ')}` : ''}. Vale para todas as semanas.
           {(() => { const g = dividirPorPeriodo(ini, fim, dur, int); return g.length > 1 ? <> Fica dividido em <b>{g.map((x) => PERIODOS.find((p) => p.id === x.periodo)!.nome).join(', ')}</b>.</> : null; })()}
-        </p>
+        </p>}
         <ol className="flex flex-col">
           {inicios.map((t, i) => (
             <li key={t}>

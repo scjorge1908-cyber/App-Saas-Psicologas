@@ -301,6 +301,8 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
   await expect(page.getByText('A grade vai das 07:00 às 23:00. Ajuste o início e o término dentro desse horário.')).toBeVisible();
   await page.getByRole('tab', { name: 'Noite' }).click();
+  await expect(page.getByText(/horários de 50 min/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Resumo da pré-visualização' }).click();
   await expect(page.getByText(/horários de 50 min/)).toBeVisible();
   await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
   await expect(page.getByText(/Grade gerada/)).toBeVisible();

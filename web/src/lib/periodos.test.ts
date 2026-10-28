@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PERIODOS, gerarInicios, periodoDe } from './periodos';
+import { PERIODOS, dividirPorPeriodo, foraDaGrade, gerarInicios, periodoDe } from './periodos';
 
 describe('períodos de atendimento', () => {
   it('manhã 07–12, tarde 13–17, noite 18–22', () => {
@@ -16,5 +16,27 @@ describe('períodos de atendimento', () => {
     expect(periodoDe('08:10').nome).toBe('Manhã');
     expect(periodoDe('13:00:00').nome).toBe('Tarde');
     expect(periodoDe('19:00').nome).toBe('Noite');
+  });
+});
+
+describe('limite da grade (07:00–23:00)', () => {
+  it('aceita dentro e recusa fora', () => {
+    expect(foraDaGrade('07:00', '23:00')).toBeNull();
+    expect(foraDaGrade('18:00', '22:00')).toBeNull();
+    expect(foraDaGrade('06:30', '12:00')).toMatch(/07:00 às 23:00/);
+    expect(foraDaGrade('20:00', '23:30')).toMatch(/07:00 às 23:00/);
+  });
+});
+
+describe('turno dividido em manhã, tarde e noite', () => {
+  it('07:00–21:00 com 60 + 10 vira três turnos com os mesmos horários', () => {
+    const g = dividirPorPeriodo('07:00', '21:00', 60, 10);
+    expect(g.map((x) => [x.periodo, x.ini, x.fim])).toEqual([['manha', '07:00', '12:40'], ['tarde', '12:50', '18:30'], ['noite', '18:40', '20:50']]);
+    expect(g.flatMap((x) => x.inicios)).toEqual(gerarInicios('07:00', '21:00', 60, 10));
+    // cada pedaço, gerado de novo, dá exatamente os seus horários
+    for (const x of g) expect(gerarInicios(x.ini, x.fim, 60, 10)).toEqual(x.inicios);
+  });
+  it('turno só de manhã continua um só', () => {
+    expect(dividirPorPeriodo('07:00', '12:00', 50, 10)).toHaveLength(1);
   });
 });

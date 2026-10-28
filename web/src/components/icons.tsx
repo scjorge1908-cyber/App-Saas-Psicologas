@@ -60,3 +60,5 @@ export const IconDots = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><circ
 export const IconUserPlus = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><circle cx="9.5" cy="8" r="3.5" /><path d="M3 20c.8-3.6 3.4-5.5 6.5-5.5 1.6 0 3 .5 4.2 1.4M18.5 12.5v6M15.5 15.5h6" /></svg>);
 export const IconCircleCheck = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><circle cx="12" cy="12" r="8.5" /><path d="M8.5 12.3l2.3 2.3 4.7-4.9" /></svg>);
 export const IconHelp = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><circle cx="12" cy="12" r="9" /><path d="M9.6 9.3a2.5 2.5 0 014.8.9c0 1.7-2.4 2.2-2.4 3.6M12 17h.01" /></svg>);
+export const IconPencil = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M4 20h4L19 9l-4-4L4 16v4z" /><path d="M14 6l4 4" /></svg>);
+export const IconTrash = (p: SVGProps<SVGSVGElement>) => (<svg {...base(p)}><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>);

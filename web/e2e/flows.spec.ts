@@ -293,10 +293,35 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await page.goto('/agenda/horarios');
   await page.getByLabel('Nome da sala').fill('Sala Fictícia');
   for (const d of ['Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']) await page.getByRole('button', { name: d, exact: true }).click();
+  // Bolinha "i" dos dias: orientação de como ativar a sala (vários dias, turno, Aplicar)
+  await page.getByRole('button', { name: 'Como ativar a sala nos dias' }).click();
+  await expect(page.getByText(/pode marcar/)).toBeVisible();
+  await page.getByRole('button', { name: 'Como ativar a sala nos dias' }).click();
+  await page.mouse.move(0, 0);
+  await expect(page.getByText(/pode marcar/)).toHaveCount(0);
+  // A grade vai das 07:00 às 23:00
+  await expect(page.getByText(/Pode criar manhã, tarde e noite/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Sobre o turno de atendimento' }).click();
+  await expect(page.getByText(/Pode criar manhã, tarde e noite/)).toBeVisible();
+  await page.getByLabel('Início do turno').fill('06:00');
+  await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
+  await expect(page.getByText('A grade vai das 07:00 às 23:00. Ajuste o início e o término dentro desse horário.')).toBeVisible();
   await page.getByRole('tab', { name: 'Noite' }).click();
+  await expect(page.getByText(/horários de 50 min/)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Resumo da pré-visualização' }).click();
   await expect(page.getByText(/horários de 50 min/)).toBeVisible();
-  await page.getByRole('button', { name: 'Salvar e gerar grade' }).click();
+  await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
   await expect(page.getByText(/Grade gerada/)).toBeVisible();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Consultório criado com sucesso!' }) }).getByRole('button', { name: 'OK' }).click();
+  // Grade atual: lápis e lixeira em cada horário (muda/exclui só aquele horário)
+  await page.getByRole('button', { name: /^Excluir o horário das 19:00 de / }).first().click();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Excluir o horário das 19:00?' }) }).getByRole('button', { name: 'Excluir horário' }).click();
+  await expect(page.getByText('Horário das 19:00 excluído')).toBeVisible();
+  await page.getByRole('button', { name: /^Mudar o horário das 21:00 de / }).first().click();
+  const mh = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Mudar o horário das 21:00' }) });
+  await mh.getByLabel('Novo horário').fill('21:05');
+  await mh.getByRole('button', { name: 'Salvar horário' }).click();
+  await expect(page.getByText('Horário mudado de 21:00 para 21:05')).toBeVisible();
 
   await irParaAgenda(page);
   await expect(page.getByText('Carlos Silva').first()).toBeVisible(); // nome e último sobrenome
@@ -337,6 +362,28 @@ test('grade de horários, agenda em cards e mover sessão', async () => {
   await expect(wz.getByRole('button', { name: 'Abrir no WhatsApp' })).toBeVisible();
   await wz.getByRole('button', { name: 'Voltar' }).click();
   await wz.getByRole('button', { name: 'Fechar' }).first().click();
+  // Turno com paciente não muda nem sai inteiro: pede nova sala (Mover) ou alta
+  // Na mesma sala dá para criar outro turno (manhã) além da noite; o do Carlos (9h/10h) fica com paciente
+  await page.goto('/agenda/horarios');
+  for (const d of ['Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']) await page.getByRole('button', { name: d, exact: true }).click();
+  await page.getByRole('tab', { name: 'Manhã' }).click();
+  await page.getByRole('button', { name: 'Aplicar', exact: true }).click();
+  await expect(page.getByText(/Grade gerada: 7 dias/)).toBeVisible();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Consultório criado com sucesso!' }) }).getByRole('button', { name: 'OK' }).click();
+  // No cartão do dia: "+ Tarde" abre o Turno de atendimento já com o dia e a sala; Aplicar cria e mostra o popup
+  await page.getByRole('button', { name: /^Criar tarde na / }).first().click();
+  const nt = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: /^Criar tarde · / }) });
+  await expect(nt.getByLabel('Início do turno')).toHaveValue('13:00');
+  await nt.getByRole('button', { name: 'Aplicar' }).click();
+  await expect(page.getByRole('heading', { name: 'Consultório criado com sucesso!' })).toBeVisible();
+  await page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Consultório criado com sucesso!' }) }).getByRole('button', { name: 'OK' }).click();
+  const comPaciente = page.getByText(/^\d+ pacientes?$/).first();
+  await expect(comPaciente).toBeVisible();
+  await comPaciente.locator('xpath=..').getByRole('button', { name: 'Ajustar horário' }).click();
+  const tv = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: /^Este turno tem \d+ pacientes?$/ }) });
+  await expect(tv.getByRole('button', { name: 'Criar nova sala' })).toBeVisible();
+  await expect(tv.getByRole('button', { name: 'Dar alta' })).toBeVisible();
+  await tv.getByRole('button', { name: 'Voltar' }).click();
 });
 
 test('sessão registrada (atendida ou falta) sai da agenda e fica no histórico do paciente', async () => {
@@ -349,6 +396,11 @@ test('sessão registrada (atendida ou falta) sai da agenda e fica no histórico 
 });
 
 test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
+  // CEP que demora a responder (como no GitHub): o que foi digitado durante a busca não pode ser apagado
+  await page.route('https://viacep.com.br/**', async (r) => {
+    await new Promise((ok) => setTimeout(ok, 1500));
+    await r.fulfill({ json: { logradouro: 'Rua Najla Carone Guedert', bairro: 'Pagani', localidade: 'Palhoça', uf: 'SC' } });
+  });
   await page.goto(patientUrl);
   await page.getByRole('button', { name: 'Editar cadastro' }).click();
   const dlg = page.getByRole('dialog');
@@ -362,12 +414,16 @@ test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
   await dlg.getByRole('button', { name: /Repetir celular, e-mail e endereço/ }).click();
   await expect(dlg.getByLabel('Celular', { exact: true })).toHaveValue(/9999\D?0001$/);
   await dlg.getByLabel('E-mail (recebe a nota)').fill('maria@exemplo.invalid');
+  const cepPronto = page.waitForResponse(/viacep\.com\.br/);
   await dlg.getByRole('textbox', { name: 'CEP', exact: true }).last().fill('88132150');
   await dlg.getByRole('textbox', { name: 'Rua', exact: true }).last().fill('Rua Fictícia');
   await dlg.getByRole('textbox', { name: 'Número', exact: true }).last().fill('10');
   await dlg.getByRole('textbox', { name: 'Bairro', exact: true }).last().fill('Centro');
   await dlg.getByRole('textbox', { name: 'Cidade', exact: true }).last().fill('Palhoça');
   await dlg.getByRole('textbox', { name: 'UF', exact: true }).last().fill('SC');
+  await cepPronto;
+  await expect(dlg.getByRole('textbox', { name: 'Rua', exact: true }).last()).toHaveValue('Rua Fictícia');
+  await expect(dlg.getByRole('textbox', { name: 'Número', exact: true }).last()).toHaveValue('10');
   await expect(dlg.getByText('Dados completos para a nota fiscal (PF).')).toBeVisible();
   await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
   await expect(dlg).toBeHidden();

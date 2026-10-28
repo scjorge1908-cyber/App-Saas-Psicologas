@@ -1,20 +1,57 @@
 // "Grade e horários" (layout Stitch): gerador de grade por sala, dias, turno, duração e intervalo, com pré-visualização;
 // abaixo, a grade atual (cada bloco editável/excluível) e as salas. A agenda mostra os horários livres a partir daqui.
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { Location, Modality, WorkingHour } from '../lib/types';
 import { DIAS_SEMANA, faixaTexto } from '../lib/horarios';
-import { DURACOES, INTERVALOS, PERIODOS, gerarInicios, hhmm, periodoDe, type PeriodoId } from '../lib/periodos';
+import { GRADE_FIM, GRADE_INICIO, PERIODOS, dividirPorPeriodo, foraDaGrade, gerarInicios, hhmm, type PeriodoId } from '../lib/periodos';
 import { useProfile } from '../auth/AuthProvider';
 import { errorMessage } from '../lib/errors';
-import { Button, Dialog, ErrorBox, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
-import { IconChevronLeft, IconCircleCheck, IconPlus } from '../components/icons';
+import { Button, Dialog, ErrorBox, Field, Input, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
+import { IconCircleCheck, IconPencil, IconPlus, IconTrash } from '../components/icons';
 import { BloqueiosSecao } from '../components/agenda/Bloqueios';
+import { AppointmentSheet } from '../components/appointments/AppointmentSheet';
+import { DarAltaDialog } from '../components/patients/DarAltaDialog';
+import type { AgendaItem } from '../lib/types';
+import { referenciasDosAtivos } from '../lib/agenda-ativos';
+import { pacientesNoHorario, pacientesNoTurno, type PacienteNoTurno } from '../lib/grade-ocupada';
+import { addDays, todayIn, zonedToUtc } from '../lib/format';
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na segunda
 const CORES = ['#146C70', '#0B6E8A', '#B3541E', '#2F7D5B', '#9C2F6B', '#5B6472'];
+
+/**
+ * Bolinha "i" (pedido do Jorge, 27/10): passando o mouse já mostra o conteúdo; um toque/clique deixa aberto;
+ * outro toque/clique fecha. No celular, o toque abre e o segundo toque fecha.
+ */
+function useInfo() {
+  const [fixo, setFixo] = useState(false);
+  const [hover, setHover] = useState(false);
+  return { aberto: fixo || hover, fixo, alternar: () => { if (fixo) { setFixo(false); setHover(false); } else setFixo(true); }, setHover };
+}
+function Bolinha({ info, rotulo, grande }: { info: ReturnType<typeof useInfo>; rotulo: string; grande?: boolean }) {
+  return (
+    <button type="button" onClick={info.alternar} aria-expanded={info.aberto} aria-label={rotulo} title={rotulo}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') info.setHover(true); }}
+      onPointerLeave={(e) => { if (e.pointerType === 'mouse') info.setHover(false); }}
+      className={cx('grid shrink-0 place-items-center rounded-full border font-titulo font-bold italic text-anil-escuro hover:bg-anil-claro/50',
+        grande ? 'size-8 text-[0.9375rem]' : 'size-7 text-[0.8125rem]', info.fixo ? 'border-anil bg-anil-claro/60' : 'border-linha-forte bg-papel')}>i</button>
+  );
+}
+
+/**
+ * Grava o turno já dividido em manhã, tarde e noite (regra do Jorge, 27/10): 07:00–21:00 vira três turnos.
+ * Com id, o 1º pedaço atualiza o turno existente e os outros entram como novos. Devolve quantos turnos ficaram.
+ */
+async function salvarTurnoDividido(t: { id?: string; location_id: string; weekday: number; ini: string; fim: string; dur: number; int: number }): Promise<number> {
+  const pedacos = dividirPorPeriodo(t.ini, t.fim, t.dur, t.int);
+  if (pedacos.length === 0) throw new Error('Nenhum horário cabe nesse turno com essa duração.');
+  for (const [i, p] of pedacos.entries()) {
+    await api.saveWorkingHour({ ...(i === 0 && t.id ? { id: t.id } : {}), location_id: t.location_id, weekday: t.weekday, start_time: p.ini, end_time: p.fim, session_minutes: t.dur, buffer_minutes: t.int });
+  }
+  return pedacos.length;
+}
 
 export function HorariosPage() {
   const qc = useQueryClient();
@@ -22,7 +59,86 @@ export function HorariosPage() {
   const horas = useQuery({ queryKey: ['working-hours'], queryFn: api.listWorkingHours });
   const [editLocal, setEditLocal] = useState<Partial<Location> | null>(null);
   const [editHora, setEditHora] = useState<Partial<WorkingHour> | null>(null);
-  const { profile } = useProfile();
+  const info = useInfo();
+  const [editSlot, setEditSlot] = useState<{ h: WorkingHour; t: string; novo: string } | null>(null);
+  const [slotBusy, setSlotBusy] = useState(false);
+  const confirmar = useConfirm();
+  const avisar = useToast();
+  const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  // Pacientes na grade (27/10): turno com paciente não muda nem sai inteiro; horário com paciente não muda nem sai
+  const { profile, tz } = useProfile();
+  const hoje = todayIn(tz);
+  const fromA = zonedToUtc(addDays(hoje, -183), '00:00', tz);
+  const toA = zonedToUtc(addDays(hoje, 400), '00:00', tz);
+  const agenda = useQuery({ queryKey: ['agenda', fromA, toA], queryFn: () => api.listAgenda(fromA, toA) });
+  const pacientes = useQuery({ queryKey: ['patients'], queryFn: api.listPatients });
+  const agora = Date.now();
+  const itensAg = agenda.data ?? [];
+  const refs = referenciasDosAtivos((pacientes.data ?? []).filter((p) => p.status === 'ativo').map((p) => p.id), itensAg, agora, tz);
+  const ocupTurno = (h: WorkingHour) => pacientesNoTurno(h, itensAg, refs, agora, tz);
+  const ocupHorario = (h: WorkingHour, t: string, dur: number) => pacientesNoHorario(h, t, dur, itensAg, refs, agora, tz);
+  const ocupSala = (id: string) => {
+    const vistos = new Map<string, PacienteNoTurno>();
+    for (const d of ORDEM_DIAS) for (const p of pacientesNoTurno({ weekday: d, location_id: id, start_time: '00:00', end_time: '23:59' }, itensAg.filter((a) => a.location_id === id), refs, agora, tz)) vistos.set(p.patient_id, p);
+    return [...vistos.values()];
+  };
+  const carregandoOcup = agenda.isLoading || pacientes.isLoading;
+  const [travado, setTravado] = useState<{ titulo: string; texto: string; pacientes: PacienteNoTurno[] } | null>(null);
+  const [moverItem, setMoverItem] = useState<AgendaItem | null>(null);
+  const [alta, setAlta] = useState(false);
+  // Criar outro turno no mesmo dia e sala (27/10): "+ Tarde", "+ Noite" no cartão abrem o Turno de atendimento
+  const [novoTurno, setNovoTurno] = useState<{ weekday: number; location_id: string; periodo: PeriodoId } | null>(null);
+  const [sucesso, setSucesso] = useState<string | null>(null);
+  /** Períodos que ainda cabem no dia (a agenda é individual: não pode bater com turno de nenhuma sala). */
+  const periodosLivres = (d: number) => PERIODOS.filter((p) => !(horas.data ?? []).some((x) => x.weekday === d && mins(x.start_time) < mins(p.fim) && mins(x.end_time) > mins(p.inicio)));
+  const travarTurno = (h: WorkingHour, ps: PacienteNoTurno[]) => setTravado({
+    titulo: `Este turno tem ${ps.length} ${ps.length === 1 ? 'paciente' : 'pacientes'}`,
+    texto: `O turno de ${DIAS_SEMANA[h.weekday]} (${faixaTexto(h)}) não pode ser mudado nem excluído inteiro enquanto tiver paciente. Para mudar: crie uma nova sala, passe estes pacientes para ela (botão Mover) e depois ajuste esta sala. Para excluir tudo: dê alta aos pacientes antes.`,
+    pacientes: ps,
+  });
+  const travarHorario = (t: string, d: number, ps: PacienteNoTurno[]) => setTravado({
+    titulo: `O horário das ${t} tem paciente`,
+    texto: `Este horário de ${DIAS_SEMANA[d]} não pode ser mudado nem excluído enquanto tiver paciente. Passe o paciente para outro horário ou sala (botão Mover), ou dê alta.`,
+    pacientes: ps,
+  });
+
+  /** Tira só o horário t do bloco: o bloco vira até dois pedaços (antes e depois), com a mesma duração e intervalo. */
+  async function tirarHorario(h: WorkingHour, t: string) {
+    const dur = h.session_minutes ?? durPadrao; const int = h.buffer_minutes ?? intPadrao;
+    const ini = h.start_time.slice(0, 5); const fim = h.end_time.slice(0, 5);
+    const pedacos = [{ ini, fim: t }, { ini: hhmm(mins(t) + dur + int), fim }].filter((p) => gerarInicios(p.ini, p.fim, dur, int).length > 0);
+    const base = { location_id: h.location_id, weekday: h.weekday, session_minutes: h.session_minutes ?? null, buffer_minutes: h.buffer_minutes ?? null };
+    if (pedacos.length === 0) { await api.deleteWorkingHour(h.id); return; }
+    await api.saveWorkingHour({ id: h.id, ...base, start_time: pedacos[0].ini, end_time: pedacos[0].fim });
+    if (pedacos[1]) await api.saveWorkingHour({ ...base, start_time: pedacos[1].ini, end_time: pedacos[1].fim });
+  }
+  async function excluirHorario(h: WorkingHour, t: string, d: number) {
+    if (!(await confirmar({ title: `Excluir o horário das ${t}?`, body: `Só este horário sai da grade de ${DIAS_SEMANA[d]}. Os outros continuam. Sessões já marcadas não são apagadas.`, confirmLabel: 'Excluir horário', danger: true }))) return;
+    try { await tirarHorario(h, t); atualizar(); avisar(`Horário das ${t} excluído`); } catch (e) { avisar(errorMessage(e), 'erro'); }
+  }
+  async function mudarHorario() {
+    if (!editSlot) return;
+    const { h, t, novo } = editSlot;
+    if (!novo || novo === t) { setEditSlot(null); return; }
+    const dur = h.session_minutes ?? durPadrao; const int = h.buffer_minutes ?? intPadrao;
+    // Confere antes de mexer: o novo horário não pode bater com outro turno do mesmo dia (a regra do banco
+    // compara as faixas inteiras), considerando o turno atual já sem o horário que sai
+    const nIni = mins(novo); const nFim = nIni + dur;
+    const limite = foraDaGrade(novo, hhmm(nFim));
+    if (limite) { avisar(limite, 'erro'); return; }
+    const ini = h.start_time.slice(0, 5); const fim = h.end_time.slice(0, 5);
+    const pedacos = [[mins(ini), mins(t)], [mins(t) + dur + int, mins(fim)]].filter(([a, b]) => b > a);
+    const outras = (horas.data ?? []).filter((x) => x.weekday === h.weekday && x.id !== h.id).map((x) => [mins(x.start_time), mins(x.end_time)]);
+    if ([...pedacos, ...outras].some(([a, b]) => a < nFim && b > nIni)) {
+      avisar(`O horário das ${novo} bate com outro horário de ${DIAS_SEMANA[h.weekday]} (a agenda é individual, vale para todas as salas). Escolha outro, ou exclua o horário vizinho antes.`, 'erro'); return;
+    }
+    setSlotBusy(true);
+    try {
+      await tirarHorario(h, t);
+      await api.saveWorkingHour({ location_id: h.location_id, weekday: h.weekday, start_time: novo, end_time: hhmm(mins(novo) + dur), session_minutes: dur, buffer_minutes: 0 });
+      atualizar(); avisar(`Horário mudado de ${t} para ${novo}`); setEditSlot(null);
+    } catch (e) { atualizar(); avisar(errorMessage(e), 'erro'); } finally { setSlotBusy(false); }
+  }
   const durPadrao = profile?.session_minutes ?? 50;
   const intPadrao = profile?.buffer_minutes ?? 10;
   const atualizar = () => {
@@ -37,55 +153,92 @@ export function HorariosPage() {
 
   return (
     <div className="flex flex-col gap-5 pb-6">
-      <header className="flex items-center gap-2">
-        <Link to="/" className="grid size-11 shrink-0 place-items-center rounded-xl text-tinta-2 hover:bg-cinza-fundo" aria-label="Voltar para a agenda"><IconChevronLeft /></Link>
-        <div>
+      {/* Só o título; a explicação abre na bolinha "i" (pedido do Jorge, 27/10). O Voltar fica no fim da tela. */}
+      <header className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
           <h1 className="titulo-display text-[1.625rem] leading-tight">Grade e horários</h1>
-          <p className="text-[0.9375rem] text-tinta-2">Gere os horários da sua rotina com os intervalos certos. A agenda usa esta grade.</p>
+          <Bolinha info={info} rotulo="O que é a grade?" grande />
         </div>
+        {info.aberto && <p className="text-[0.9375rem] text-tinta-2">Gere os horários da sua rotina com os intervalos certos. A agenda usa esta grade.</p>}
       </header>
 
       {erro && <ErrorBox>{errorMessage(erro)}</ErrorBox>}
       {(locais.isLoading || horas.isLoading) && <Loading />}
 
       {locais.data && horas.data && (
-        <GeradorGrade locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onNovaSala={() => setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] })} onSaved={atualizar} />
+        <GeradorGrade locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onNovaSala={() => setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] })} onSaved={atualizar} onSucesso={setSucesso} />
       )}
 
-      {/* Grade atual: um card por bloco (sala + turno), por dia */}
+      {/* Grade atual (27/10): cartão igual ao da agenda (dia + sala, com o turno) e, em cada horário,
+          lápis para mudar só aquele horário e lixeira para excluir só ele — não o bloco todo */}
       {(horas.data ?? []).length > 0 && (
         <section aria-labelledby="t-semana" className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between">
-            <h2 id="t-semana" className="text-[1.125rem] font-bold">Grade atual</h2>
-            <span className="text-sm text-tinta-2">Toque num bloco para mudar ou excluir</span>
-          </div>
-          {ORDEM_DIAS.map((d) => {
+          <h2 id="t-semana" className="text-[1.125rem] font-bold">Grade atual</h2>
+          {ORDEM_DIAS.flatMap((d) => {
             const doDia = (horas.data ?? []).filter((h) => h.weekday === d);
-            if (doDia.length === 0) return null;
-            return (
-              <div key={d}>
-                <h3 className="mb-1.5 font-bold">{DIAS_SEMANA[d]}</h3>
-                <ul className="grid gap-2 sm:grid-cols-2">
-                  {doDia.map((h) => {
-                    const l = nomeLocal(h.location_id);
+            const salas = [...new Set(doDia.map((h) => h.location_id))];
+            return salas.map((sid) => {
+              const l = nomeLocal(sid);
+              const faixas = doDia.filter((h) => h.location_id === sid).sort((a, b) => a.start_time.localeCompare(b.start_time));
+              return (
+                <div key={`${d}-${sid}`} className="cartao flex flex-col gap-2 p-2.5 sm:p-3">
+                  <header className="flex items-center gap-2 border-b border-linha pb-2">
+                    <h3 className="text-[1.0625rem] font-extrabold">{DIAS_SEMANA[d]}</h3>
+                    <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-afundado px-2.5 py-0.5 text-[0.8125rem] font-bold text-tinta-2">
+                      <span aria-hidden className="size-2 rounded-full" style={{ background: l?.color ?? 'var(--color-anil)' }} />{l?.name ?? 'Sala'}
+                    </span>
+                  </header>
+                  {faixas.flatMap((h) => {
                     const dur = h.session_minutes ?? durPadrao; const int = h.buffer_minutes ?? intPadrao;
-                    const inicios = gerarInicios(h.start_time.slice(0, 5), h.end_time.slice(0, 5), dur, int);
+                    const noTurno = ocupTurno(h);
+                    // Mostra separado por manhã, tarde e noite, mesmo um turno antigo que atravessa os períodos (27/10)
+                    return dividirPorPeriodo(h.start_time.slice(0, 5), h.end_time.slice(0, 5), dur, int).map((g) => {
+                    const doGrupo = new Set(g.inicios.flatMap((t) => ocupHorario(h, t, dur).map((p) => p.patient_id)));
                     return (
-                      <li key={h.id}>
-                        <button type="button" onClick={() => setEditHora(h)} className="cartao pressionar flex w-full flex-col gap-1 border-l-4 border-l-livre px-4 py-3 text-left">
-                          <span className="flex items-center gap-2 font-bold">
-                            <span className="size-2.5 rounded-full" style={{ background: l?.color ?? 'var(--color-anil)' }} aria-hidden />
-                            {l?.name ?? 'Local'} · {periodoDe(h.start_time).nome}
-                          </span>
-                          <span className="num text-sm text-tinta-2">{faixaTexto(h)} · {dur} min{int ? ` + ${int} de intervalo` : ''}</span>
-                          <span className="num text-sm text-tinta-3">{inicios.length} {inicios.length === 1 ? 'horário' : 'horários'}: {inicios.join(', ')}</span>
-                        </button>
-                      </li>
+                      <div key={`${h.id}-${g.periodo}`} className="flex flex-col gap-1.5">
+                        <div className="flex items-baseline gap-x-1.5">
+                          <h4 className="rotulo text-tinta-3">{PERIODOS.find((p) => p.id === g.periodo)!.nome} <span className="num font-semibold normal-case tracking-normal">{g.ini}–{g.fim}</span></h4>
+                          {doGrupo.size > 0 && <span className="num text-[0.75rem] font-bold text-ag-pac">{doGrupo.size} {doGrupo.size === 1 ? 'paciente' : 'pacientes'}</span>}
+                          <button type="button" disabled={carregandoOcup} onClick={() => (noTurno.length ? travarTurno(h, noTurno) : setEditHora(h))} className="ml-auto min-h-9 px-1 text-[0.8125rem] font-bold text-anil-escuro underline-offset-2 hover:underline">Ajustar horário</button>
+                        </div>
+                        <ul className="flex flex-col gap-1.5">
+                          {g.inicios.map((t) => {
+                            const ps = ocupHorario(h, t, dur);
+                            const ocupado = ps.length > 0;
+                            const abrir = (acao: () => void) => () => (ocupado ? travarHorario(t, d, ps) : acao());
+                            return (
+                            <li key={t} className={cx('flex min-h-12 items-center gap-2 rounded-campo border-l-4 pl-2.5 pr-1.5',
+                              ocupado ? 'border-l-ag-pac-borda bg-ag-pac-fundo text-ag-pac' : 'border-l-ag-livre-borda bg-ag-livre-fundo text-ag-livre')}>
+                              <span className="num text-[1.0625rem] font-extrabold">{t}</span>
+                              <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold opacity-80">
+                                {ocupado ? ps.map((p) => p.nome).join(', ') : <span className="num">até {hhmm(Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5)) + dur)}</span>}
+                              </span>
+                              <button type="button" disabled={carregandoOcup} onClick={abrir(() => setEditSlot({ h, t, novo: t }))} aria-label={`Mudar o horário das ${t} de ${DIAS_SEMANA[d]}`} title="Mudar só este horário"
+                                className="pressionar grid size-10 place-items-center rounded-full border border-current/30 bg-papel disabled:opacity-40"><IconPencil className="size-[1.125rem]" /></button>
+                              <button type="button" disabled={carregandoOcup} onClick={abrir(() => excluirHorario(h, t, d))} aria-label={`Excluir o horário das ${t} de ${DIAS_SEMANA[d]}`} title="Excluir só este horário"
+                                className="pressionar grid size-10 place-items-center rounded-full border border-vermelho-forte/40 bg-papel text-vermelho disabled:opacity-40"><IconTrash className="size-[1.125rem]" /></button>
+                            </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
                     );
+                    });
                   })}
-                </ul>
-              </div>
-            );
+                  {periodosLivres(d).length > 0 && (
+                    <div className="flex flex-wrap gap-2 border-t border-linha pt-2">
+                      {periodosLivres(d).map((p) => (
+                        <button key={p.id} type="button" onClick={() => setNovoTurno({ weekday: d, location_id: sid, periodo: p.id })}
+                          aria-label={`Criar ${p.nome.toLowerCase()} na ${DIAS_SEMANA[d]}`}
+                          className="pressionar inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-full border border-dashed border-ag-livre-borda bg-ag-livre-fundo px-3 text-[0.9375rem] font-bold text-ag-livre">
+                          <IconPlus className="size-4" strokeWidth={2.4} /> {p.nome}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            });
           })}
         </section>
       )}
@@ -116,13 +269,59 @@ export function HorariosPage() {
       {/* Férias, feriados e folgas (27/10) */}
       <BloqueiosSecao />
 
-      <LocalDialog local={editLocal} onClose={() => setEditLocal(null)} onSaved={atualizar} />
+      <Dialog open={!!editSlot} onClose={() => setEditSlot(null)} title={editSlot ? `Mudar o horário das ${editSlot.t}` : ''} footer={<>
+        <Button variant="secondary" onClick={() => setEditSlot(null)}>Voltar</Button>
+        <Button busy={slotBusy} onClick={mudarHorario}>Salvar horário</Button>
+      </>}>
+        {editSlot && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm text-tinta-2">Muda só este horário de {DIAS_SEMANA[editSlot.h.weekday]}. Os outros horários do turno continuam iguais.</p>
+            <TextField label="Novo horário" type="time" step={300} value={editSlot.novo} onChange={(e) => setEditSlot({ ...editSlot, novo: e.target.value })} />
+          </div>
+        )}
+      </Dialog>
+      <Dialog open={!!travado} onClose={() => setTravado(null)} title={travado?.titulo ?? ''} footer={<>
+        <Button variant="secondary" onClick={() => setTravado(null)}>Voltar</Button>
+        <Button variant="secondary" onClick={() => { setTravado(null); setAlta(true); }}>Dar alta</Button>
+        <Button onClick={() => { setTravado(null); setEditLocal({ modality: 'presencial', color: CORES[lista.length % CORES.length] }); }}><IconPlus /> Criar nova sala</Button>
+      </>}>
+        {travado && (
+          <div className="flex flex-col gap-3">
+            <p className="text-[0.9375rem] text-tinta-2">{travado.texto}</p>
+            <ul className="flex flex-col gap-1.5">
+              {travado.pacientes.map((p) => (
+                <li key={p.patient_id} className="flex min-h-12 items-center gap-2 rounded-campo border-l-4 border-l-ag-pac-borda bg-ag-pac-fundo pl-2.5 pr-1.5 text-ag-pac">
+                  <span className="num font-extrabold">{p.hora}</span>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block truncate">{p.nome}</strong>
+                    {p.semHorario && <span className="block text-[0.75rem]">sem próximo horário</span>}
+                  </span>
+                  {!p.semHorario && <Button size="sm" variant="secondary" onClick={() => { setTravado(null); setMoverItem(p.item); }}>Mover</Button>}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Dialog>
+      <AppointmentSheet item={moverItem} mover onClose={() => { setMoverItem(null); atualizar(); }} />
+      <DarAltaDialog open={alta} onClose={() => { setAlta(false); atualizar(); }} />
+      <LocalDialog local={editLocal} ocupados={editLocal?.id ? ocupSala(editLocal.id) : []} onClose={() => setEditLocal(null)} onSaved={atualizar}
+        onTravado={(ps) => setTravado({ titulo: `Esta sala tem ${ps.length} ${ps.length === 1 ? 'paciente' : 'pacientes'}`,
+          texto: 'A sala não pode ser excluída enquanto tiver paciente. Crie uma nova sala e passe estes pacientes para ela (botão Mover), ou dê alta. Depois exclua esta sala.', pacientes: ps })} />
+      <NovoTurnoDialog alvo={novoTurno} locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onClose={() => setNovoTurno(null)}
+        onCriado={(msg) => { setNovoTurno(null); atualizar(); setSucesso(msg); }} />
+      <Dialog open={!!sucesso} onClose={() => setSucesso(null)} title="Consultório criado com sucesso!" footer={<Button onClick={() => setSucesso(null)} className="w-full">OK</Button>}>
+        <div className="flex flex-col items-center gap-3 py-2 text-center">
+          <span className="grid size-16 place-items-center rounded-full bg-livre-fundo text-livre"><IconCircleCheck className="size-9" /></span>
+          <p className="text-[0.9375rem] text-tinta-2">{sucesso}</p>
+        </div>
+      </Dialog>
       <HoraDialog hora={editHora} locais={lista} durPadrao={durPadrao} intPadrao={intPadrao} onClose={() => setEditHora(null)} onSaved={atualizar} />
     </div>
   );
 }
 
-function LocalDialog({ local, onClose, onSaved }: { local: Partial<Location> | null; onClose: () => void; onSaved: () => void }) {
+function LocalDialog({ local, ocupados, onClose, onSaved, onTravado }: { local: Partial<Location> | null; ocupados: PacienteNoTurno[]; onClose: () => void; onSaved: () => void; onTravado: (ps: PacienteNoTurno[]) => void }) {
   const confirm = useConfirm();
   const toast = useToast();
   const [form, setForm] = useState<Partial<Location>>({});
@@ -139,6 +338,7 @@ function LocalDialog({ local, onClose, onSaved }: { local: Partial<Location> | n
   });
 
   async function pedirExclusao() {
+    if (ocupados.length) { onClose(); onTravado(ocupados); return; }
     const ok = await confirm({ title: 'Excluir este local?', confirmLabel: 'Excluir', danger: true,
       body: 'Os horários deste local saem da semana. As sessões já marcadas continuam na agenda, só sem o local.' });
     if (ok) excluir.mutate();
@@ -194,15 +394,21 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
   if (hora !== aberto) { setAberto(hora); setForm(hora ? { ...hora, start_time: hora.start_time?.slice(0, 5), end_time: hora.end_time?.slice(0, 5) } : {}); }
 
   const salvar = useMutation({
-    mutationFn: () => api.saveWorkingHour({ id: form.id, weekday: form.weekday ?? 1, start_time: form.start_time ?? '', end_time: form.end_time ?? '', location_id: form.location_id ?? '',
-      session_minutes: form.session_minutes ?? durPadrao, buffer_minutes: form.buffer_minutes ?? intPadrao }),
+    mutationFn: () => salvarTurnoDividido({ id: form.id, weekday: form.weekday ?? 1, ini: form.start_time ?? '', fim: form.end_time ?? '', location_id: form.location_id ?? '',
+      dur: form.session_minutes ?? durPadrao, int: form.buffer_minutes ?? intPadrao }),
     onSuccess: () => { onSaved(); toast('Horário salvo'); onClose(); },
   });
   const excluir = useMutation({
     mutationFn: () => api.deleteWorkingHour(form.id!),
     onSuccess: () => { onSaved(); toast('Horário excluído'); onClose(); },
   });
-  function enviar(e: FormEvent) { e.preventDefault(); salvar.mutate(); }
+  const [limite, setLimite] = useState<string | null>(null);
+  function enviar(e: FormEvent) {
+    e.preventDefault();
+    const fora = foraDaGrade(form.start_time ?? '', form.end_time ?? '');
+    setLimite(fora);
+    if (!fora) salvar.mutate();
+  }
 
   return (
     <Dialog open={!!hora} onClose={onClose} title={form.id ? 'Editar bloco da grade' : 'Novo bloco da grade'}
@@ -212,6 +418,7 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
         <Button type="submit" form="form-hora" busy={salvar.isPending}>Salvar</Button>
       </>}>
       <form id="form-hora" onSubmit={enviar} className="flex flex-col gap-4" noValidate>
+        {limite && <ErrorBox>{limite}</ErrorBox>}
         {(salvar.error || excluir.error) && <ErrorBox>{errorMessage(salvar.error ?? excluir.error)}</ErrorBox>}
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-bold text-tinta-2">Dia da semana</span>
@@ -220,8 +427,8 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
           </Select>
         </label>
         <div className="grid grid-cols-2 gap-3">
-          <TextField label="Início" type="time" step={300} required value={form.start_time ?? ''} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
-          <TextField label="Fim" type="time" step={300} required value={form.end_time ?? ''} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+          <TextField label="Início" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} required value={form.start_time ?? ''} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+          <TextField label="Fim" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} required value={form.end_time ?? ''} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
         </div>
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-bold text-tinta-2">Local</span>
@@ -229,8 +436,8 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
             {locais.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </Select>
         </label>
-        <Escolha rotulo="Duração da sessão" valores={DURACOES} valor={form.session_minutes ?? durPadrao} sufixo="min" onChange={(v) => setForm({ ...form, session_minutes: v })} />
-        <Escolha rotulo="Intervalo entre sessões" valores={INTERVALOS} valor={form.buffer_minutes ?? intPadrao} sufixo="min" onChange={(v) => setForm({ ...form, buffer_minutes: v })} />
+        <Passo rotulo="Duração da sessão" valor={form.session_minutes ?? durPadrao} min={10} max={300} onChange={(v) => setForm({ ...form, session_minutes: v })} />
+        <Passo rotulo="Intervalo entre sessões" valor={form.buffer_minutes ?? intPadrao} min={0} max={120} onChange={(v) => setForm({ ...form, buffer_minutes: v })} />
         {form.start_time && form.end_time && (
           <p className="num text-sm text-tinta-2">Horários: {gerarInicios(form.start_time, form.end_time, form.session_minutes ?? durPadrao, form.buffer_minutes ?? intPadrao).join(', ') || 'nenhum cabe nesse período'}</p>
         )}
@@ -240,27 +447,31 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
 }
 
 /** Linha de botões de escolha única (duração, intervalo). */
-function Escolha({ rotulo, valores, valor, sufixo, onChange }: { rotulo: string; valores: number[]; valor: number; sufixo: string; onChange: (v: number) => void }) {
+/** Campo de minutos com – e + (pedido do Jorge, 27/10): digita ou sobe/desce de 5 em 5. */
+function Passo({ rotulo, valor, min, max, onChange }: { rotulo: string; valor: number; min: number; max: number; onChange: (v: number) => void }) {
+  const limitar = (v: number) => Math.min(max, Math.max(min, Number.isFinite(v) ? Math.round(v) : min));
+  const btn = 'pressionar grid size-12 shrink-0 place-items-center rounded-full border border-linha-forte bg-papel text-[1.375rem] font-bold text-anil-escuro disabled:opacity-40';
   return (
-    <fieldset>
-      <legend className="rotulo mb-2">{rotulo}</legend>
-      <div className="flex flex-wrap gap-2">
-        {valores.map((v) => (
-          <button key={v} type="button" aria-pressed={valor === v} onClick={() => onChange(v)}
-            className={cx('num min-h-11 min-w-16 rounded-full border px-3 font-bold', valor === v ? 'border-anil bg-anil-claro text-sobre-anil-claro' : 'border-linha-forte text-tinta-2')}>
-            {v === 0 ? 'Sem' : `${v} ${sufixo}`}
-          </button>
-        ))}
-      </div>
-    </fieldset>
+    <Field label={rotulo}>
+      {(id) => (
+        <div className="flex items-center gap-2">
+          <button type="button" className={btn} aria-label={`Diminuir ${rotulo.toLowerCase()}`} disabled={valor <= min} onClick={() => onChange(limitar(valor - 5))}>–</button>
+          <div className="relative min-w-0 flex-1">
+            <Input id={id} type="number" inputMode="numeric" min={min} max={max} step={5} value={valor}
+              onChange={(e) => onChange(limitar(Number(e.target.value)))} className="num pr-12 text-center text-[1.125rem] font-bold" />
+            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-tinta-3">min</span>
+          </div>
+          <button type="button" className={btn} aria-label={`Aumentar ${rotulo.toLowerCase()}`} disabled={valor >= max} onClick={() => onChange(limitar(valor + 5))}>+</button>
+        </div>
+      )}
+    </Field>
   );
 }
 
 /** Gerador de grade (layout Stitch): sala, dias, turno com início/término, duração, intervalo e pré-visualização. */
-function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
-  locais: Location[]; durPadrao: number; intPadrao: number; onNovaSala: () => void; onSaved: () => void;
+function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSucesso }: {
+  locais: Location[]; durPadrao: number; intPadrao: number; onNovaSala: () => void; onSaved: () => void; onSucesso: (msg: string) => void;
 }) {
-  const toast = useToast();
   const ativas = locais.filter((l) => l.active);
   const [localId, setLocalId] = useState('');
   const [novoLocal, setNovoLocal] = useState('Sala 1');
@@ -272,6 +483,9 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
   const [int, setInt] = useState(intPadrao);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const infoTurno = useInfo();
+  const infoPrevia = useInfo();
+  const infoDias = useInfo();
   const salaSel = ativas.find((l) => l.id === localId) ?? ativas[0] ?? null;
   const semSala = ativas.length === 0;
   const alterna = (v: number) => setDias((d) => (d.includes(v) ? d.filter((x) => x !== v) : [...d, v]));
@@ -287,6 +501,8 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
     if (semSala && !novoLocal.trim()) return setErro('Dê um nome para a sala.');
     if (dias.length === 0) return setErro('Escolha pelo menos um dia.');
     if (!ini || !fim || fim <= ini) return setErro('O término precisa ser depois do início.');
+    const limite = foraDaGrade(ini, fim);
+    if (limite) return setErro(limite);
     if (inicios.length === 0) return setErro('Nenhum horário cabe nesse turno com essa duração.');
     setSalvando(true);
     try {
@@ -295,22 +511,23 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
       let criados = 0;
       for (const d of ORDEM_DIAS.filter((x) => dias.includes(x))) {
         try {
-          await api.saveWorkingHour({ location_id: id, weekday: d, start_time: ini, end_time: fim, session_minutes: dur, buffer_minutes: int });
+          await salvarTurnoDividido({ location_id: id, weekday: d, ini, fim, dur, int });
           criados++;
         } catch (e) { falhas.push(`${DIAS_SEMANA[d]}: ${errorMessage(e)}`); }
       }
       onSaved();
-      if (falhas.length === 0) toast(`Grade gerada: ${criados} ${criados === 1 ? 'dia' : 'dias'} × ${inicios.length} horários`);
+      if (falhas.length === 0) onSucesso(`Grade gerada: ${criados} ${criados === 1 ? 'dia' : 'dias'} × ${inicios.length} horários. Veja em "Grade atual".`);
       else setErro(`Gerados: ${criados}. Não deu para gerar em ${falhas.join(' · ')}`);
     } catch (e) { setErro(errorMessage(e)); } finally { setSalvando(false); }
   }
 
   return (
-    <section className="flex flex-col gap-4" aria-labelledby="t-gerar">
-      <div>
-        <span className="inline-flex h-7 items-center rounded-full bg-livre-fundo px-3 text-[0.75rem] font-bold text-livre">Gerador de horários</span>
-        <h2 id="t-gerar" className="mt-2 text-[1.25rem] font-bold leading-tight">Configurar regras de atendimento</h2>
-      </div>
+    <section className="flex flex-col gap-4" aria-label="Gerador de horários">
+      {/* "Criar consultório" no lugar do selo "Gerador de horários" e do título (27/10) */}
+      <button type="button" onClick={onNovaSala}
+        className="pressionar inline-flex min-h-11 items-center gap-1.5 self-start rounded-full bg-livre-fundo px-4 text-[0.9375rem] font-bold text-livre hover:brightness-95">
+        <IconPlus className="size-4" strokeWidth={2.4} /> Criar consultório
+      </button>
       {erro && <ErrorBox>{erro}</ErrorBox>}
 
       {/* Sala */}
@@ -319,25 +536,42 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
         {semSala ? (
           <TextField label="Nome da sala" required maxLength={80} value={novoLocal} onChange={(e) => setNovoLocal(e.target.value)} hint="Ex.: Sala 1, Sala 2 ou On-line." />
         ) : (
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          // Salas em quadrados do mesmo tamanho, até 3 por linha; as demais descem (nunca rolagem para o lado) — 27/10
+          <div className="grid grid-cols-3 gap-2">
             {ativas.map((l) => {
               const sel = l.id === salaSel?.id;
               return (
                 <button key={l.id} type="button" aria-pressed={sel} onClick={() => setLocalId(l.id)}
-                  className={cx('flex min-h-16 min-w-36 shrink-0 items-center gap-2 rounded-cartao border px-3 text-left', sel ? 'btn-degrade border-transparent shadow-elevado' : 'border-linha bg-papel')}>
+                  className={cx('flex aspect-square min-w-0 flex-col items-center justify-center gap-1 rounded-cartao border p-2 text-center', sel ? 'btn-degrade border-transparent shadow-elevado' : 'border-linha bg-papel')}>
                   <span className="size-2.5 shrink-0 rounded-full" style={{ background: sel ? 'currentColor' : l.color ?? 'var(--color-anil)' }} aria-hidden />
-                  <span className="min-w-0"><span className="block truncate font-bold">{l.name}</span><span className="block text-[0.75rem] opacity-80">{l.modality === 'online' ? 'On-line' : 'Presencial'}</span></span>
+                  <span className="w-full break-words text-[0.9375rem] font-bold leading-tight [overflow-wrap:anywhere]">{l.name}</span>
+                  <span className="text-[0.75rem] opacity-80">{l.modality === 'online' ? 'On-line' : 'Presencial'}</span>
                 </button>
               );
             })}
-            <button type="button" onClick={onNovaSala} className="flex min-h-16 shrink-0 items-center gap-1.5 rounded-cartao border border-dashed border-linha-forte px-3 font-bold text-anil-escuro"><IconPlus className="size-5" /> Sala</button>
+            <button type="button" onClick={onNovaSala} aria-label="Nova sala"
+              className="flex aspect-square min-w-0 flex-col items-center justify-center gap-1 rounded-cartao border border-dashed border-linha-forte p-2 font-bold text-anil-escuro">
+              <IconPlus className="size-6" /> <span className="text-[0.8125rem]">Sala</span>
+            </button>
           </div>
         )}
       </div>
 
       {/* Dias */}
       <div>
-        <div className="mb-2 flex items-center justify-between"><p className="font-bold">Dias de aplicação</p><span className="text-sm text-anil-escuro">{dias.length} {dias.length === 1 ? 'dia ativo' : 'dias ativos'}</span></div>
+        <div className="mb-2 flex items-center gap-2">
+          <p className="font-bold">Dias de aplicação</p>
+          <Bolinha info={infoDias} rotulo="Como ativar a sala nos dias" />
+          <span className="ml-auto text-sm text-anil-escuro">{dias.length} {dias.length === 1 ? 'dia ativo' : 'dias ativos'}</span>
+        </div>
+        {infoDias.aberto && (
+          <ol className="mb-2 flex list-decimal flex-col gap-0.5 rounded-campo bg-anil-claro/60 py-2.5 pl-8 pr-3 text-[0.875rem] text-sobre-anil-claro">
+            <li>Escolha a sala acima.</li>
+            <li>Toque nos dias em que vai atender: pode marcar <b>vários dias</b> de uma vez.</li>
+            <li>Escolha o turno (manhã, tarde ou noite) e ajuste início, término, duração e intervalo.</li>
+            <li>Toque em <b>Aplicar</b>: a sala fica ativa nesses dias e os horários aparecem em "Grade atual".</li>
+          </ol>
+        )}
         <div className="grid grid-cols-7 gap-1.5">
           {ORDEM_DIAS.map((d) => (
             <button key={d} type="button" aria-pressed={dias.includes(d)} onClick={() => alterna(d)}
@@ -350,7 +584,14 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
 
       {/* Turno */}
       <div className="cartao flex flex-col gap-4 p-4">
-        <p className="rotulo">Turno de atendimento</p>
+        {/* Explicação na bolinha "i" ao lado do título (27/10), não fixa no cartão */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <p className="rotulo">Turno de atendimento</p>
+            <Bolinha info={infoTurno} rotulo="Sobre o turno de atendimento" />
+          </div>
+          {infoTurno.aberto && <p className="text-[0.8125rem] text-tinta-2">A grade vai das {GRADE_INICIO} às {GRADE_FIM}. Pode criar manhã, tarde e noite na mesma sala; sem espaço no dia, use outro dia.</p>}
+        </div>
         <div role="tablist" aria-label="Turno" className="grid grid-cols-3 gap-1 rounded-campo bg-afundado p-1">
           {PERIODOS.map((p) => (
             <button key={p.id} role="tab" type="button" aria-selected={turno === p.id} onClick={() => escolheTurno(p.id)}
@@ -358,20 +599,25 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
           ))}
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <TextField label="Início do turno" type="time" step={300} value={ini} onChange={(e) => setIni(e.target.value)} />
-          <TextField label="Término previsto" type="time" step={300} value={fim} onChange={(e) => setFim(e.target.value)} />
+          <TextField label="Início do turno" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={ini} onChange={(e) => setIni(e.target.value)} />
+          <TextField label="Término previsto" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={fim} onChange={(e) => setFim(e.target.value)} />
         </div>
-        <Escolha rotulo={`Duração por consulta · ${dur} min`} valores={DURACOES} valor={dur} sufixo="min" onChange={setDur} />
-        <Escolha rotulo={`Intervalo entre sessões · ${int} min`} valores={INTERVALOS} valor={int} sufixo="min" onChange={setInt} />
+        <Passo rotulo="Duração por consulta" valor={dur} min={10} max={300} onChange={setDur} />
+        <Passo rotulo="Intervalo entre sessões" valor={int} min={0} max={120} onChange={setInt} />
       </div>
 
       {/* Pré-visualização */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between"><p className="text-[1.125rem] font-bold">Pré-visualização da grade</p></div>
-        <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
+        {/* Resumo na bolinha "i" ao lado do título (27/10), não fixo */}
+        <div className="flex items-center gap-2">
+          <p className="text-[1.125rem] font-bold">Pré-visualização da grade</p>
+          <Bolinha info={infoPrevia} rotulo="Resumo da pré-visualização" />
+        </div>
+        {infoPrevia.aberto && <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
           <b className="num">{String(inicios.length).padStart(2, '0')} horários</b> de {dur} min{int ? <> com <b>{int} min</b> de intervalo</> : ' sem intervalo'}.
           Total útil: <b className="num">{Math.floor(util / 60)}h{util % 60 ? `${util % 60}` : ''}</b> de agenda{dias.length ? `, em ${ORDEM_DIAS.filter((d) => dias.includes(d)).map((d) => DIAS_SEMANA[d].slice(0, 3)).join(', ')}` : ''}. Vale para todas as semanas.
-        </p>
+          {(() => { const g = dividirPorPeriodo(ini, fim, dur, int); return g.length > 1 ? <> Fica dividido em <b>{g.map((x) => PERIODOS.find((p) => p.id === x.periodo)!.nome).join(', ')}</b>.</> : null; })()}
+        </p>}
         <ol className="flex flex-col">
           {inicios.map((t, i) => (
             <li key={t}>
@@ -388,8 +634,63 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
         </ol>
       </div>
 
-      <Button onClick={salvar} busy={salvando} className="min-h-14 w-full text-[1rem]">Salvar e gerar grade</Button>
+      {/* "Aplicar" (27/10): cria os horários; eles aparecem logo abaixo, em "Grade atual", com lápis e lixeira em cada um */}
+      <Button onClick={salvar} busy={salvando} className="min-h-14 w-full text-[1rem]">Aplicar</Button>
       <Button variant="secondary" onClick={restaurar} className="w-full">Restaurar padrão</Button>
     </section>
+  );
+}
+
+/** "+ Tarde" / "+ Noite" no cartão da Grade atual (27/10): o mesmo Turno de atendimento, já com o dia, a sala e o período. */
+function NovoTurnoDialog({ alvo, locais, durPadrao, intPadrao, onClose, onCriado }: {
+  alvo: { weekday: number; location_id: string; periodo: PeriodoId } | null; locais: Location[]; durPadrao: number; intPadrao: number;
+  onClose: () => void; onCriado: (msg: string) => void;
+}) {
+  const [aberto, setAberto] = useState<typeof alvo>(null);
+  const [ini, setIni] = useState(''); const [fim, setFim] = useState('');
+  const [dur, setDur] = useState(durPadrao); const [int, setInt] = useState(intPadrao);
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+  if (alvo !== aberto) {
+    setAberto(alvo);
+    if (alvo) { const p = PERIODOS.find((x) => x.id === alvo.periodo)!; setIni(p.inicio); setFim(p.fim); setDur(durPadrao >= 60 ? 60 : durPadrao); setInt(intPadrao); setErro(null); }
+  }
+  const p = alvo ? PERIODOS.find((x) => x.id === alvo.periodo)! : null;
+  const sala = locais.find((l) => l.id === alvo?.location_id);
+  const inicios = ini && fim ? gerarInicios(ini, fim, dur, int) : [];
+  async function aplicar() {
+    if (!alvo) return;
+    setErro(null);
+    if (!ini || !fim || fim <= ini) return setErro('O término precisa ser depois do início.');
+    const limite = foraDaGrade(ini, fim);
+    if (limite) return setErro(limite);
+    if (inicios.length === 0) return setErro('Nenhum horário cabe nesse turno com essa duração.');
+    setSalvando(true);
+    try {
+      await salvarTurnoDividido({ location_id: alvo.location_id, weekday: alvo.weekday, ini, fim, dur, int });
+      onCriado(`${p!.nome} de ${DIAS_SEMANA[alvo.weekday]} na ${sala?.name ?? 'sala'}: ${inicios.length} horários (${ini}–${fim}).`);
+    } catch (e) { setErro(errorMessage(e)); } finally { setSalvando(false); }
+  }
+  return (
+    <Dialog open={!!alvo} onClose={onClose} title={p && alvo ? `Criar ${p.nome.toLowerCase()} · ${DIAS_SEMANA[alvo.weekday]}` : ''} footer={<>
+      <Button variant="secondary" onClick={onClose}>Voltar</Button>
+      <Button busy={salvando} onClick={aplicar}>Aplicar</Button>
+    </>}>
+      {alvo && p && (
+        <div className="flex flex-col gap-4">
+          {erro && <ErrorBox>{erro}</ErrorBox>}
+          <p className="rotulo">Turno de atendimento · {sala?.name ?? 'Sala'}</p>
+          <div className="grid grid-cols-2 gap-3">
+            <TextField label="Início do turno" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={ini} onChange={(e) => setIni(e.target.value)} />
+            <TextField label="Término previsto" type="time" step={300} min={GRADE_INICIO} max={GRADE_FIM} value={fim} onChange={(e) => setFim(e.target.value)} />
+          </div>
+          <Passo rotulo="Duração por consulta" valor={dur} min={10} max={300} onChange={setDur} />
+          <Passo rotulo="Intervalo entre sessões" valor={int} min={0} max={120} onChange={setInt} />
+          <p className="num rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
+            <b>{inicios.length} horários</b>{inicios.length ? `: ${inicios.join(', ')}` : ' — nenhum cabe nesse período'}
+          </p>
+        </div>
+      )}
+    </Dialog>
   );
 }

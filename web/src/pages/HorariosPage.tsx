@@ -1,7 +1,6 @@
 // "Grade e horários" (layout Stitch): gerador de grade por sala, dias, turno, duração e intervalo, com pré-visualização;
 // abaixo, a grade atual (cada bloco editável/excluível) e as salas. A agenda mostra os horários livres a partir daqui.
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { Location, Modality, WorkingHour } from '../lib/types';
@@ -10,7 +9,7 @@ import { DURACOES, INTERVALOS, PERIODOS, gerarInicios, hhmm, periodoDe, type Per
 import { useProfile } from '../auth/AuthProvider';
 import { errorMessage } from '../lib/errors';
 import { Button, Dialog, ErrorBox, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
-import { IconChevronLeft, IconCircleCheck, IconPlus } from '../components/icons';
+import { IconCircleCheck, IconPlus } from '../components/icons';
 import { BloqueiosSecao } from '../components/agenda/Bloqueios';
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na segunda
@@ -22,6 +21,7 @@ export function HorariosPage() {
   const horas = useQuery({ queryKey: ['working-hours'], queryFn: api.listWorkingHours });
   const [editLocal, setEditLocal] = useState<Partial<Location> | null>(null);
   const [editHora, setEditHora] = useState<Partial<WorkingHour> | null>(null);
+  const [info, setInfo] = useState(false);
   const { profile } = useProfile();
   const durPadrao = profile?.session_minutes ?? 50;
   const intPadrao = profile?.buffer_minutes ?? 10;
@@ -37,12 +37,14 @@ export function HorariosPage() {
 
   return (
     <div className="flex flex-col gap-5 pb-6">
-      <header className="flex items-center gap-2">
-        <Link to="/" className="grid size-11 shrink-0 place-items-center rounded-xl text-tinta-2 hover:bg-cinza-fundo" aria-label="Voltar para a agenda"><IconChevronLeft /></Link>
-        <div>
+      {/* Só o título; a explicação abre na bolinha "i" (pedido do Jorge, 27/10). O Voltar fica no fim da tela. */}
+      <header className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
           <h1 className="titulo-display text-[1.625rem] leading-tight">Grade e horários</h1>
-          <p className="text-[0.9375rem] text-tinta-2">Gere os horários da sua rotina com os intervalos certos. A agenda usa esta grade.</p>
+          <button type="button" onClick={() => setInfo((v) => !v)} aria-expanded={info} aria-label="O que é a grade?"
+            className="grid size-8 shrink-0 place-items-center rounded-full border border-linha-forte bg-papel font-titulo text-[0.9375rem] font-bold italic text-anil-escuro hover:bg-anil-claro/50">i</button>
         </div>
+        {info && <p className="text-[0.9375rem] text-tinta-2">Gere os horários da sua rotina com os intervalos certos. A agenda usa esta grade.</p>}
       </header>
 
       {erro && <ErrorBox>{errorMessage(erro)}</ErrorBox>}
@@ -306,11 +308,12 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
   }
 
   return (
-    <section className="flex flex-col gap-4" aria-labelledby="t-gerar">
-      <div>
-        <span className="inline-flex h-7 items-center rounded-full bg-livre-fundo px-3 text-[0.75rem] font-bold text-livre">Gerador de horários</span>
-        <h2 id="t-gerar" className="mt-2 text-[1.25rem] font-bold leading-tight">Configurar regras de atendimento</h2>
-      </div>
+    <section className="flex flex-col gap-4" aria-label="Gerador de horários">
+      {/* "Criar consultório" no lugar do selo "Gerador de horários" e do título (27/10) */}
+      <button type="button" onClick={onNovaSala}
+        className="pressionar inline-flex min-h-11 items-center gap-1.5 self-start rounded-full bg-livre-fundo px-4 text-[0.9375rem] font-bold text-livre hover:brightness-95">
+        <IconPlus className="size-4" strokeWidth={2.4} /> Criar consultório
+      </button>
       {erro && <ErrorBox>{erro}</ErrorBox>}
 
       {/* Sala */}
@@ -319,18 +322,23 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved }: {
         {semSala ? (
           <TextField label="Nome da sala" required maxLength={80} value={novoLocal} onChange={(e) => setNovoLocal(e.target.value)} hint="Ex.: Sala 1, Sala 2 ou On-line." />
         ) : (
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          // Salas em quadrados do mesmo tamanho, até 3 por linha; as demais descem (nunca rolagem para o lado) — 27/10
+          <div className="grid grid-cols-3 gap-2">
             {ativas.map((l) => {
               const sel = l.id === salaSel?.id;
               return (
                 <button key={l.id} type="button" aria-pressed={sel} onClick={() => setLocalId(l.id)}
-                  className={cx('flex min-h-16 min-w-36 shrink-0 items-center gap-2 rounded-cartao border px-3 text-left', sel ? 'btn-degrade border-transparent shadow-elevado' : 'border-linha bg-papel')}>
+                  className={cx('flex aspect-square min-w-0 flex-col items-center justify-center gap-1 rounded-cartao border p-2 text-center', sel ? 'btn-degrade border-transparent shadow-elevado' : 'border-linha bg-papel')}>
                   <span className="size-2.5 shrink-0 rounded-full" style={{ background: sel ? 'currentColor' : l.color ?? 'var(--color-anil)' }} aria-hidden />
-                  <span className="min-w-0"><span className="block truncate font-bold">{l.name}</span><span className="block text-[0.75rem] opacity-80">{l.modality === 'online' ? 'On-line' : 'Presencial'}</span></span>
+                  <span className="w-full break-words text-[0.9375rem] font-bold leading-tight [overflow-wrap:anywhere]">{l.name}</span>
+                  <span className="text-[0.75rem] opacity-80">{l.modality === 'online' ? 'On-line' : 'Presencial'}</span>
                 </button>
               );
             })}
-            <button type="button" onClick={onNovaSala} className="flex min-h-16 shrink-0 items-center gap-1.5 rounded-cartao border border-dashed border-linha-forte px-3 font-bold text-anil-escuro"><IconPlus className="size-5" /> Sala</button>
+            <button type="button" onClick={onNovaSala} aria-label="Nova sala"
+              className="flex aspect-square min-w-0 flex-col items-center justify-center gap-1 rounded-cartao border border-dashed border-linha-forte p-2 font-bold text-anil-escuro">
+              <IconPlus className="size-6" /> <span className="text-[0.8125rem]">Sala</span>
+            </button>
           </div>
         )}
       </div>

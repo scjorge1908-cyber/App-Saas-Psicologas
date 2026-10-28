@@ -83,13 +83,15 @@ export function AppShell() {
       </header>
       <div className="hidden justify-end px-6 pt-4 text-anil-escuro lg:flex"><BotaoAjuda className="hover:bg-anil-claro/60" /><BotaoAvisos className="hover:bg-anil-claro/60" /></div>
       <main id="conteudo" ref={mainRef} tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 pb-28 pt-5 outline-none sm:px-6 lg:pb-12 lg:pt-2">
-        {/* Em toda tela: voltar ao Resumo do dia (pedido do Jorge, 27/10) */}
-        {loc.pathname !== '/resumo' && (
-          <NavLink to="/resumo" className="mb-3 inline-flex min-h-11 items-center gap-1.5 rounded-full border border-linha bg-papel px-3.5 text-[0.875rem] font-bold text-anil-escuro shadow-cartao hover:bg-anil-claro/50">
-            <IconChevronLeft className="size-4" /> Voltar ao Resumo
-          </NavLink>
-        )}
         <Outlet />
+        {/* Em toda tela: voltar ao Resumo do dia, sempre no fim da tela (pedidos do Jorge, 27/10) */}
+        {loc.pathname !== '/resumo' && (
+          <div className="mt-8 flex justify-center">
+            <NavLink to="/resumo" className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-linha bg-papel px-4 text-[0.875rem] font-bold text-anil-escuro shadow-cartao hover:bg-anil-claro/50">
+              <IconChevronLeft className="size-4" /> Voltar ao Resumo
+            </NavLink>
+          </div>
+        )}
         <Versao className="mt-10" />
       </main>
       </div>

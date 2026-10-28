@@ -27,6 +27,11 @@ export interface Profile {
   address: string | null;
   city: string | null;
   uf: string | null;
+  /** Endereço do consultório (28/10): CEP, número, complemento e bairro; a rua fica em address. */
+  cep?: string | null;
+  address_number?: string | null;
+  address_complement?: string | null;
+  neighborhood?: string | null;
   timezone: string;
   session_minutes: number;
   buffer_minutes: number;
@@ -143,7 +148,7 @@ export interface WorkingHour {
 }
 
 /** Bloqueio de agenda (férias, feriado, folga). Sem horário = dia inteiro. */
-export type BlockKind = 'ferias' | 'feriado' | 'folga' | 'outro';
+export type BlockKind = 'ferias' | 'feriado' | 'folga' | 'aniversario' | 'outro';
 export interface ScheduleBlock {
   id: string;
   kind: BlockKind;

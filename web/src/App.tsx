@@ -18,6 +18,7 @@ import { TermsPage } from './pages/TermsPage';
 import { WelcomePage } from './pages/WelcomePage';
 import { HorariosPage } from './pages/HorariosPage';
 import { ProntuarioPage } from './pages/ProntuarioPage';
+import { faltandoPerfil } from './lib/perfil';
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading, recovering } = useAuth();
@@ -29,6 +30,8 @@ function RequireAuth({ children }: { children: ReactNode }) {
   if (error) return <div className="p-6"><ErrorBox>Não foi possível carregar seu perfil. Recarregue a página.</ErrorBox></div>;
   // Só o nome é pedido no começo; o CRP é pedido quando ela for emitir documento.
   if (profile && !profile.onboarded_at) return <OnboardingPage />;
+  // Perfil profissional obrigatório (28/10): incompleto, só Configurações (e a Ajuda) abrem
+  if (profile && faltandoPerfil(profile).length && !['/configuracoes', '/ajuda'].includes(loc.pathname)) return <Navigate to="/configuracoes" replace />;
   return <>{children}</>;
 }
 

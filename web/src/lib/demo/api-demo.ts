@@ -51,8 +51,10 @@ const atraso = () => new Promise((r) => setTimeout(r, 120)); // dá a sensação
 function montarStore(): Store {
   const hoje = todayIn(tz);
   const perfil: Profile = {
-    id: DEMO_USER_ID, full_name: 'Ana Ribeiro (demonstração)', crp: '12/34567', cpf: null, cnpj: null, fiscal_type: 'pf',
-    contact_email: 'ana.demo@exemplo.com', phone: '48999990000', address: null, city: 'Florianópolis', uf: 'SC',
+    id: DEMO_USER_ID, full_name: 'Ana Ribeiro (demonstração)', crp: '12/34567', cpf: '52998224725', cnpj: null, fiscal_type: 'pf',
+    contact_email: 'ana.demo@exemplo.com', phone: '48999990000', city: 'Florianópolis', uf: 'SC',
+    // perfil completo (fictício): sem ele o app não abre (28/10)
+    cep: '88010000', address: 'Rua Fictícia', address_number: '100', address_complement: null, neighborhood: 'Centro',
     timezone: tz, session_minutes: 50, buffer_minutes: 10, default_price: 180, cancellation_hours: 24,
     agenda_start: '07:00', agenda_end: '21:00', retention_years: 5, onboarded_at: agora(),
   };

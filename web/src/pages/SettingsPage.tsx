@@ -4,7 +4,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { Profile } from '../lib/types';
 import { errorMessage } from '../lib/errors';
-import { isValidCpf, normalizeCrp, onlyDigits, parseMoney, todayIn } from '../lib/format';
+import { formatCnpj, formatCpf, formatPhone, normalizeCrp, onlyDigits, parseMoney, todayIn } from '../lib/format';
+import { faltandoPerfil } from '../lib/perfil';
+import { formatarCep } from '../lib/cep';
+import { ENDERECO_VAZIO, EnderecoCampos, type Endereco } from '../components/patients/EnderecoCampos';
 import type { BackupProgress } from '../lib/backup';
 import { signOut, useAuth, useProfile } from '../auth/AuthProvider';
 import { Button, ErrorBox, Field, Loading, Notice, PageHeader, Panel, Select, TextField, useConfirm, useToast } from '../components/ui';
@@ -50,57 +53,70 @@ function useSaveProfile() {
   };
 }
 
+/**
+ * Perfil profissional (28/10): todos os campos são obrigatórios (só o complemento é opcional) e, sem ele completo,
+ * o resto do app não abre. Endereço pelo CEP (rua, bairro, cidade e UF vêm sozinhos), com número e complemento.
+ * O botão Salvar fica no fim do cartão; dá para voltar e alterar quando quiser.
+ */
 function ProfileForm({ profile }: { profile: Profile }) {
   const save = useSaveProfile();
   const [f, setF] = useState<Record<string, string>>({});
+  const [end, setEnd] = useState<Endereco>(ENDERECO_VAZIO);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setF({
-      full_name: profile.full_name, crp: profile.crp ?? '', cpf: profile.cpf ?? '', cnpj: profile.cnpj ?? '', fiscal_type: profile.fiscal_type,
-      contact_email: profile.contact_email ?? '', phone: profile.phone ?? '', address: profile.address ?? '', city: profile.city ?? '', uf: profile.uf ?? '',
+      full_name: profile.full_name, crp: profile.crp ?? '', cpf: formatCpf(profile.cpf), cnpj: formatCnpj(profile.cnpj), fiscal_type: profile.fiscal_type,
+      contact_email: profile.contact_email ?? '', phone: formatPhone(profile.phone),
     });
+    setEnd({ cep: formatarCep(profile.cep ?? ''), street: profile.address ?? '', address_number: profile.address_number ?? '', address_complement: profile.address_complement ?? '',
+      neighborhood: profile.neighborhood ?? '', city: profile.city ?? '', uf: profile.uf ?? '' });
   }, [profile]);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
+  const dados = { ...f, fiscal_type: f.fiscal_type as Profile['fiscal_type'], cep: end.cep, address: end.street, address_number: end.address_number,
+    neighborhood: end.neighborhood, city: end.city, uf: end.uf };
+  const falta = faltandoPerfil(dados);
+  const salvoCompleto = faltandoPerfil(profile).length === 0;
 
   async function submit() {
     setError(null);
-    const crp = normalizeCrp(f.crp);
-    if (!crp) return setError('CRP inválido. Use o formato 06/123456.');
-    if (f.cpf && !isValidCpf(f.cpf)) return setError('CPF inválido.');
-    const cnpj = onlyDigits(f.cnpj);
-    if (cnpj && cnpj.length !== 14) return setError('CNPJ deve ter 14 números.');
-    const phone = onlyDigits(f.phone);
-    if (phone && (phone.length < 10 || phone.length > 11)) return setError('Telefone inválido.');
+    if (falta.length) return setError(`Para salvar, falta: ${falta.join(', ')}.`);
     setBusy(true);
     await save(profile.id, {
-      full_name: f.full_name.trim(), crp, cpf: onlyDigits(f.cpf) || null, cnpj: cnpj || null, fiscal_type: f.fiscal_type as Profile['fiscal_type'],
-      contact_email: f.contact_email.trim() || null, phone: phone || null, address: f.address.trim() || null, city: f.city.trim() || null, uf: f.uf.trim().toUpperCase() || null,
+      full_name: f.full_name.trim(), crp: normalizeCrp(f.crp), cpf: onlyDigits(f.cpf), cnpj: f.fiscal_type === 'pj' ? onlyDigits(f.cnpj) : null,
+      fiscal_type: f.fiscal_type as Profile['fiscal_type'], contact_email: f.contact_email.trim(), phone: onlyDigits(f.phone),
+      cep: onlyDigits(end.cep), address: end.street.trim(), address_number: end.address_number.trim(), address_complement: end.address_complement.trim() || null,
+      neighborhood: end.neighborhood.trim(), city: end.city.trim(), uf: end.uf.trim().toUpperCase(),
     }, setError);
     setBusy(false);
   }
 
   return (
-    <Panel recolhivel aberto title="Perfil profissional" actions={<Button size="sm" busy={busy} onClick={submit}>Salvar perfil</Button>}>
+    <Panel recolhivel aberto title="Perfil profissional">
       <div className="flex flex-col gap-4">
+        {!salvoCompleto && <Notice tone="ocre"><b>Complete o seu perfil profissional para liberar o app.</b> Todos os campos são obrigatórios (só o complemento é opcional).</Notice>}
         {error && <ErrorBox>{error}</ErrorBox>}
         <div className="grid gap-3 sm:grid-cols-2">
-          <TextField label="Nome completo" value={f.full_name ?? ''} onChange={set('full_name')} />
-          <TextField label="CRP" value={f.crp ?? ''} onChange={set('crp')} placeholder="06/123456" />
-          <TextField label="CPF" inputMode="numeric" value={f.cpf ?? ''} onChange={set('cpf')} hint="Aparece nos recibos." />
-          <Field label="Atuação fiscal">{(id) => (
+          <TextField label="Nome completo" required value={f.full_name ?? ''} onChange={set('full_name')} />
+          <TextField label="CRP" required value={f.crp ?? ''} onChange={set('crp')} placeholder="06/123456" />
+          <TextField label="CPF" required inputMode="numeric" value={f.cpf ?? ''} onChange={set('cpf')} hint="Aparece nos recibos." />
+          <Field label="Atuação fiscal" required>{(id) => (
             <Select id={id} value={f.fiscal_type} onChange={set('fiscal_type')}>
               <option value="pf">Pessoa física (autônoma, Receita Saúde)</option>
               <option value="pj">Pessoa jurídica (NFS-e)</option>
             </Select>
           )}</Field>
-          {f.fiscal_type === 'pj' && <TextField label="CNPJ" inputMode="numeric" value={f.cnpj ?? ''} onChange={set('cnpj')} />}
-          <TextField label="E-mail profissional" type="email" value={f.contact_email ?? ''} onChange={set('contact_email')} />
-          <TextField label="Telefone" inputMode="tel" value={f.phone ?? ''} onChange={set('phone')} />
-          <TextField label="Endereço do consultório" value={f.address ?? ''} onChange={set('address')} className="sm:col-span-2" />
-          <TextField label="Cidade" value={f.city ?? ''} onChange={set('city')} />
-          <TextField label="UF" maxLength={2} value={f.uf ?? ''} onChange={set('uf')} />
+          {f.fiscal_type === 'pj' && <TextField label="CNPJ" required inputMode="numeric" value={f.cnpj ?? ''} onChange={set('cnpj')} />}
+          <TextField label="E-mail profissional" required type="email" value={f.contact_email ?? ''} onChange={set('contact_email')} />
+          <TextField label="Telefone" required inputMode="tel" placeholder="(48) 99999-9999" value={f.phone ?? ''} onChange={set('phone')} />
         </div>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm font-bold text-tinta-2">Endereço do consultório</legend>
+          <p className="text-[0.8125rem] text-tinta-3">Digite o CEP: rua, bairro, cidade e UF vêm preenchidos. Depois coloque o número e, se tiver, o complemento.</p>
+          <EnderecoCampos valor={end} onChange={setEnd} obrigatorio />
+        </fieldset>
+        {falta.length > 0 && <p className="text-[0.8125rem] text-tinta-3">Falta: {falta.join(', ')}.</p>}
+        <Button busy={busy} onClick={submit} className="w-full">Salvar perfil</Button>
       </div>
     </Panel>
   );

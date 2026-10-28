@@ -3,6 +3,7 @@
  * Executa contra o app real + gateway local + Postgres com as migrations reais.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { completarPerfil } from './perfil';
 import { readFileSync } from 'node:fs';
 import { unzipSync, strFromU8 } from 'fflate';
 
@@ -50,6 +51,10 @@ async function signup(page: Page, name: string, email: string, crp: string) {
   await page.getByLabel('Cidade').fill('Palhoça');
   await page.getByLabel('UF').fill('SC');
   await page.getByRole('button', { name: 'Começar a usar' }).click();
+  // Perfil profissional obrigatório: sem ele completo o app fica em Configurações
+  await page.goto('/resumo');
+  await completarPerfil(page);
+  await page.goto('/');
   await expect(page).toHaveURL(/\/(resumo)?$/); // entra no app (tela inicial = Resumo do dia; a agenda fica no rodapé)
 }
 
@@ -68,7 +73,7 @@ test.beforeAll(async ({ browser }) => {
 test('cadastro, perfil e tela inicial', async () => {
   await signup(page, 'Ana Fictícia Teste', `ana.e2e.${RUN}@exemplo.invalid`, '12/345678');
   // O app abre no Resumo do dia; sem grade, a agenda convida a criar os horários e mostra os primeiros passos
-  await page.waitForURL(/\/resumo$/);
+  await page.goto('/resumo');
   await page.getByRole('navigation', { name: 'Principal' }).first().getByRole('link', { name: 'Agenda', exact: true }).click();
   await expect(page.getByRole('link', { name: 'Voltar ao Resumo' })).toBeVisible();
   await expect(page.getByText('Monte sua grade de horários')).toBeVisible();
@@ -585,6 +590,9 @@ test('bloqueio de agenda: folga amanhã some com os horários livres e avisa a s
   const amanha = tzDate(1);
   const ddmm = `${amanha.slice(8, 10)}/${amanha.slice(5, 7)}`;
   await page.goto('/agenda/horarios');
+  await expect(page.getByRole('heading', { name: 'Bloquear: férias, feriados, aniversário ou folgas' })).toBeVisible();
+  await page.getByRole('button', { name: 'O que acontece nos dias bloqueados' }).click();
+  await expect(page.getByText('Nos dias bloqueados a agenda não mostra horários livres e não deixa marcar sessão nova.')).toBeVisible();
   await page.getByRole('button', { name: 'Novo bloqueio' }).click();
   const dlg = page.getByRole('dialog').filter({ has: page.getByRole('heading', { name: 'Novo bloqueio' }) });
   await dlg.getByLabel('Tipo').selectOption('folga');

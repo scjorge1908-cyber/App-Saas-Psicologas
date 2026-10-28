@@ -7,6 +7,7 @@ import type { BlockKind, ScheduleBlock } from '../../lib/types';
 import * as api from '../../lib/api';
 import { errorMessage } from '../../lib/errors';
 import { addDays, formatDate, todayIn, zonedToUtc } from '../../lib/format';
+import { Bolinha, useInfo } from '../Bolinha';
 import { TIPO_BLOQUEIO, feriadosNacionais, textoBloqueio } from '../../lib/bloqueios';
 import { useProfile } from '../../auth/AuthProvider';
 import { Button, Dialog, ErrorBox, Field, Input, Select, TextField, useConfirm, useToast } from '../ui';
@@ -75,16 +76,19 @@ export function BloqueiosSecao() {
   }
 
   const anoAtual = Number(hoje.slice(0, 4));
+  const info = useInfo();
   const novo = (): Form => ({ kind: 'ferias', starts_on: hoje, ends_on: hoje, diaInteiro: true, start_time: '13:00', end_time: '18:00', reason: '' });
   const intervalo = (b: ScheduleBlock) => (b.starts_on === b.ends_on ? formatDate(b.starts_on) : `${formatDate(b.starts_on)} a ${formatDate(b.ends_on)}`);
 
   return (
     <section aria-labelledby="t-bloqueios" className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 id="t-bloqueios" className="text-[1.125rem] font-bold">Bloqueios: férias, feriados e folgas</h2>
-        <Button variant="ghost" size="sm" onClick={() => { setErro(null); setForm(novo()); }}><IconPlus /> Novo bloqueio</Button>
+      {/* 28/10: título que diz o que é (bloquear) + bolinha "i" com a explicação; "Novo bloqueio" vira botão de verdade */}
+      <div className="flex items-center gap-2">
+        <h2 id="t-bloqueios" className="text-[1.125rem] font-bold leading-snug">Bloquear: férias, feriados, aniversário ou folgas</h2>
+        <Bolinha info={info} rotulo="O que acontece nos dias bloqueados" />
       </div>
-      <p className="text-sm text-tinta-2">Nos dias bloqueados a agenda não mostra horários livres e não deixa marcar sessão nova.</p>
+      {info.aberto && <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-sm text-sobre-anil-claro">Nos dias bloqueados a agenda não mostra horários livres e não deixa marcar sessão nova.</p>}
+      <Button onClick={() => { setErro(null); setForm(novo()); }} className="w-full"><IconPlus /> Novo bloqueio</Button>
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" size="sm" busy={busy} onClick={() => adicionarFeriados(anoAtual)}>Feriados nacionais de {anoAtual}</Button>
         <Button variant="secondary" size="sm" busy={busy} onClick={() => adicionarFeriados(anoAtual + 1)}>Feriados nacionais de {anoAtual + 1}</Button>

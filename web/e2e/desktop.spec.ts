@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { completarPerfil } from './perfil';
 
 /** O app abre no Resumo do dia; a agenda fica no rodapé (link "Agenda"). */
 async function irParaAgenda(p: Page) {
@@ -40,6 +41,9 @@ test('desktop: agenda semanal em grade e ficha do paciente', async ({ page }) =>
   await page.getByRole('button', { name: 'Criar conta', exact: true }).click();
   await page.getByLabel('CRP').fill('12/999999');
   await page.getByRole('button', { name: 'Começar a usar' }).click();
+  await page.goto('/resumo');
+  await completarPerfil(page);
+  await page.goto('/');
   await expect(page).toHaveURL(/\/(resumo)?$/); // entra no app (tela inicial = Resumo do dia)
 
   for (const [name, time, freq] of [['Helena Fictícia', '09:00', 'semanal'], ['Rafael Fictício', '11:00', 'quinzenal'], ['Júlia Fictícia', '16:30', 'semanal']] as const) {

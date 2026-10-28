@@ -2,7 +2,7 @@
 // Regra pura (sem rede): diz se um dia/horário está bloqueado e lista os feriados nacionais do ano.
 import type { BlockKind, ScheduleBlock } from './types';
 
-export const TIPO_BLOQUEIO: Record<BlockKind, string> = { ferias: 'Férias', feriado: 'Feriado', folga: 'Folga', outro: 'Bloqueio' };
+export const TIPO_BLOQUEIO: Record<BlockKind, string> = { ferias: 'Férias', feriado: 'Feriado', folga: 'Folga', aniversario: 'Aniversário', outro: 'Bloqueio' };
 
 const minutos = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
 

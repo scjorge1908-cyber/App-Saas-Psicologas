@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { Location, Modality, WorkingHour } from '../lib/types';
 import { DIAS_SEMANA, faixaTexto } from '../lib/horarios';
-import { GRADE_FIM, GRADE_INICIO, PERIODOS, foraDaGrade, gerarInicios, hhmm, periodoDe, type PeriodoId } from '../lib/periodos';
+import { GRADE_FIM, GRADE_INICIO, PERIODOS, dividirPorPeriodo, foraDaGrade, gerarInicios, hhmm, type PeriodoId } from '../lib/periodos';
 import { useProfile } from '../auth/AuthProvider';
 import { errorMessage } from '../lib/errors';
 import { Button, Dialog, ErrorBox, Field, Input, Loading, Select, TextField, cx, useConfirm, useToast } from '../components/ui';
@@ -20,6 +20,19 @@ import { addDays, todayIn, zonedToUtc } from '../lib/format';
 
 const ORDEM_DIAS = [1, 2, 3, 4, 5, 6, 0]; // a semana de trabalho começa na segunda
 const CORES = ['#146C70', '#0B6E8A', '#B3541E', '#2F7D5B', '#9C2F6B', '#5B6472'];
+
+/**
+ * Grava o turno já dividido em manhã, tarde e noite (regra do Jorge, 27/10): 07:00–21:00 vira três turnos.
+ * Com id, o 1º pedaço atualiza o turno existente e os outros entram como novos. Devolve quantos turnos ficaram.
+ */
+async function salvarTurnoDividido(t: { id?: string; location_id: string; weekday: number; ini: string; fim: string; dur: number; int: number }): Promise<number> {
+  const pedacos = dividirPorPeriodo(t.ini, t.fim, t.dur, t.int);
+  if (pedacos.length === 0) throw new Error('Nenhum horário cabe nesse turno com essa duração.');
+  for (const [i, p] of pedacos.entries()) {
+    await api.saveWorkingHour({ ...(i === 0 && t.id ? { id: t.id } : {}), location_id: t.location_id, weekday: t.weekday, start_time: p.ini, end_time: p.fim, session_minutes: t.dur, buffer_minutes: t.int });
+  }
+  return pedacos.length;
+}
 
 export function HorariosPage() {
   const qc = useQueryClient();
@@ -157,19 +170,21 @@ export function HorariosPage() {
                       <span aria-hidden className="size-2 rounded-full" style={{ background: l?.color ?? 'var(--color-anil)' }} />{l?.name ?? 'Sala'}
                     </span>
                   </header>
-                  {faixas.map((h) => {
+                  {faixas.flatMap((h) => {
                     const dur = h.session_minutes ?? durPadrao; const int = h.buffer_minutes ?? intPadrao;
-                    const inicios = gerarInicios(h.start_time.slice(0, 5), h.end_time.slice(0, 5), dur, int);
                     const noTurno = ocupTurno(h);
+                    // Mostra separado por manhã, tarde e noite, mesmo um turno antigo que atravessa os períodos (27/10)
+                    return dividirPorPeriodo(h.start_time.slice(0, 5), h.end_time.slice(0, 5), dur, int).map((g) => {
+                    const doGrupo = new Set(g.inicios.flatMap((t) => ocupHorario(h, t, dur).map((p) => p.patient_id)));
                     return (
-                      <div key={h.id} className="flex flex-col gap-1.5">
+                      <div key={`${h.id}-${g.periodo}`} className="flex flex-col gap-1.5">
                         <div className="flex items-baseline gap-x-1.5">
-                          <h4 className="rotulo text-tinta-3">{periodoDe(h.start_time).nome} <span className="num font-semibold normal-case tracking-normal">{faixaTexto(h)}</span></h4>
-                          {noTurno.length > 0 && <span className="num text-[0.75rem] font-bold text-ag-pac">{noTurno.length} {noTurno.length === 1 ? 'paciente' : 'pacientes'}</span>}
+                          <h4 className="rotulo text-tinta-3">{PERIODOS.find((p) => p.id === g.periodo)!.nome} <span className="num font-semibold normal-case tracking-normal">{g.ini}–{g.fim}</span></h4>
+                          {doGrupo.size > 0 && <span className="num text-[0.75rem] font-bold text-ag-pac">{doGrupo.size} {doGrupo.size === 1 ? 'paciente' : 'pacientes'}</span>}
                           <button type="button" disabled={carregandoOcup} onClick={() => (noTurno.length ? travarTurno(h, noTurno) : setEditHora(h))} className="ml-auto min-h-9 px-1 text-[0.8125rem] font-bold text-anil-escuro underline-offset-2 hover:underline">Ajustar turno</button>
                         </div>
                         <ul className="flex flex-col gap-1.5">
-                          {inicios.map((t) => {
+                          {g.inicios.map((t) => {
                             const ps = ocupHorario(h, t, dur);
                             const ocupado = ps.length > 0;
                             const abrir = (acao: () => void) => () => (ocupado ? travarHorario(t, d, ps) : acao());
@@ -190,6 +205,7 @@ export function HorariosPage() {
                         </ul>
                       </div>
                     );
+                    });
                   })}
                   {periodosLivres(d).length > 0 && (
                     <div className="flex flex-wrap gap-2 border-t border-linha pt-2">
@@ -360,8 +376,8 @@ function HoraDialog({ hora, locais, durPadrao, intPadrao, onClose, onSaved }: { 
   if (hora !== aberto) { setAberto(hora); setForm(hora ? { ...hora, start_time: hora.start_time?.slice(0, 5), end_time: hora.end_time?.slice(0, 5) } : {}); }
 
   const salvar = useMutation({
-    mutationFn: () => api.saveWorkingHour({ id: form.id, weekday: form.weekday ?? 1, start_time: form.start_time ?? '', end_time: form.end_time ?? '', location_id: form.location_id ?? '',
-      session_minutes: form.session_minutes ?? durPadrao, buffer_minutes: form.buffer_minutes ?? intPadrao }),
+    mutationFn: () => salvarTurnoDividido({ id: form.id, weekday: form.weekday ?? 1, ini: form.start_time ?? '', fim: form.end_time ?? '', location_id: form.location_id ?? '',
+      dur: form.session_minutes ?? durPadrao, int: form.buffer_minutes ?? intPadrao }),
     onSuccess: () => { onSaved(); toast('Horário salvo'); onClose(); },
   });
   const excluir = useMutation({
@@ -475,7 +491,7 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
       let criados = 0;
       for (const d of ORDEM_DIAS.filter((x) => dias.includes(x))) {
         try {
-          await api.saveWorkingHour({ location_id: id, weekday: d, start_time: ini, end_time: fim, session_minutes: dur, buffer_minutes: int });
+          await salvarTurnoDividido({ location_id: id, weekday: d, ini, fim, dur, int });
           criados++;
         } catch (e) { falhas.push(`${DIAS_SEMANA[d]}: ${errorMessage(e)}`); }
       }
@@ -565,6 +581,7 @@ function GeradorGrade({ locais, durPadrao, intPadrao, onNovaSala, onSaved, onSuc
         <p className="rounded-campo bg-anil-claro/60 px-3 py-2.5 text-[0.9375rem] text-sobre-anil-claro">
           <b className="num">{String(inicios.length).padStart(2, '0')} horários</b> de {dur} min{int ? <> com <b>{int} min</b> de intervalo</> : ' sem intervalo'}.
           Total útil: <b className="num">{Math.floor(util / 60)}h{util % 60 ? `${util % 60}` : ''}</b> de agenda{dias.length ? `, em ${ORDEM_DIAS.filter((d) => dias.includes(d)).map((d) => DIAS_SEMANA[d].slice(0, 3)).join(', ')}` : ''}. Vale para todas as semanas.
+          {(() => { const g = dividirPorPeriodo(ini, fim, dur, int); return g.length > 1 ? <> Fica dividido em <b>{g.map((x) => PERIODOS.find((p) => p.id === x.periodo)!.nome).join(', ')}</b>.</> : null; })()}
         </p>
         <ol className="flex flex-col">
           {inicios.map((t, i) => (
@@ -615,7 +632,7 @@ function NovoTurnoDialog({ alvo, locais, durPadrao, intPadrao, onClose, onCriado
     if (inicios.length === 0) return setErro('Nenhum horário cabe nesse turno com essa duração.');
     setSalvando(true);
     try {
-      await api.saveWorkingHour({ location_id: alvo.location_id, weekday: alvo.weekday, start_time: ini, end_time: fim, session_minutes: dur, buffer_minutes: int });
+      await salvarTurnoDividido({ location_id: alvo.location_id, weekday: alvo.weekday, ini, fim, dur, int });
       onCriado(`${p!.nome} de ${DIAS_SEMANA[alvo.weekday]} na ${sala?.name ?? 'sala'}: ${inicios.length} horários (${ini}–${fim}).`);
     } catch (e) { setErro(errorMessage(e)); } finally { setSalvando(false); }
   }

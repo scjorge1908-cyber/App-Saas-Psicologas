@@ -36,3 +36,19 @@ export function gerarInicios(inicio: string, fim: string, duracao: number, inter
   for (let m = min(inicio); m + duracao <= min(fim); m += passo) out.push(hhmm(m));
   return out;
 }
+
+/**
+ * Divide um turno pelos períodos (regra do Jorge, 27/10/2026): manhã até 12h, tarde das 12h às 18h, noite a partir das 18h.
+ * Ex.: 07:00–21:00 vira manhã, tarde e noite, cada uma com os mesmos horários que o turno inteiro teria.
+ * Cada pedaço vai do 1º horário até o fim da última sessão dele.
+ */
+export function dividirPorPeriodo(inicio: string, fim: string, duracao: number, intervalo: number): Array<{ periodo: PeriodoId; ini: string; fim: string; inicios: string[] }> {
+  const grupos: Array<{ periodo: PeriodoId; ini: string; fim: string; inicios: string[] }> = [];
+  for (const t of gerarInicios(inicio, fim, duracao, intervalo)) {
+    const p = periodoDe(t).id;
+    const ult = grupos[grupos.length - 1];
+    if (ult && ult.periodo === p) { ult.inicios.push(t); ult.fim = hhmm(min(t) + duracao); }
+    else grupos.push({ periodo: p, ini: t, fim: hhmm(min(t) + duracao), inicios: [t] });
+  }
+  return grupos;
+}

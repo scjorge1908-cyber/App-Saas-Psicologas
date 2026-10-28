@@ -89,7 +89,7 @@ test('cadastro, perfil e tela inicial', async () => {
   await campo('Repita a nova senha').fill('Senha-Nova-Ficticia-2026');
   await page.getByRole('button', { name: 'Alterar senha' }).click();
   await expect(page.getByText(/Senha atual incorreta/)).toBeVisible();
-  await page.getByRole('button', { name: /Esqueci a senha/ }).click();
+  await page.getByRole('button', { name: 'Esqueci a senha', exact: true }).click();
   await expect(page.getByText(/um link para criar uma nova senha/)).toBeVisible();
   await campo('Senha atual').fill('Senha-Ficticia-2026');
   await page.getByRole('button', { name: 'Alterar senha' }).click();

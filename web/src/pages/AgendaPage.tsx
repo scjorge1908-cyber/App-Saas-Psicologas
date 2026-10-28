@@ -107,7 +107,15 @@ export function AgendaPage() {
   const { pendentes } = useLinksPaciente();
   const [gerarLink, setGerarLink] = useState(false);
   const [pedidosAbertos, setPedidosAbertos] = useState(false);
-  const [pedidoVer, setPedidoVer] = useState<string | null>(null);
+  const [pedidoVer, setPedidoVer] = useState<string | null>(() => params.get('pedido'));
+  // Veio da notificação do celular: abre o pedido (ou a lista) e limpa o endereço
+  useEffect(() => {
+    const id = params.get('pedido'); const lista = params.get('pedidos');
+    if (!id && !lista) return;
+    if (id) setPedidoVer(id); else setPedidosAbertos(true);
+    params.delete('pedido'); params.delete('pedidos'); setParams(params, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
   const semGrade = horas.data !== undefined && horas.data.length === 0;
 
   // Blocos da semana: dia + bloco da grade (sala + período); sessões fora da grade em "Outros horários"

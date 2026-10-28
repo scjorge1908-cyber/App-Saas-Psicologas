@@ -14,6 +14,7 @@ import { FinancePage } from './pages/FinancePage';
 import { InvoicesPage } from './pages/InvoicesPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { PublicConfirmPage } from './pages/PublicConfirmPage';
+import { PublicBookingPage } from './pages/PublicBookingPage';
 import { TermsPage } from './pages/TermsPage';
 import { WelcomePage } from './pages/WelcomePage';
 import { HorariosPage } from './pages/HorariosPage';
@@ -52,6 +53,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/c/:token" element={<PublicConfirmPage />} />
+      <Route path="/a/:token" element={<PublicBookingPage />} />
       <Route path="/termos" element={<TermsPage />} />
       <Route path="/boas-vindas" element={<PublicOnly><WelcomePage /></PublicOnly>} />
       <Route path="/entrar" element={<PublicOnly><LoginPage /></PublicOnly>} />

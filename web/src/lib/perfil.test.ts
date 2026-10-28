@@ -13,8 +13,8 @@ describe('perfil profissional obrigatório', () => {
   });
   it('lista o que falta', () => {
     expect(faltandoPerfil({ ...completo, cpf: '', address_number: ' ', contact_email: 'sem-arroba' })).toEqual(['CPF', 'e-mail profissional', 'número']);
-    expect(faltandoPerfil({ ...completo, fiscal_type: 'pj', cnpj: '11.222.333/0001-82' })).toEqual(['CNPJ']);
-    expect(faltandoPerfil({ ...completo, fiscal_type: 'pj', cnpj: '11.222.333/0001-81' })).toEqual([]);
+    expect(faltandoPerfil({ ...completo, fiscal_type: 'pj', cnpj: '11.222.333/0001-82' })).toEqual(['CNPJ', 'razão social']);
+    expect(faltandoPerfil({ ...completo, fiscal_type: 'pj', cnpj: '11.222.333/0001-81', company_name: 'Empresa Fictícia Ltda' })).toEqual([]);
     expect(faltandoPerfil(null)).toEqual(['perfil']);
   });
 });

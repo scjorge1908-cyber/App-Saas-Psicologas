@@ -3,7 +3,7 @@
 import type { Profile } from './types';
 import { isValidCnpj, isValidCpf, normalizeCrp, onlyDigits } from './format';
 
-export type CamposPerfil = Pick<Profile, 'full_name' | 'crp' | 'cpf' | 'cnpj' | 'fiscal_type' | 'contact_email' | 'phone' | 'address' | 'city' | 'uf' | 'cep' | 'address_number' | 'neighborhood'>;
+export type CamposPerfil = Pick<Profile, 'full_name' | 'crp' | 'cpf' | 'cnpj' | 'fiscal_type' | 'contact_email' | 'phone' | 'address' | 'city' | 'uf' | 'cep' | 'address_number' | 'neighborhood' | 'company_name'>;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -16,6 +16,7 @@ export function faltandoPerfil(p: Partial<CamposPerfil> | null | undefined): str
   if (!normalizeCrp(t(p.crp))) falta.push('CRP');
   if (!isValidCpf(t(p.cpf))) falta.push('CPF');
   if (p.fiscal_type === 'pj' && !isValidCnpj(t(p.cnpj))) falta.push('CNPJ');
+  if (p.fiscal_type === 'pj' && t(p.company_name).length < 2) falta.push('razão social');
   if (!EMAIL.test(t(p.contact_email))) falta.push('e-mail profissional');
   const tel = onlyDigits(t(p.phone));
   if (tel.length < 10 || tel.length > 11) falta.push('telefone');

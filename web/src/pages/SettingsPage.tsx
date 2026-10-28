@@ -10,7 +10,9 @@ import { formatarCep } from '../lib/cep';
 import { ENDERECO_VAZIO, EnderecoCampos, type Endereco } from '../components/patients/EnderecoCampos';
 import type { BackupProgress } from '../lib/backup';
 import { signOut, useAuth, useProfile } from '../auth/AuthProvider';
-import { Button, ErrorBox, Field, Loading, Notice, PageHeader, Panel, Select, TextField, useConfirm, useToast } from '../components/ui';
+import { Button, ErrorBox, Field, Loading, Notice, PageHeader, Panel, Select, Spinner, TextField, useConfirm, useToast } from '../components/ui';
+import { useCnpjAutomatico } from '../components/useCnpjAutomatico';
+import { mascararCnpj } from '../lib/mascaras';
 import { saveBlob } from '../components/patients/DocumentsTab';
 import { isDemo } from '../lib/demo/modo';
 import { atualizarPerfilDemo } from '../lib/demo/api-demo';
@@ -66,13 +68,15 @@ function ProfileForm({ profile }: { profile: Profile }) {
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     setF({
-      full_name: profile.full_name, crp: profile.crp ?? '', cpf: formatCpf(profile.cpf), cnpj: formatCnpj(profile.cnpj), fiscal_type: profile.fiscal_type,
+      full_name: profile.full_name, crp: profile.crp ?? '', cpf: formatCpf(profile.cpf), cnpj: formatCnpj(profile.cnpj), company_name: profile.company_name ?? '', fiscal_type: profile.fiscal_type,
       contact_email: profile.contact_email ?? '', phone: formatPhone(profile.phone),
     });
     setEnd({ cep: formatarCep(profile.cep ?? ''), street: profile.address ?? '', address_number: profile.address_number ?? '', address_complement: profile.address_complement ?? '',
       neighborhood: profile.neighborhood ?? '', city: profile.city ?? '', uf: profile.uf ?? '' });
   }, [profile]);
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
+  // CNPJ → razão social automática (28/10)
+  const cnpjAuto = useCnpjAutomatico(f.cnpj ?? '', f.company_name ?? '', (company_name) => setF((x) => ({ ...x, company_name })));
   const dados = { ...f, fiscal_type: f.fiscal_type as Profile['fiscal_type'], cep: end.cep, address: end.street, address_number: end.address_number,
     neighborhood: end.neighborhood, city: end.city, uf: end.uf };
   const falta = faltandoPerfil(dados);
@@ -83,7 +87,7 @@ function ProfileForm({ profile }: { profile: Profile }) {
     if (falta.length) return setError(`Para salvar, falta: ${falta.join(', ')}.`);
     setBusy(true);
     await save(profile.id, {
-      full_name: f.full_name.trim(), crp: normalizeCrp(f.crp), cpf: onlyDigits(f.cpf), cnpj: f.fiscal_type === 'pj' ? onlyDigits(f.cnpj) : null,
+      full_name: f.full_name.trim(), crp: normalizeCrp(f.crp), cpf: onlyDigits(f.cpf), cnpj: f.fiscal_type === 'pj' ? onlyDigits(f.cnpj) : null, company_name: f.fiscal_type === 'pj' ? f.company_name.trim() : null,
       fiscal_type: f.fiscal_type as Profile['fiscal_type'], contact_email: f.contact_email.trim(), phone: onlyDigits(f.phone),
       cep: onlyDigits(end.cep), address: end.street.trim(), address_number: end.address_number.trim(), address_complement: end.address_complement.trim() || null,
       neighborhood: end.neighborhood.trim(), city: end.city.trim(), uf: end.uf.trim().toUpperCase(),
@@ -106,7 +110,12 @@ function ProfileForm({ profile }: { profile: Profile }) {
               <option value="pj">Pessoa jurídica (NFS-e)</option>
             </Select>
           )}</Field>
-          {f.fiscal_type === 'pj' && <TextField label="CNPJ" required inputMode="numeric" value={f.cnpj ?? ''} onChange={set('cnpj')} />}
+          {f.fiscal_type === 'pj' && <>
+            <TextField label="CNPJ" required inputMode="numeric" value={f.cnpj ?? ''}
+              hint={cnpjAuto.buscando ? <span className="inline-flex items-center gap-1.5"><Spinner small /> Buscando o nome da empresa…</span> : cnpjAuto.aviso ?? 'Digite o CNPJ: a razão social vem sozinha.'}
+              onChange={(e) => { const cnpj = mascararCnpj(e.target.value); setF({ ...f, cnpj }); void cnpjAuto.aoMudarCnpj(cnpj); }} />
+            <TextField label="Razão social" required value={f.company_name ?? ''} onChange={set('company_name')} />
+          </>}
           <TextField label="E-mail profissional" required type="email" value={f.contact_email ?? ''} onChange={set('contact_email')} />
           <TextField label="Telefone" required inputMode="tel" placeholder="(48) 99999-9999" value={f.phone ?? ''} onChange={set('phone')} />
         </div>

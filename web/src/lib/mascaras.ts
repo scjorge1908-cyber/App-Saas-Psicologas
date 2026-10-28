@@ -35,3 +35,9 @@ export function dataBrParaIso(v: string): string | null {
 
 /** "1990-03-25" → "25/03/1990" */
 export const isoParaDataBr = (iso: string) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : '');
+
+/** CNPJ: 00.000.000/0000-00 */
+export const mascararCnpj = (v: string) => {
+  const d = dig(v, 14);
+  return d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+};

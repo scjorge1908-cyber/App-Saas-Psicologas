@@ -32,6 +32,8 @@ export interface Profile {
   address_number?: string | null;
   address_complement?: string | null;
   neighborhood?: string | null;
+  /** Razão social (PJ), preenchida pelo CNPJ (28/10). */
+  company_name?: string | null;
   timezone: string;
   session_minutes: number;
   buffer_minutes: number;

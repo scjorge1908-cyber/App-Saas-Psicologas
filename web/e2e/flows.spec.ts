@@ -437,10 +437,14 @@ test('cartão Nota fiscal: obrigatórios e dados de quem paga', async () => {
   // Empresa (PJ): razão social e CNPJ válidos
   await page.getByRole('button', { name: 'Editar cadastro' }).click();
   await dlg.getByRole('radio', { name: /^Empresa/ }).click();
-  await dlg.getByLabel('Razão social').fill('Empresa Fictícia Ltda');
+  // CNPJ digitado → razão social automática (BrasilAPI simulada)
+  await page.route('https://brasilapi.com.br/**', (r) => r.fulfill({ json: { razao_social: 'Empresa Fictícia Ltda', nome_fantasia: 'Fictícia' } }));
   await dlg.getByLabel('CNPJ').fill('11.222.333/0001-82');
-  await expect(dlg.getByText(/falta: CNPJ válido/i)).toBeVisible();
+  await expect(dlg.getByText(/falta: .*CNPJ válido/i)).toBeVisible();
+  await expect(dlg.getByText('CNPJ inválido. Confira os números.')).toBeVisible();
   await dlg.getByLabel('CNPJ').fill('11.222.333/0001-81');
+  await expect(dlg.getByLabel('Razão social')).toHaveValue('Empresa Fictícia Ltda');
+  await expect(dlg.getByText(/Nome da empresa preenchido pelo CNPJ/)).toBeVisible();
   await expect(dlg.getByText('Dados completos para a nota fiscal (PJ).')).toBeVisible();
   await dlg.getByRole('button', { name: 'Salvar alterações' }).click();
   await expect(dlg).toBeHidden();

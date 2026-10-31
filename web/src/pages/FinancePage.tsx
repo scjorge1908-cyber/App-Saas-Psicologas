@@ -10,6 +10,9 @@ import { Badge, Button, Dialog, Empty, ErrorBox, Field, Input, Loading, Notice, 
 import { ChargesList } from '../components/finance/ChargesList';
 import { ChargeDialog, METHOD_LABEL, PaymentDialog, useInvalidateFinance } from '../components/finance/PaymentDialog';
 import { saveBlob } from '../components/patients/DocumentsTab';
+import { ReciboAssistido } from '../components/finance/ReciboAssistido';
+import { abrirExterno } from '../lib/abrir-externo';
+import { URL_ECAC } from '../lib/receita-saude';
 
 type Tab = 'receber' | 'recebimentos' | 'despesas' | 'relatorio' | 'receita';
 
@@ -304,12 +307,23 @@ function ReceitaSaudeTab() {
   const invalidate = useInvalidateFinance();
   const toast = useToast();
   const pending = (q.data ?? []).filter((p) => p.receita_saude_status === 'pendente');
+  const desde = addDays(todayIn(), -30);
+  const emitidos = (q.data ?? []).filter((p) => p.receita_saude_status === 'emitido' && p.paid_on >= desde).sort((a, b) => b.paid_on.localeCompare(a.paid_on));
   return (
     <div className="flex flex-col gap-4">
       <Notice>
         Desde 2025, psicólogas que atendem como pessoa física emitem o recibo oficial no Receita Saúde (app da Receita, Carnê-Leão Web ou lote no e-CAC), na data de cada pagamento.
         O sistema não envia dados à Receita: use esta lista para conferir e marque cada recebimento depois de emitir o recibo.
       </Notice>
+      <section aria-label="Como emitir o recibo" className="rounded-lg border border-linha bg-papel p-4">
+        <p className="font-bold">Como emitir, em 3 passos</p>
+        <ol className="mt-2 list-decimal pl-5 text-sm text-tinta-2">
+          <li>Toque em <strong>Ver dados para o recibo</strong> no recebimento e copie cada campo.</li>
+          <li>No celular, abra o app <strong>Receita Federal</strong> → Receita Saúde → Novo recibo. No computador, entre no e-CAC → Carnê-Leão Web.</li>
+          <li>Depois de emitir, volte aqui e toque em <strong>Recibo emitido</strong>.</li>
+        </ol>
+        <Button size="sm" variant="secondary" className="mt-3" onClick={() => abrirExterno(URL_ECAC)}>Abrir e-CAC (computador)</Button>
+      </section>
       {q.isLoading && <Loading />}
       {q.data && pending.length === 0 && <p className="text-tinta-2">Nenhum recibo pendente.</p>}
       {pending.length > 0 && (
@@ -330,6 +344,7 @@ function ReceitaSaudeTab() {
                     <p className="num text-sm text-tinta-2">{formatDate(p.paid_on)}, {money(p.amount)}, CPF {formatCpf(p.payer_cpf ?? p.patient_cpf) || <span className="text-vermelho">não cadastrado</span>}</p>
                     {missingCpf && <p className="text-sm text-vermelho">O recibo exige o CPF de quem pagou. Complete no cadastro do paciente.</p>}
                   </div>
+                  <div className="order-last w-full"><ReciboAssistido pagamento={p} /></div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={async () => { try { await api.updatePayment(p.id, { receita_saude_status: 'emitido' }); await invalidate(); toast('Marcado como emitido'); } catch (e) { toast(errorMessage(e), 'erro'); } }}>Recibo emitido</Button>
                     <Button size="sm" variant="ghost" onClick={async () => { try { await api.updatePayment(p.id, { receita_saude_status: 'nao_aplicavel' }); await invalidate(); } catch (e) { toast(errorMessage(e), 'erro'); } }}>Não se aplica</Button>
@@ -340,6 +355,19 @@ function ReceitaSaudeTab() {
           </ul>
           <p className="text-sm text-tinta-3">A planilha de apoio não segue o leiaute oficial do lote do e-CAC; confira o modelo no portal da Receita antes de importar.</p>
         </>
+      )}
+      {emitidos.length > 0 && (
+        <section aria-label="Recibos emitidos recentemente">
+          <p className="mb-2 font-bold">Emitidos nos últimos 30 dias</p>
+          <ul className="divide-y divide-linha rounded-lg border border-linha bg-papel">
+            {emitidos.map((p) => (
+              <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                <p className="num text-sm text-tinta-2"><span className="font-bold text-tinta">{p.payer_name ?? p.patient_name}</span> · {formatDate(p.paid_on)} · {money(p.amount)}</p>
+                <Button size="sm" variant="ghost" onClick={async () => { try { await api.updatePayment(p.id, { receita_saude_status: 'pendente' }); await invalidate(); toast('Voltou para pendente'); } catch (e) { toast(errorMessage(e), 'erro'); } }}>Desfazer</Button>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </div>
   );

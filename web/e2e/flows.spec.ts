@@ -179,6 +179,16 @@ test('registro de presença gera cobrança; recebimento quita', async () => {
   await expect(page.getByText('Total do mês: R$ 100,00')).toBeVisible();
   await page.getByRole('tab', { name: /Receita Saúde/ }).click();
   await expect(page.getByRole('button', { name: 'Recibo emitido' })).toBeVisible();
+  // Recibo assistido (31/10/2026): dados prontos para copiar e "Desfazer" depois de marcar
+  await expect(page.getByRole('button', { name: 'Abrir e-CAC (computador)' })).toBeVisible();
+  await page.getByRole('button', { name: 'Ver dados para o recibo' }).first().click();
+  await expect(page.getByText('Valor (R$)')).toBeVisible();
+  await expect(page.getByText('100,00', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Copiar Valor (R$)' })).toBeVisible();
+  await page.getByRole('button', { name: 'Recibo emitido' }).first().click();
+  await expect(page.getByText('Emitidos nos últimos 30 dias')).toBeVisible();
+  await page.getByRole('button', { name: 'Desfazer' }).first().click();
+  await expect(page.getByRole('button', { name: 'Recibo emitido' }).first()).toBeVisible();
 });
 
 test('lembrete com link e confirmação pelo paciente', async ({ browser }) => {

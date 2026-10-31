@@ -179,6 +179,19 @@ test('registro de presença gera cobrança; recebimento quita', async () => {
   await expect(page.getByText('Total do mês: R$ 100,00')).toBeVisible();
   await page.getByRole('tab', { name: /Receita Saúde/ }).click();
   await expect(page.getByRole('button', { name: 'Recibo emitido' })).toBeVisible();
+  // Arquivo do Carnê-Leão (31/10/2026, 20:14): leiaute do manual Receita Saúde v2.1, 16 campos, sem cabeçalho
+  await expect(page.getByText('Mais fácil: todos os recibos de uma vez')).toBeVisible();
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /Baixar arquivo de \d{4} \(1 recibo\)/ }).click()]);
+  expect(dl.suggestedFilename()).toMatch(/^receita-saude-\d{4}\.csv$/);
+  const linhaCsv = readFileSync(await dl.path() as string, 'utf8').trim();
+  const camposCsv = linhaCsv.split(';');
+  expect(camposCsv).toHaveLength(16);
+  expect(camposCsv.slice(1, 4)).toEqual(['R01.001.001', '255', '100,00']);
+  expect(camposCsv.slice(6, 9)).toEqual(['PF', '12345678909', '12345678909']);
+  expect(camposCsv[13]).toBe('S');
+  expect(camposCsv[14]).toBe('52998224725');
+  await expect(page.getByRole('button', { name: /Já importei: marcar 1 como emitido/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Baixar arquivo só deste' })).toBeVisible();
   // Recibo assistido (31/10/2026): dados prontos para copiar e "Desfazer" depois de marcar
   await expect(page.getByRole('button', { name: 'Abrir e-CAC (computador)' })).toBeVisible();
   await page.getByRole('button', { name: 'Ver dados para o recibo' }).first().click();

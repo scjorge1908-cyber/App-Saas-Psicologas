@@ -11,6 +11,7 @@ import { ChargesList } from '../components/finance/ChargesList';
 import { ChargeDialog, METHOD_LABEL, PaymentDialog, useInvalidateFinance } from '../components/finance/PaymentDialog';
 import { saveBlob } from '../components/patients/DocumentsTab';
 import { ReciboAssistido } from '../components/finance/ReciboAssistido';
+import { ArquivoCarneLeao, ArquivoUmRecibo } from '../components/finance/ArquivoCarneLeao';
 import { abrirExterno } from '../lib/abrir-externo';
 import { URL_ECAC } from '../lib/receita-saude';
 
@@ -315,6 +316,7 @@ function ReceitaSaudeTab() {
         Desde 2025, psicólogas que atendem como pessoa física emitem o recibo oficial no Receita Saúde (app da Receita, Carnê-Leão Web ou lote no e-CAC), na data de cada pagamento.
         O sistema não envia dados à Receita: use esta lista para conferir e marque cada recebimento depois de emitir o recibo.
       </Notice>
+      {pending.length > 0 && <ArquivoCarneLeao pendentes={pending} />}
       <section aria-label="Como emitir o recibo" className="rounded-lg border border-linha bg-papel p-4">
         <p className="font-bold">Como emitir, em 3 passos</p>
         <ol className="mt-2 list-decimal pl-5 text-sm text-tinta-2">
@@ -345,7 +347,8 @@ function ReceitaSaudeTab() {
                     {missingCpf && <p className="text-sm text-vermelho">O recibo exige o CPF de quem pagou. Complete no cadastro do paciente.</p>}
                   </div>
                   <div className="order-last w-full"><ReciboAssistido pagamento={p} /></div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    <ArquivoUmRecibo pagamento={p} />
                     <Button size="sm" onClick={async () => { try { await api.updatePayment(p.id, { receita_saude_status: 'emitido' }); await invalidate(); toast('Marcado como emitido'); } catch (e) { toast(errorMessage(e), 'erro'); } }}>Recibo emitido</Button>
                     <Button size="sm" variant="ghost" onClick={async () => { try { await api.updatePayment(p.id, { receita_saude_status: 'nao_aplicavel' }); await invalidate(); } catch (e) { toast(errorMessage(e), 'erro'); } }}>Não se aplica</Button>
                   </div>

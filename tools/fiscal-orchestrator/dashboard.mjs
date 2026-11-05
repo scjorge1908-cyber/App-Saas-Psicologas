@@ -24,6 +24,14 @@ async function safeReadJson(name) {
     return JSON.parse(text);
   } catch { return null; }
 }
+async function safeReadEvidence(runId) {
+  try {
+    const data = await readFile(join(stateDir, runId + '.evidence.json'), 'utf8');
+    if (data.length > 2_000_000) return null;
+    const evidence = JSON.parse(data);
+    return evidence.runId === runId ? evidence : null;
+  } catch { return null; }
+}
 export function publicState(data) {
   return {
     runId: data.runId,
@@ -35,6 +43,35 @@ export function publicState(data) {
     updatedAt: data.updatedAt || data.createdAt || null,
     // No objective, proposal, patient data, tokens, model responses or evidence.
   };
+}
+// The dashboard exposes deliberately limited, redacted extracts rather than raw evidence.
+// Redaction is best-effort: missions must contain only synthetic data.
+function excerpt(value, max = 900) {
+  if (typeof value !== 'string') return '';
+  return value.slice(0, max)
+    .replace(/sk-(?:ant|proj)-[a-zA-Z0-9_-]+/gi, '[chave oculta]')
+    .replace(/\b\d{11}\b|\b\d{14}\b/g, '[identificador oculto]')
+    .replace(/[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/g, '[e-mail oculto]')
+    .replace(/(?:Bearer\s+)[a-zA-Z0-9_.-]+/gi, 'Bearer [oculto]');
+}
+function bullets(value, count = 5) {
+  return Array.isArray(value) ? value.slice(0, count).map(x => excerpt(x, 350)).filter(Boolean) : [];
+}
+export function publicReport(checkpoint, evidence = null) {
+  const events = Array.isArray(checkpoint.events) ? checkpoint.events.slice(-16).map(event => {
+    const e = event.evidence && typeof event.evidence === 'object' ? event.evidence : {};
+    const role = event.role === 'executor' ? 'Claude' : 'Codex';
+    return { role, action: excerpt(event.action, 40), round: Number(event.round) || 0,
+      at: excerpt(event.at, 40),
+      summary: excerpt(e.summary || e.reason || e.acceptance, 500),
+      design: excerpt(e.design, 1400),
+      plan: bullets(e.plan, 5), findings: bullets(e.findings, 6),
+      tests: bullets(e.tests, 5), risks: bullets(e.risks, 5) };
+  }) : [];
+  const spent = evidence?.cost?.spentUsdEstimate;
+  return { ...publicState(checkpoint), events,
+    cost: typeof spent === 'number' && Number.isFinite(spent) && spent >= 0
+      ? { spentUsdEstimate: spent, final: true } : null };
 }
 export function validateMission(value) {
   if (typeof value !== 'string' || value.trim().length < 12 || value.length > MAX_OBJECTIVE)
@@ -74,6 +111,14 @@ async function serve(req, res) {
       executionEnabled: process.env.FISCAL_DASHBOARD_ENABLE_RUN === 'YES',
       active: active ? { running: true, startedAt: active.startedAt } : null,
       missionCapUsd: budgetCap, runs: await snapshots() });
+  const reportMatch = /^\/api\/report\/([a-f0-9-]{36})$/.exec(url.pathname);
+  if (reportMatch && req.method === 'GET') {
+    const id = reportMatch[1];
+    const checkpoint = await safeReadJson(id + '.json');
+    if (!checkpoint || checkpoint.runId !== id) return json(res, 404, { error: 'Missão não encontrada' });
+    const evidence = await safeReadEvidence(id);
+    return json(res, 200, publicReport(checkpoint, evidence));
+  }
   if (url.pathname === '/api/run' && req.method === 'POST') {
     if (process.env.FISCAL_DASHBOARD_ENABLE_RUN !== 'YES')
       return json(res, 403, { error: 'Execução desabilitada. Ative explicitamente no computador.' });

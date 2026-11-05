@@ -44,3 +44,37 @@ node tools/fiscal-orchestrator/cli.mjs demo
 
 This is a **transport integration**, not yet autonomous code development. Implementation of sandboxed file patches, independent test validation, budget enforcement, and permitted authentication for unattended automation is required before production use. In particular, an environment opt-in is not a budget limit, and Anthropic's API billing must be configured and monitored separately.
 
+
+## Update 2026-11-05 — connection setup, fixes and how to run one mission
+
+### Connection status (verified 2026-11-05)
+| Provider | Status | Notes |
+|---|---|---|
+| Anthropic API | **Key created, not yet installed in a runtime** | Workspace `PsiConsultorio-IA` (`wrkspc_01RLfNNo2CXujK5itgYZdrpf`), monthly spend limit **US$ 5**, key `psiconsultorio-fiscal-orchestrator` scoped only to this workspace, expires 2026-12-05. Org has no payment method and no auto-reload; usage draws on promotional credit (expires 2026-11-11). `HopeCore-Unimed-Robo` untouched. |
+| Codex CLI (ChatGPT Plus) | **Not logged in** | Requires Jorge's own `codex login` (official ChatGPT sign-in). No token extraction. |
+| Real end-to-end cycle | **Not executed** | Blocked until both rows above are connected. The stub-binary test below is **not** proof of real integration. |
+| Cost recorded | US$ 0.00 | No billed call was made. |
+
+### Fixes in this update
+- **Windows:** `codex` is `codex.cmd` on Windows and Node 22 refuses to spawn `.cmd` without a shell → adapter now uses `codex.cmd` + shell on win32 (fixed args only).
+- **Codex output:** reads the clean final message via `--output-last-message` instead of parsing stdout (which can contain progress text); `--color never`; clearer login / usage-limit errors.
+- **Truncation:** `max_tokens` raised to 4000 (env `ANTHROPIC_MAX_TOKENS`); a truncated response (`stop_reason=max_tokens`) is an error, never parsed as approval.
+- **Budget guard:** real token usage from the API is recorded per call; before each call the worst-case cost is reserved, so the run stops as `blocked/budget_limit` before crossing `FISCAL_AI_MAX_USD` (default US$ 0.50, hard max US$ 5). The workspace limit in the Console remains the final safety net.
+- **Evidence:** every event stores the plan, proposal and review content with timestamps; real runs write `.fiscal-orchestrator-runs/<runId>.evidence.json` (git-ignored) including costs.
+- **Free connectivity check:** `real-cli.mjs --check` verifies `codex login status` and the Anthropic key/model via `GET /v1/models/{model}` (no tokens billed).
+- Plan schema validated (`acceptance` required); JSON surrounded by prose is tolerated.
+
+### Tests (mock / stub — not real integration)
+`node --test tools/fiscal-orchestrator/*.test.mjs` → 15/15 pass, including: budget guard stops before overspending; truncated output is rejected; full cycle **plan → Claude proposal → Codex requests change → Claude receives feedback automatically and fixes → Codex approves** through the real `spawn('codex')` path using a stub binary.
+
+### Run one mission (Jorge's Windows PC)
+```powershell
+npm i -g @openai/codex
+codex login                     # sign in with ChatGPT Plus in the browser (official flow)
+cd <repo>; git checkout feature/fiscal-ai-orchestrator-poc
+powershell -ExecutionPolicy Bypass -File tools\fiscal-orchestrator\run-real.ps1 -Check
+powershell -ExecutionPolicy Bypass -File tools\fiscal-orchestrator\run-real.ps1 -Objective "Projetar idempotencia de emissao NFS-e por (tenant_id, chave) com dados ficticios" -MaxUsd 0.5
+```
+The script asks for the API key with hidden input and keeps it only in that process. Output: status `passed` / `blocked` (`round_limit`, `budget_limit`, `step_limit`), rounds, cost and full evidence.
+
+**Scope reminder:** this still produces *design proposals only* (no patches applied, no commands from model output, no invoices, no production data). Moving to autonomous code changes requires the sandbox/allowlist work listed above and Jorge's authorization.

@@ -36,22 +36,28 @@ export class Orchestrator {
         const task = await this.planner.plan({ objective: state.objective });
         assert(task && typeof task === 'object', 'Invalid plan');
         state.task = task;
-        state.events.push({ role: 'planner', action: 'plan', round: state.round });
+        state.events.push({ role: 'planner', action: 'plan', round: state.round, at: new Date().toISOString(), evidence: task });
         state.phase = 'execute';
       } else if (state.phase === 'execute') {
         if (state.round >= this.maxRounds) { state.status = 'blocked'; state.reason = 'round_limit'; break; }
         const round = state.round + 1;
-        const proposal = await this.executor.execute({ task: state.task, feedback: state.review, round });
+        let proposal;
+        try { proposal = await this.executor.execute({ task: state.task, feedback: state.review, round }); }
+        catch (error) {
+          // Budget guard is a controlled stop, not a crash: checkpoint as blocked.
+          if (error?.name === 'BudgetExceededError') { state.status = 'blocked'; state.reason = 'budget_limit'; state.detail = error.message; break; }
+          throw error;
+        }
         assert(proposal && typeof proposal === 'object', 'Invalid proposal');
         state.round = round;
         state.proposal = proposal;
-        state.events.push({ role: 'executor', action: 'execute', round });
+        state.events.push({ role: 'executor', action: 'execute', round, at: new Date().toISOString(), evidence: proposal });
         state.phase = 'review';
       } else if (state.phase === 'review') {
         const review = await this.planner.review({ task: state.task, proposal: state.proposal, round: state.round });
         assert(review && typeof review.accepted === 'boolean', 'Invalid review');
         state.review = review;
-        state.events.push({ role: 'planner', action: review.accepted ? 'approved' : 'changes_requested', round: state.round });
+        state.events.push({ role: 'planner', action: review.accepted ? 'approved' : 'changes_requested', round: state.round, at: new Date().toISOString(), evidence: review });
         if (review.accepted) { state.status = 'passed'; state.phase = 'done'; }
         else state.phase = 'execute';
       } else throw new Error('Invalid phase');

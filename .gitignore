@@ -13,3 +13,6 @@ web/e2e/.auth/
 .storage/
 web/test-results/
 dev-gateway/.storage/
+
+# Fiscal AI orchestrator checkpoints/evidence (may contain model output; never commit)
+.fiscal-orchestrator-runs/

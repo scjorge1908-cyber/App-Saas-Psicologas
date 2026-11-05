@@ -114,3 +114,23 @@ test('Windows resolves Codex executable directly without invoking a shell', () =
   assert.deepEqual(codexCommand('win32'), { command: 'codex.exe', shell: false });
   assert.deepEqual(codexCommand('linux'), { command: 'codex', shell: false });
 });
+
+test('Claude fiscal prompt requests bounded JSON instead of a lengthy report', async () => {
+  let body;
+  const executor = createAnthropicExecutor({
+    apiKey: 'synthetic-test-key',
+    model: 'test-model',
+    fetcher: async (_url, options) => {
+      body = JSON.parse(options.body);
+      return { ok: true, json: async () => ({
+        stop_reason: 'end_turn',
+        content: [{ type: 'text', text: JSON.stringify({ summary: 'ok', design: 'test', tests: [], risks: [] }) }]
+      }) };
+    }
+  });
+  await executor.execute({ task: { acceptance: 'synthetic fiscal check' }, feedback: null, round: 1 });
+  const prompt = body.messages[0].content;
+  assert.match(prompt, /under 1200 tokens/);
+  assert.match(prompt, /max 800 characters/);
+  assert.match(prompt, /do not include source code/);
+});

@@ -76,11 +76,11 @@ export function createBudget({
   };
 }
 
-function codexCommand() {
-  // On Windows the npm shim is codex.cmd; Node >= 18.20/20.12 refuses to spawn .cmd without a shell.
-  // Arguments are fixed constants (no user input), so shell mode is safe here.
-  return process.platform === 'win32'
-    ? { command: 'codex.cmd', shell: true }
+export function codexCommand(platform = process.platform) {
+  // Official Codex desktop installs codex.exe on Windows (not codex.cmd).
+  // Use the executable without shell to avoid CMD path assumptions and DEP0190.
+  return platform === 'win32'
+    ? { command: 'codex.exe', shell: false }
     : { command: 'codex', shell: false };
 }
 export async function runCodexReadOnly(message, { cwd = process.cwd(), timeoutMs = 180000, spawnFn = spawn } = {}) {

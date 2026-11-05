@@ -1,6 +1,6 @@
 # Fiscal AI Orchestrator — isolated proof of concept (Issue #24)
 
-**Status: MOCK ONLY. Not connected to Codex, ChatGPT, Claude, Anthropic, OpenAI, government APIs, GitHub write workflows or patient data.** Nothing in this directory emits fiscal documents or modifies app behavior.
+**Status (2026-11-05): mock tests plus opt-in Codex CLI/Anthropic transport and local mission dashboard.** A real design-proposal cycle has been observed on the operator PC, ending at the configured round limit. No fiscal documents are emitted and app source code is not modified by the agent loop.
 
 ## Run locally (Node.js 22+)
 
@@ -78,3 +78,28 @@ powershell -ExecutionPolicy Bypass -File tools\fiscal-orchestrator\run-real.ps1 
 The script asks for the API key with hidden input and keeps it only in that process. Output: status `passed` / `blocked` (`round_limit`, `budget_limit`, `step_limit`), rounds, cost and full evidence.
 
 **Scope reminder:** this still produces *design proposals only* (no patches applied, no commands from model output, no invoices, no production data). Moving to autonomous code changes requires the sandbox/allowlist work listed above and Jorge's authorization.
+
+
+## Painel local — Central de missões (Windows)
+
+Nova interface, acessível apenas no computador em http://127.0.0.1:4876. Permite consultar checkpoints e, quando habilitado, iniciar uma missão de propostas com dados fictícios sem redigitar comandos no PowerShell.
+
+1. Atualize a branch com \`git pull origin feature/fiscal-ai-orchestrator-poc\`.
+2. Para **acompanhar histórico, sem chave e sem cobrança**:
+   \`\`\`powershell
+   powershell -ExecutionPolicy Bypass -File .\tools\fiscal-orchestrator\start-panel.ps1
+   \`\`\`
+3. Para permitir **missões reais de propostas** com Anthropic API (custos reais podem ocorrer):
+   \`\`\`powershell
+   powershell -ExecutionPolicy Bypass -File .\tools\fiscal-orchestrator\start-panel.ps1 -EnableRuns
+   \`\`\`
+   Cole a chave quando o PowerShell solicitar (não envie ao ChatGPT nem grave no GitHub). Abra http://127.0.0.1:4876 no navegador.
+
+A interface mostra somente metadados de execução, não o conteúdo das propostas nem informações de pacientes. Há uma missão por vez, até 3 rodadas. O teto de custo estimado da **missão individual** é US$ 0,50, sujeito às limitações de apuração já documentadas; **não existe ainda controle agregado e persistente de US$ 80**. O workspace do PsiConsultorio-IA foi relatado com limite de US$ 5, que deve ser confirmado no Console antes de ampliar consumo. Não alterar esse limite por instruções de modelo.
+
+**Para consultar amanhã:** a tela pode ler arquivos anteriores da pasta local mesmo após reiniciar o painel, mas o trabalho NÃO continua em segundo plano se o PowerShell fechar, o PC dormir, desligar ou reiniciar. Este painel ainda não dispara tarefas subsequentes automaticamente, não escreve código do app e não publica. Para execução autônoma noturna serão necessários agendador/process manager, política de retomada sem duplicidade, autenticação persistente em cofre de segredos, watchdog e teto agregado auditável — ainda não implementados.
+
+Executar testes grátis:
+\`\`\`powershell
+node --test tools/fiscal-orchestrator/*.test.mjs
+\`\`\`

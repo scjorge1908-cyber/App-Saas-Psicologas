@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hope AI • Missões fiscais</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,Segoe UI,Arial,sans-serif;background:#101a24;color:#eef6ff}*{box-sizing:border-box}body{margin:0}main{max-width:1050px;margin:0 auto;padding:38px 22px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}h1{font-size:28px;letter-spacing:-.7px;margin:6px 0}h2{font-size:17px;margin:0 0 14px}p{color:#9fb3c5;line-height:1.5}.eyebrow{font-size:12px;color:#80d9c5;font-weight:700;text-transform:uppercase;letter-spacing:1.7px}.pill{border:1px solid #315568;background:#192d38;color:#cce5ea;border-radius:99px;padding:8px 12px;font-size:12px}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-top:22px}.card{background:#182634;border:1px solid #314253;border-radius:17px;padding:23px;min-width:0}.sub{font-size:13px;color:#a1b7c9}textarea{width:100%;min-height:125px;background:#101d28;color:#fff;border:1px solid #41596b;border-radius:12px;padding:14px;resize:vertical;font:inherit;line-height:1.5;margin:6px 0 12px}textarea:focus{outline:2px solid #6cd1b5}button{cursor:pointer;background:#81e0c6;border:0;color:#10262c;font:700 14px inherit;border-radius:10px;padding:13px 20px;width:100%}button:disabled{opacity:.4;cursor:not-allowed}.stat{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #304254;font-size:14px;gap:12px}.stat:last-child{border:0}.good{color:#81e0c6}.warn{color:#ffca79}.muted{color:#b3c2d0}.runs{margin-top:19px}.run{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #334554;padding:13px 0;gap:12px}.run small{color:#9fb3c5}.run strong{font-size:13px}.run .right{text-align:right}#message{min-height:23px;margin-top:10px;font-size:13px}.footer{font-size:12px;margin-top:22px}code{color:#b6ecdc}@media(max-width:760px){.grid{grid-template-columns:1fr}main{padding:22px 14px}h1{font-size:24px}}
+</style></head><body><main>
+<header><div><div class="eyebrow">Hope AI • Psi Consultório</div><h1>Central de missões</h1><div class="sub">Codex planeja e revisa · Claude propõe e corrige</div></div><div class="pill" id="connection">Verificando ambiente...</div></header>
+<div class="grid">
+<section class="card"><h2>Nova missão</h2><p class="sub">Descreva o objetivo com dados fictícios. Uma missão por vez, sem emissão fiscal real ou alterações em produção.</p>
+<form id="mission-form"><label for="objective" class="sub">Objetivo do trabalho</label><textarea id="objective" maxlength="800" placeholder="Ex.: Revisar riscos de duplicidade de NFS-e e propor critérios para testes com dados fictícios."></textarea>
+<button id="submit" disabled>Iniciar missão</button><div id="message" role="status" aria-live="polite"></div></form>
+<div class="footer">O executor atual troca propostas técnicas; não implementa código automaticamente. Para iniciar missões o painel deve estar habilitado no computador.</div></section>
+<section class="card"><h2>Controle operacional</h2>
+<div class="stat"><span class="muted">Codex</span><strong>Login local do ChatGPT</strong></div>
+<div class="stat"><span class="muted">Claude</span><strong id="claude">Verificando...</strong></div>
+<div class="stat"><span class="muted">Execução</span><strong id="enabled">Verificando...</strong></div>
+<div class="stat"><span class="muted">Teto estimado por missão</span><strong id="cap">US$ 0,50</strong></div>
+<div class="stat"><span class="muted">Missão ativa</span><strong id="active">Nenhuma</strong></div>
+<p class="footer">O limite de US$ 0,50 é por missão e não substitui o limite da Anthropic Console. Este painel não pode garantir um teto agregado de US$ 80 e não altera o limite do Workspace.</p></section></div>
+<section class="card runs"><h2>Histórico de execução</h2><p class="sub">Atualização automática a cada 5 segundos. Conteúdos clínicos, respostas completas e credenciais não aparecem nesta tela.</p>
+<div id="runs"><span class="muted">Carregando missões...</span></div></section>
+<p class="footer">Disponível apenas neste computador em <code>127.0.0.1:4876</code>. Mantenha o PowerShell e o computador ligados para executar novas missões. O painel não funciona sozinho durante a noite se o computador dormir ou desligar.</p>
+</main><script>
+const token='__SESSION_TOKEN__';
+const h={'x-hope-panel-token':token};
+const statusEl=document.querySelector('#message'), send=document.querySelector('#submit');
+async function refresh(){
+ try{
+  const res=await fetch('/api/status',{headers:h,cache:'no-store'});if(!res.ok)throw Error('Erro na leitura');
+  const d=await res.json();
+  document.querySelector('#connection').textContent=d.ready?'Claude configurado':'Claude sem credencial no painel';
+  document.querySelector('#claude').textContent=d.ready?'Chave carregada':'Sem chave';
+  document.querySelector('#enabled').textContent=d.executionEnabled?'Autorizada localmente':'Bloqueada';
+  document.querySelector('#cap').textContent='US$ '+Number(d.missionCapUsd).toFixed(2).replace('.',',');
+  document.querySelector('#active').textContent=d.active?'Executando desde '+new Date(d.active.startedAt).toLocaleTimeString('pt-BR'):'Nenhuma';
+  send.disabled=!d.ready||!d.executionEnabled||!!d.active;
+  const list=document.querySelector('#runs');list.replaceChildren();
+  if(!d.runs.length){list.textContent='Nenhum checkpoint encontrado.';return}
+  for(const run of d.runs){
+   const item=document.createElement('div');item.className='run';
+   const left=document.createElement('div'),strong=document.createElement('strong'),small=document.createElement('small');
+   strong.textContent='Missão '+run.runId.slice(0,8);small.textContent=' · '+(run.updatedAt?new Date(run.updatedAt).toLocaleString('pt-BR'):'sem data');
+   left.append(strong,small);
+   const right=document.createElement('div');right.className='right';
+   const state=document.createElement('strong');state.className=run.status==='passed'?'good':run.status==='blocked'?'warn':'muted';
+   state.textContent=run.status==='passed'?'Aprovada':run.status==='blocked'?'Bloqueada':run.status==='running'?'Em andamento':run.status;
+   const detail=document.createElement('div');detail.className='sub';detail.textContent='Rodada '+(run.round||0)+(run.reason?' · '+run.reason:'');
+   right.append(state,detail);item.append(left,right);list.append(item);
+  }
+ }catch(e){document.querySelector('#connection').textContent='Sem conexão com painel';send.disabled=true;}
+}
+document.querySelector('#mission-form').addEventListener('submit',async e=>{
+ e.preventDefault();send.disabled=true;statusEl.textContent='Enviando missão...';
+ try{
+  const objective=document.querySelector('#objective').value;
+  const res=await fetch('/api/run',{method:'POST',headers:{...h,'content-type':'application/json'},body:JSON.stringify({objective})});
+  const result=await res.json();if(!res.ok)throw Error(result.error||'Falha ao iniciar');
+  statusEl.textContent='Missão iniciada. Acompanhe o histórico.';document.querySelector('#objective').value='';
+ }catch(e){statusEl.textContent=e.message}
+ await refresh();
+});
+refresh();setInterval(refresh,5000);
+</script></body></html>

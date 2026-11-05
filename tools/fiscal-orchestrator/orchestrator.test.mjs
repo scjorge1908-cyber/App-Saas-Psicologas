@@ -7,7 +7,11 @@ import { Orchestrator, createMockAgents } from './orchestrator.mjs';
 
 async function sandbox(callback) {
   const dir = await mkdtemp(join(tmpdir(), 'fiscal-orch-'));
-  try { await callback(dir); } finally { await rm(dir, { recursive: true, force: true }); }
+  try { await callback(dir); } finally {
+    // Windows can temporarily hold JSON checkpoint handles (antivirus/indexer).
+    // Node retries transient ENOTEMPTY/EPERM/EBUSY failures for recursive rm.
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 150 });
+  }
 }
 test('mock agents request change and then approve', async () => sandbox(async dir => {
   const runner = new Orchestrator({ ...createMockAgents(), storageDir: dir });

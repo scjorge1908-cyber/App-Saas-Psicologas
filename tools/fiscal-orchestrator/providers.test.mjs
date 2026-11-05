@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createCodexPlanner, createAnthropicExecutor } from './providers.mjs';
+import { createCodexPlanner, createAnthropicExecutor, codexCommand } from './providers.mjs';
 
 test('Codex planner handles JSON plan and review without actual network', async () => {
   const outputs = [
@@ -108,4 +108,9 @@ let input='';process.stdin.on('data',c=>input+=c).on('end',()=>{
     assert.ok(seen[1].includes('missing unique constraint'), 'Claude received Codex feedback automatically');
     assert.equal(state.events[3].evidence.summary, 'fixed');
   } finally { process.env.PATH = oldPath; await rm(dir, { recursive: true, force: true }); }
+});
+
+test('Windows resolves Codex executable directly without invoking a shell', () => {
+  assert.deepEqual(codexCommand('win32'), { command: 'codex.exe', shell: false });
+  assert.deepEqual(codexCommand('linux'), { command: 'codex', shell: false });
 });

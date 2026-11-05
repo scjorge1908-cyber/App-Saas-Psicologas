@@ -3,6 +3,7 @@
 <title>Hope AI • Missões fiscais</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,Segoe UI,Arial,sans-serif;background:#101a24;color:#eef6ff}*{box-sizing:border-box}body{margin:0}main{max-width:1050px;margin:0 auto;padding:38px 22px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}h1{font-size:28px;letter-spacing:-.7px;margin:6px 0}h2{font-size:17px;margin:0 0 14px}p{color:#9fb3c5;line-height:1.5}.eyebrow{font-size:12px;color:#80d9c5;font-weight:700;text-transform:uppercase;letter-spacing:1.7px}.pill{border:1px solid #315568;background:#192d38;color:#cce5ea;border-radius:99px;padding:8px 12px;font-size:12px}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-top:22px}.card{background:#182634;border:1px solid #314253;border-radius:17px;padding:23px;min-width:0}.sub{font-size:13px;color:#a1b7c9}textarea{width:100%;min-height:125px;background:#101d28;color:#fff;border:1px solid #41596b;border-radius:12px;padding:14px;resize:vertical;font:inherit;line-height:1.5;margin:6px 0 12px}textarea:focus{outline:2px solid #6cd1b5}button{cursor:pointer;background:#81e0c6;border:0;color:#10262c;font:700 14px inherit;border-radius:10px;padding:13px 20px;width:100%}button:disabled{opacity:.4;cursor:not-allowed}.stat{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #304254;font-size:14px;gap:12px}.stat:last-child{border:0}.good{color:#81e0c6}.warn{color:#ffca79}.muted{color:#b3c2d0}.runs{margin-top:19px}.run{display:flex;justify-content:space-between;align-items:center;border-top:1px solid #334554;padding:13px 0;gap:12px}.run small{color:#9fb3c5}.run strong{font-size:13px}.run .right{text-align:right}#message{min-height:23px;margin-top:10px;font-size:13px}.footer{font-size:12px;margin-top:22px}code{color:#b6ecdc}@media(max-width:760px){.grid{grid-template-columns:1fr}main{padding:22px 14px}h1{font-size:24px}}
+.run{cursor:pointer;border-radius:9px;padding:13px 8px}.run:hover{background:#223547}.run:focus{outline:2px solid #81e0c6}.report{margin-top:19px}.timeline{display:grid;gap:12px}.event{border:1px solid #385062;background:#111f2c;border-radius:12px;padding:16px}.event h3{font-size:14px;margin:0 0 8px}.event p{white-space:pre-wrap;overflow-wrap:anywhere;margin:7px 0;font-size:13px}.event ul{padding-left:19px;margin:7px 0}.event li{color:#bed0de;font-size:13px;margin-bottom:5px;overflow-wrap:anywhere}.report-info{display:flex;gap:15px;flex-wrap:wrap;align-items:center;justify-content:space-between}.report .small{font-size:12px;color:#9fb3c5}
 </style></head><body><main>
 <header><div><div class="eyebrow">Hope AI • Psi Consultório</div><h1>Central de missões</h1><div class="sub">Codex planeja e revisa · Claude propõe e corrige</div></div><div class="pill" id="connection">Verificando ambiente...</div></header>
 <div class="grid">
@@ -17,13 +18,49 @@
 <div class="stat"><span class="muted">Teto estimado por missão</span><strong id="cap">US$ 0,50</strong></div>
 <div class="stat"><span class="muted">Missão ativa</span><strong id="active">Nenhuma</strong></div>
 <p class="footer">O limite de US$ 0,50 é por missão e não substitui o limite da Anthropic Console. Este painel não pode garantir um teto agregado de US$ 80 e não altera o limite do Workspace.</p></section></div>
-<section class="card runs"><h2>Histórico de execução</h2><p class="sub">Atualização automática a cada 5 segundos. Conteúdos clínicos, respostas completas e credenciais não aparecem nesta tela.</p>
+<section class="card runs"><h2>Histórico de execução</h2><p class="sub">Clique em uma missão para acompanhar planos, propostas e revisões. Atualização automática a cada 5 segundos. Somente resumos redigidos para uso com dados fictícios; nunca inclua dados clínicos ou segredos.</p>
 <div id="runs"><span class="muted">Carregando missões...</span></div></section>
+<section class="card report" id="report-panel" hidden><div class="report-info"><h2 id="report-title">Relatório da missão</h2><span class="pill" id="report-cost">Custo em apuração</span></div><p class="sub" id="report-state"></p><div class="timeline" id="report-events"></div><p class="footer">Resumos dos registros locais, não um chat interativo. Custos aparecem após a conclusão normal da missão; podem faltar em execuções interrompidas. Nunca inclua dados reais de pacientes.</p></section>
 <p class="footer">Disponível apenas neste computador em <code>127.0.0.1:4876</code>. Mantenha o PowerShell e o computador ligados para executar novas missões. O painel não funciona sozinho durante a noite se o computador dormir ou desligar.</p>
 </main><script>
 const token='__SESSION_TOKEN__';
 const h={'x-hope-panel-token':token};
 const statusEl=document.querySelector('#message'), send=document.querySelector('#submit');
+let selectedRun=null;
+function displayList(container, label, values){
+ if(!Array.isArray(values)||!values.length)return;
+ const heading=document.createElement('strong');heading.textContent=label;
+ const ul=document.createElement('ul');for(const value of values){const li=document.createElement('li');li.textContent=value;ul.append(li)}
+ container.append(heading,ul);
+}
+async function showReport(id){
+ if(!/^[a-f0-9-]{36}$/.test(id))return;
+ selectedRun=id;
+ const panel=document.querySelector('#report-panel');panel.hidden=false;
+ const list=document.querySelector('#report-events');
+ try{
+  const response=await fetch('/api/report/'+encodeURIComponent(id),{headers:h,cache:'no-store'});
+  if(!response.ok)throw Error('Não foi possível consultar a missão');
+  const report=await response.json();if(selectedRun!==id)return;
+  document.querySelector('#report-title').textContent='Relatório da missão '+id.slice(0,8);
+  document.querySelector('#report-state').textContent='Status: '+report.status+' · Rodadas: '+(report.round||0)+(report.reason?' · Motivo: '+report.reason:'');
+  document.querySelector('#report-cost').textContent=report.cost?'Anthropic estimado: US$ '+Number(report.cost.spentUsdEstimate).toFixed(6).replace('.',','):'Custo não disponível';
+  list.replaceChildren();
+  if(!report.events?.length){list.textContent='Aguardando os primeiros registros da missão.';return}
+  for(const event of report.events){
+   const card=document.createElement('article');card.className='event';
+   const title=document.createElement('h3');title.textContent=event.role+' · '+event.action+' · Rodada '+event.round;
+   card.append(title);
+   for(const [label,value] of [['Resumo',event.summary],['Proposta',event.design]]){
+    if(!value)continue;const text=document.createElement('p');const strong=document.createElement('strong');strong.textContent=label+': ';text.append(strong,document.createTextNode(value));card.append(text);
+   }
+   displayList(card,'Plano',event.plan);displayList(card,'Correções solicitadas',event.findings);
+   displayList(card,'Testes propostos (não executados)',event.tests);displayList(card,'Riscos',event.risks);
+   list.append(card);
+  }
+ }catch(err){list.textContent=err.message}
+}
+
 async function refresh(){
  try{
   const res=await fetch('/api/status',{headers:h,cache:'no-store'});if(!res.ok)throw Error('Erro na leitura');
@@ -45,8 +82,11 @@ async function refresh(){
    const state=document.createElement('strong');state.className=run.status==='passed'?'good':run.status==='blocked'?'warn':'muted';
    state.textContent=run.status==='passed'?'Aprovada':run.status==='blocked'?'Bloqueada':run.status==='running'?'Em andamento':run.status;
    const detail=document.createElement('div');detail.className='sub';detail.textContent='Rodada '+(run.round||0)+(run.reason?' · '+run.reason:'');
-   right.append(state,detail);item.append(left,right);list.append(item);
+   right.append(state,detail);item.append(left,right);item.tabIndex=0;item.setAttribute('role','button');item.setAttribute('aria-label','Abrir relatório da missão '+run.runId.slice(0,8));
+   item.addEventListener('click',()=>showReport(run.runId));item.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showReport(run.runId)}});
+   list.append(item);
   }
+  if(selectedRun) await showReport(selectedRun);
  }catch(e){document.querySelector('#connection').textContent='Sem conexão com painel';send.disabled=true;}
 }
 document.querySelector('#mission-form').addEventListener('submit',async e=>{
@@ -55,7 +95,7 @@ document.querySelector('#mission-form').addEventListener('submit',async e=>{
   const objective=document.querySelector('#objective').value;
   const res=await fetch('/api/run',{method:'POST',headers:{...h,'content-type':'application/json'},body:JSON.stringify({objective})});
   const result=await res.json();if(!res.ok)throw Error(result.error||'Falha ao iniciar');
-  statusEl.textContent='Missão iniciada. Acompanhe o histórico.';document.querySelector('#objective').value='';
+  statusEl.textContent='Missão iniciada. Acompanhe o histórico e abra o relatório da missão.';document.querySelector('#objective').value='';
  }catch(e){statusEl.textContent=e.message}
  await refresh();
 });

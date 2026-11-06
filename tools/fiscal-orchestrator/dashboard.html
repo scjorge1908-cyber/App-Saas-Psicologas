@@ -18,12 +18,31 @@
 <div class="stat"><span class="muted">Teto estimado por missão</span><strong id="cap">US$ 0,50</strong></div>
 <div class="stat"><span class="muted">Missão ativa</span><strong id="active">Nenhuma</strong></div>
 <p class="footer">O limite de US$ 0,50 é por missão e não substitui o limite da Anthropic Console. Este painel não pode garantir um teto agregado de US$ 80 e não altera o limite do Workspace.</p></section></div>
+<section class="card runs" id="development-section">
+<h2>Desenvolvimento fiscal — Codex</h2>
+<p class="sub">A missão permanente #26 já está configurada. Um clique inicia o Codex para criar uma experiência <strong>simulada</strong> de emissão de NFS-e em uma cópia local separada do repositório. Sem Claude API e sem transmissão fiscal real. O resultado precisa ser revisado antes de incorporar ao aplicativo.</p>
+<button id="start-development" disabled>Iniciar desenvolvimento local com Codex</button>
+<p id="development-message" class="sub" role="status" aria-live="polite">Consultando ambiente...</p>
+<div id="development-list" class="timeline"></div>
+<p class="footer">O Codex usa a sessão ChatGPT já autenticada e pode estar sujeito a limites de uso. A cópia separada e o sandbox workspace-write não equivalem a uma máquina virtual segura. Não executa automaticamente deploy, merge nem envio de NFS-e.</p></section>
 <section class="card runs"><h2>Histórico de execução</h2><p class="sub">Clique em uma missão para acompanhar planos, propostas e revisões. Atualização automática a cada 5 segundos. Somente resumos redigidos para uso com dados fictícios; nunca inclua dados clínicos ou segredos.</p>
 <div id="runs"><span class="muted">Carregando missões...</span></div></section>
 <section class="card report" id="report-panel" hidden><div class="report-info"><h2 id="report-title">Relatório da missão</h2><span class="pill" id="report-cost">Custo em apuração</span></div><p class="sub" id="report-state"></p><div class="timeline" id="report-events"></div><p class="footer">Resumos dos registros locais, não um chat interativo. Custos aparecem após a conclusão normal da missão; podem faltar em execuções interrompidas. Nunca inclua dados reais de pacientes.</p></section>
 <p class="footer">Disponível apenas neste computador em <code>127.0.0.1:4876</code>. Mantenha o PowerShell e o computador ligados para executar novas missões. O painel não funciona sozinho durante a noite se o computador dormir ou desligar.</p>
 </main><script>
 const token='__SESSION_TOKEN__';
+const devButton=document.querySelector('#start-development');
+devButton.addEventListener('click',async()=>{
+ devButton.disabled=true;
+ document.querySelector('#development-message').textContent='Iniciando Codex em cópia local...';
+ try{
+  const response=await fetch('/api/development/start',{method:'POST',headers:{'x-hope-panel-token':token}});
+  const result=await response.json();
+  if(!response.ok)throw Error(result.error||'Erro ao iniciar desenvolvimento');
+  document.querySelector('#development-message').textContent='Codex iniciado. Identificador: '+result.runId.slice(0,8);
+ }catch(error){document.querySelector('#development-message').textContent=error.message;}
+ await refresh();
+});
 const h={'x-hope-panel-token':token};
 const statusEl=document.querySelector('#message'), send=document.querySelector('#submit');
 let selectedRun=null;
@@ -70,7 +89,19 @@ async function refresh(){
   document.querySelector('#enabled').textContent=d.executionEnabled?'Autorizada localmente':'Bloqueada';
   document.querySelector('#cap').textContent='US$ '+Number(d.missionCapUsd).toFixed(2).replace('.',',');
   document.querySelector('#active').textContent=d.active?'Executando desde '+new Date(d.active.startedAt).toLocaleTimeString('pt-BR'):'Nenhuma';
-  send.disabled=!d.ready||!d.executionEnabled||!!d.active;
+  send.disabled=!d.ready||!d.executionEnabled||!!d.active||d.developmentActive;
+  devButton.disabled=!d.developmentEnabled||!!d.active||d.developmentActive;
+  const devList=document.querySelector('#development-list');devList.replaceChildren();
+  document.querySelector('#development-message').textContent=d.developmentActive?'Codex em execução. Acompanhe as atualizações abaixo.':'Nenhuma execução ativa. A missão permanente já está definida.';
+  for(const item of d.developmentRuns||[]){
+   const card=document.createElement('div');card.className='event';
+   const title=document.createElement('h3');title.textContent='Codex '+item.runId.slice(0,8)+' · '+item.status+' · '+item.phase;card.append(title);
+   const text=document.createElement('p');text.textContent=item.message||'';card.append(text);
+   if(item.summary){const p=document.createElement('p');p.textContent='Relatório: '+item.summary;card.append(p);}
+   if(item.changedFiles?.length){const label=document.createElement('strong');label.textContent='Arquivos modificados na cópia local';card.append(label);const list=document.createElement('ul');for(const file of item.changedFiles){const li=document.createElement('li');li.textContent=file;list.append(li)}card.append(list);}
+   if(item.checkout){const local=document.createElement('p');local.textContent='Pasta do protótipo (ainda não incorporado): '+item.checkout;card.append(local);}
+   devList.append(card);
+  }
   const list=document.querySelector('#runs');list.replaceChildren();
   if(!d.runs.length){list.textContent='Nenhum checkpoint encontrado.';return}
   for(const run of d.runs){

@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +15,8 @@ const MAX_OBJECTIVE = 800;
 const allowedOrigins = new Set(['http://127.0.0.1:' + PORT, 'http://localhost:' + PORT]);
 const budgetCap = 0.5; // one mission estimate; NOT a lifetime spending cap
 let active = null;
+let activeDevelopment = null;
+const developmentRoot = join(stateDir, 'development');
 
 async function safeReadJson(name) {
   if (!/^[a-f0-9-]{36}\.json$/.test(name)) return null;
@@ -89,6 +91,22 @@ function authorized(req) {
   return req.headers['x-hope-panel-token'] === token &&
     (req.headers.origin === undefined || allowedOrigins.has(req.headers.origin));
 }
+async function developmentSnapshots() {
+  const entries = (await readdir(developmentRoot).catch(()=>[]))
+    .filter(id=>/^[a-f0-9-]{36}$/.test(id)).slice(-50);
+  const runs = await Promise.all(entries.map(async id=>{
+    try {
+      const data = JSON.parse(await readFile(join(developmentRoot,id,'status.json'),'utf8'));
+      if(data.runId!==id) return null;
+      return { runId:id,status:data.status,phase:data.phase,message:String(data.message||'').slice(0,500),
+        startedAt:data.startedAt,updatedAt:data.updatedAt,completedAt:data.completedAt,
+        changedFiles:Array.isArray(data.changedFiles)?data.changedFiles.slice(0,50):[],
+        summary:String(data.summary||'').slice(0,2000),
+        checkout:data.status==='completed_unreviewed'?data.checkout:undefined };
+    } catch { return null; }
+  }));
+  return runs.filter(Boolean).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')).slice(0,12);
+}
 async function snapshots() {
   const names = (await readdir(stateDir).catch(() => []))
     .filter(x => /^[a-f0-9-]{36}\.json$/.test(x)).slice(-100);
@@ -110,7 +128,9 @@ async function serve(req, res) {
     return json(res, 200, { ready: Boolean(process.env.ANTHROPIC_API_KEY),
       executionEnabled: process.env.FISCAL_DASHBOARD_ENABLE_RUN === 'YES',
       active: active ? { running: true, startedAt: active.startedAt } : null,
-      missionCapUsd: budgetCap, runs: await snapshots() });
+      missionCapUsd: budgetCap, runs: await snapshots(),
+      developmentEnabled: process.env.FISCAL_DASHBOARD_ENABLE_RUN === 'YES',
+      developmentActive: Boolean(activeDevelopment), developmentRuns: await developmentSnapshots() });
   const reportMatch = /^\/api\/report\/([a-f0-9-]{36})$/.exec(url.pathname);
   if (reportMatch && req.method === 'GET') {
     const id = reportMatch[1];
@@ -119,11 +139,27 @@ async function serve(req, res) {
     const evidence = await safeReadEvidence(id);
     return json(res, 200, publicReport(checkpoint, evidence));
   }
+  if (url.pathname === '/api/development/start' && req.method === 'POST') {
+    if (process.env.FISCAL_DASHBOARD_ENABLE_RUN !== 'YES')
+      return json(res,403,{error:'Inicie o painel com -EnableRuns para autorizar o trabalho local'});
+    if (active || activeDevelopment)
+      return json(res,409,{error:'Existe outra tarefa em execução'});
+    const id = randomUUID();
+    const child = spawn(process.execPath,[join(here,'development-worker.mjs'),id],{
+      cwd:root,shell:false,windowsHide:true,stdio:['ignore','pipe','pipe'],
+      env:{...process.env,ANTHROPIC_API_KEY:'',OPENAI_API_KEY:'',FISCAL_AI_REAL_MODE:'OFF'}
+    });
+    activeDevelopment={id,child};
+    child.stdout.resume();child.stderr.resume();
+    child.on('exit',()=>{if(activeDevelopment?.id===id)activeDevelopment=null});
+    child.on('error',()=>{if(activeDevelopment?.id===id)activeDevelopment=null});
+    return json(res,202,{started:true,runId:id});
+  }
   if (url.pathname === '/api/run' && req.method === 'POST') {
     if (process.env.FISCAL_DASHBOARD_ENABLE_RUN !== 'YES')
       return json(res, 403, { error: 'Execução desabilitada. Ative explicitamente no computador.' });
     if (!process.env.ANTHROPIC_API_KEY) return json(res, 403, { error: 'Chave Anthropic ausente no processo local.' });
-    if (active) return json(res, 409, { error: 'Uma missão já está em execução.' });
+    if (active || activeDevelopment) return json(res, 409, { error: 'Uma missão já está em execução.' });
     let body = '';
     try {
       for await (const part of req) {

@@ -36,3 +36,17 @@ test('mocked worker completes without invoking real API or Codex',async()=>{
   assert.deepEqual(result.changedFiles,['M web/src/mock.ts']);
   assert.equal(calls.length,4);
 });
+
+test('Codex that changes no files is blocked rather than marked complete',async()=>{
+  const id='bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb';
+  const run=async(command,args)=>{
+    if(command==='git' && args[0]==='clone') await mkdir(args.at(-1),{recursive:true});
+    if(/codex/.test(command)) await writeFile(args[args.indexOf('--output-last-message')+1],'read-only; no changes');
+    if(command==='git' && args[0]==='status') return '';
+    return '';
+  };
+  const result=await runDevelopment(id,{run});
+  assert.equal(result.status,'blocked');
+  assert.deepEqual(result.changedFiles,[]);
+  assert.match(result.message,/nenhum arquivo/i);
+});

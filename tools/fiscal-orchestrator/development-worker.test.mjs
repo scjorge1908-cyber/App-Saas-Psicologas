@@ -34,5 +34,5 @@ test('mocked worker completes without invoking real API or Codex',async()=>{
   assert.equal(result.status,'completed_unreviewed');
   assert.ok(result.summary.includes('mocked'));
   assert.deepEqual(result.changedFiles,['M web/src/mock.ts']);
-  assert.equal(calls.length,3);
+  assert.equal(calls.length,4);
 });

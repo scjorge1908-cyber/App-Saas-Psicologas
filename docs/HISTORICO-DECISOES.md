@@ -18,6 +18,12 @@ Legenda de situação: **Publicado** (na Play/produção) · **Pronto, não publ
 
 ---
 
+## 05/11/2026
+
+| Versão / PR | O que mudou | Por quê / quem pediu | Situação |
+|---|---|---|---|
+| PR #25 (orquestrador fiscal IA) | Configuração da integração Claude ↔ Codex: workspace **PsiConsultorio-IA** na Anthropic com limite mensal de **US$ 5** e chave exclusiva (sem tocar no HopeCore); correções nos adaptadores (Codex no Windows, leitura da resposta final do Codex, resposta truncada, trava de orçamento por chamada, evidências com custo, verificação gratuita `--check`), script `run-real.ps1` e 5 testes novos (15/15). Nenhuma chamada paga feita; ciclo real ainda não executado. | Comando do Jorge de 05/11 ("COMANDO PARA CLAUDE — CONFIGURAÇÃO DA API DO PSICONSULTÓRIO"). Sem merge, sem deploy, sem emissão fiscal, sem dados reais. | Pronto, não publicado — aguardando `codex login` e instalação da chave pelo Jorge |
+
 ## 31/10/2026
 
 | Versão / PR | O que mudou | Por quê / quem pediu | Situação |

@@ -1,0 +1,19 @@
+name: Fiscal orchestrator mock tests
+on:
+  pull_request:
+    paths:
+      - 'tools/fiscal-orchestrator/**'
+      - '.github/workflows/fiscal-orchestrator-poc.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mock-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test tools/fiscal-orchestrator/*.test.mjs
+      - run: node tools/fiscal-orchestrator/cli.mjs demo

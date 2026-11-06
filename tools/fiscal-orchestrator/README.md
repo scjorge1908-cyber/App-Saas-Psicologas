@@ -103,3 +103,18 @@ Executar testes grátis:
 \`\`\`powershell
 node --test tools/fiscal-orchestrator/*.test.mjs
 \`\`\`
+
+## Desenvolvimento local pelo painel — protótipo fiscal mock (06/11/2026)
+
+Nova função opt-in **Iniciar desenvolvimento local com Codex** no painel `http://127.0.0.1:4876`.
+
+- Requer o Codex CLI autenticado pelo ChatGPT e o painel iniciado com `-EnableRuns`. O botão de desenvolvimento **não utiliza Anthropic API** e não tem custo Anthropic; o Codex está sujeito aos limites normais do plano.
+- A missão é fixa e restrita: implementar fluxo **simulado** de emissão fiscal em Psi Consultório usando dados fictícios e código existente. O texto mestre está em `development-worker.mjs`, portanto não é necessário colar instruções longas.
+- Cria clone **local**, separado da pasta original, em `.fiscal-orchestrator-runs/development/<uuid>/checkout`. Roda `codex exec --sandbox workspace-write` nessa cópia, com variáveis de API removidas, sem executar comandos textuais vindos do navegador e sem GitHub push.
+- O painel mostra status persistido por fases, resumo e arquivos alterados. Resultado `completed_unreviewed` significa **código desenvolvido na cópia, NÃO testado/aceito independentemente**, e requer revisão humana/técnica antes de ser levado ao aplicativo.
+- Execução única por clique; não é um daemon autônomo que continua indefinidamente após desligar o Windows. Não há incorporação automática no repositório principal, deploy, migrações ou transmissão de notas reais.
+- `workspace-write` + clone separado **não são garantia de isolamento equivalente a VM/container**; na plataforma Windows, permissões efetivas do sandbox dependem da instalação do Codex. Não usar esta ferramenta com dados reais/segredos disponíveis no workspace.
+- O botão antigo `Nova missão` permanece um ciclo pago de **propostas** Codex/Claude. Para testar desenvolvimento real local, use **somente** o botão novo.
+- Antes de usar, baixar a branch `feature/fiscal-ai-orchestrator-poc`, rodar `node --test tools/fiscal-orchestrator/*.test.mjs`, encerrar o servidor local antigo e reiniciar `start-panel.ps1 -EnableRuns`.
+
+**Meta de produto:** o primeiro clique deve gerar um protótipo testável com NFS-e simulada, nunca emissão fiscal oficial. A cobertura nacional oficial precisa de documentação, integração e homologação por regime/município.

@@ -55,6 +55,8 @@ export async function runDevelopment(id,{run=runProgram,now=()=>new Date().toISO
   const env=sanitizedEnvironment();
   try {
     await run('git',['clone','--no-hardlinks','--local','--single-branch','--branch',workingBranch,sourceRepo,checkout],{cwd:dir,env,timeoutMs:90000});
+    // Remove the clone's origin to prevent accidental remote pushes from the agent.
+    await run('git',['remote','remove','origin'],{cwd:checkout,env,timeoutMs:30000});
     await update({phase:'developing',message:'Codex desenvolvendo protótipo local. Nenhuma chamada Anthropic.',checkout});
     const outputFile=join(dir,'codex-last-message.txt');
     await run(process.platform==='win32'?'codex.exe':'codex',

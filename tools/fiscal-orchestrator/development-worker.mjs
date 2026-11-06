@@ -66,7 +66,11 @@ export async function runDevelopment(id,{run=runProgram,now=()=>new Date().toISO
     const diff=await run('git',['status','--short'],{cwd:checkout,env,timeoutMs:30000});
     const files=diff.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).slice(0,80);
     const finalText=await readFile(outputFile,'utf8').catch(()=> 'Codex não deixou resposta final.');
-    await update({status:'completed_unreviewed',phase:'done',message:'Desenvolvimento local concluído; revisar e testar antes de incorporar ao repositório',changedFiles:files,summary:redact(finalText),completedAt:now()});
+    if (files.length===0) {
+      await update({status:'blocked',phase:'blocked',message:'Codex terminou sem alterar nenhum arquivo. Não há protótipo para testar. Verifique as permissões de gravação do sandbox na Central.',changedFiles:[],summary:redact(finalText),completedAt:now()});
+    } else {
+      await update({status:'completed_unreviewed',phase:'done',message:'Arquivos alterados na cópia local; ainda precisam de testes e revisão antes de incorporar',changedFiles:files,summary:redact(finalText),completedAt:now()});
+    }
   }catch(error) {
     await update({status:'blocked',phase:'blocked',message:redact(error.message),completedAt:now()});
   }

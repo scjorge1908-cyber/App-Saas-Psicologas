@@ -54,6 +54,14 @@ export function dadosDaNfse(chave: string, xml: string): NfseGerada {
   return { chave, xml, numero, emitidaEm: dh ? dh.slice(0, 10) : null };
 }
 
+const CHAVE = /^[0-9]{50}$/;
+const ID_DPS = /^DPS[0-9]{42}$/;
+/** Só chave/Id no formato oficial entram no endereço (nada de "../" vindo do banco). */
+function exigir(v: string, re: RegExp, nome: string) {
+  if (!re.test(v)) throw new ErroSefin(`${nome} inválida.`);
+  return v;
+}
+
 export function clienteSefin(transporte: Transporte, ambiente: Ambiente, base = URLS[ambiente]) {
   const chamar = async (url: string, init: Parameters<Transporte>[1]) => {
     try { return await transporte(url, init); } catch (e) {
@@ -64,33 +72,33 @@ export function clienteSefin(transporte: Transporte, ambiente: Ambiente, base = 
     async enviarDps(xmlAssinado: string): Promise<NfseGerada> {
       const r = await chamar(`${base.sefin}/nfse`, { method: 'POST', json: { dpsXmlGZipB64: await gzipB64(xmlAssinado) } });
       const j = json(r);
-      if (r.status >= 200 && r.status < 300 && j?.chaveAcesso && j?.nfseXmlGZipB64) {
+      if (r.status >= 200 && r.status < 300 && CHAVE.test(String(j?.chaveAcesso ?? '')) && j?.nfseXmlGZipB64) {
         return dadosDaNfse(String(j.chaveAcesso), await deGzipB64(String(j.nfseXmlGZipB64)));
       }
       falha(r, 'Emissão');
     },
     /** Procura a NFS-e gerada a partir de uma DPS (usado no reenvio, para não emitir em dobro). */
     async chaveDaDps(idDps: string): Promise<string | null> {
-      const r = await chamar(`${base.sefin}/dps/${idDps}`, { method: 'GET' });
+      const r = await chamar(`${base.sefin}/dps/${exigir(idDps, ID_DPS, 'Id da DPS')}`, { method: 'GET' });
       if (r.status === 404) return null;
       const j = json(r);
-      if (r.status === 200 && j?.chaveAcesso) return String(j.chaveAcesso);
+      if (r.status === 200 && CHAVE.test(String(j?.chaveAcesso ?? ''))) return String(j!.chaveAcesso);
       if (r.status === 400 && errosSefin(j).length) return null;
       falha(r, 'Consulta da DPS');
     },
     async obterNfse(chave: string): Promise<NfseGerada> {
-      const r = await chamar(`${base.sefin}/nfse/${chave}`, { method: 'GET' });
+      const r = await chamar(`${base.sefin}/nfse/${exigir(chave, CHAVE, 'Chave')}`, { method: 'GET' });
       const j = json(r);
       if (r.status === 200 && j?.nfseXmlGZipB64) return dadosDaNfse(chave, await deGzipB64(String(j.nfseXmlGZipB64)));
       falha(r, 'Consulta da NFS-e');
     },
     async cancelar(chave: string, eventoAssinado: string): Promise<void> {
-      const r = await chamar(`${base.sefin}/nfse/${chave}/eventos`, { method: 'POST', json: { pedidoRegistroEventoXmlGZipB64: await gzipB64(eventoAssinado) } });
+      const r = await chamar(`${base.sefin}/nfse/${exigir(chave, CHAVE, 'Chave')}/eventos`, { method: 'POST', json: { pedidoRegistroEventoXmlGZipB64: await gzipB64(eventoAssinado) } });
       if (r.status >= 200 && r.status < 300) return;
       falha(r, 'Cancelamento');
     },
     async danfse(chave: string): Promise<Uint8Array> {
-      const r = await chamar(`${base.adn}/danfse/${chave}`, { method: 'GET' });
+      const r = await chamar(`${base.adn}/danfse/${exigir(chave, CHAVE, 'Chave')}`, { method: 'GET' });
       if (r.status === 200 && r.tipo.includes('pdf')) return r.corpo;
       falha(r, 'PDF da nota (DANFSe)');
     },

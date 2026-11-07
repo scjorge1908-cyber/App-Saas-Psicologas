@@ -28,6 +28,14 @@ select tests.throws($q$update public.invoices set status = 'emitida', number = '
 select tests.eq(tests.affected($q$update public.invoices set amount = 210 where id = tests.id('N')$q$), 1, 'Rascunho (antes do envio) pode ter o valor ajustado');
 select tests.throws($q$insert into public.invoices (patient_id, payment_id, amount) values (tests.id('P'), tests.id('G'), 200)$q$, '23505', 'Segunda nota ativa para o mesmo recebimento é recusada');
 
+-- Revisão de segurança: nota manual não vira "nota do sistema emitida" por etapas
+with _m as (insert into public.invoices (patient_id, amount) values (tests.id('P'), 50) returning id)
+select tests.put('M', id) from _m;
+select tests.eq(tests.affected($q$update public.invoices set status = 'emitida', number = '7', issued_on = current_date where id = tests.id('M')$q$), 1, 'Nota manual continua editável como antes');
+select tests.throws($q$update public.invoices set access_key = repeat('9', 50), nfse_xml = '<x/>' where id = tests.id('M')$q$, '42501', 'XML da NFS-e não é gravado pelo app nem em nota manual');
+select tests.throws($q$update public.invoices set emissao = 'nfse_nacional' where id = tests.id('M')$q$, '42501', 'Nota manual emitida não vira nota do sistema');
+select tests.throws($q$update public.invoices set dps_numero = 3, ambiente = 'producao' where id = tests.id('M')$q$, '42501', 'Campos da DPS não são gravados pelo app');
+
 -- Funções do servidor: o app não chama
 select tests.throws($q$select public.nfse_reservar(tests.id('A'), tests.id('N'))$q$, '42501', 'App não reserva número da DPS');
 select tests.throws($q$select public.nfse_certificado_obter(tests.id('A'))$q$, '42501', 'App não lê o certificado cifrado');
@@ -46,6 +54,12 @@ update public.invoices set emissao_iniciada_em = now() - interval '5 minutes' wh
 select tests.eq((public.nfse_reservar(tests.id('A'), tests.id('N')) ->> 'numero')::int, 1, 'Reenvio reaproveita o mesmo número');
 select tests.eq((select nfse_proximo_numero from public.profiles where id = tests.id('A'))::int, 2, 'Reenvio não gasta número');
 select tests.throws($q$select public.nfse_reservar(tests.id('B'), tests.id('N'))$q$, 'P0002', 'Outra profissional não reserva nota alheia');
+-- Enquanto envia (número reservado), o app não muda o valor
+reset role;
+select tests.login(tests.id('A'));
+select tests.throws($q$update public.invoices set amount = 999 where id = tests.id('N')$q$, '42501', 'Valor travado depois de reservado o número');
+reset role;
+set local role service_role;
 select public.nfse_resultado(tests.id('A'), tests.id('N'), jsonb_build_object('ok', true, 'dps_id', 'DPS' || repeat('2', 42),
   'numero', '15', 'chave', repeat('3', 50), 'emitida_em', '2026-11-06', 'xml', '<NFSe/>', 'tomador_tipo', 'pf', 'tomador_documento', '52998224725', 'tomador_nome', 'Paciente NFS-e'));
 select tests.eq((select status::text from public.invoices where id = tests.id('N')), 'emitida', 'Resultado grava a nota como emitida');

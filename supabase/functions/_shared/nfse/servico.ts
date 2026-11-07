@@ -96,7 +96,15 @@ export async function emitir(d: Dependencias, notaId: string) {
   const cert = await certificadoDa(d);
   const chave = await importarChave(cert.chavePkcs8);
 
-  const res = (await d.rpc('nfse_reservar', { p_owner: d.dono, p_invoice: notaId })) as { numero: number; serie: string; ambiente: Ambiente; reenvio: boolean; dps_id: string | null };
+  const res = (await d.rpc('nfse_reservar', { p_owner: d.dono, p_invoice: notaId })) as { numero: number; serie: string; ambiente: Ambiente; reenvio: boolean;
+    dps_id: string | null; amount: number; competence: string; patient_id: string; descricao: string | null };
+  // A DPS sai dos valores da nota TRAVADA (revisão de segurança 06/11). Se o paciente mudou entre a conferência
+  // e a trava, os dados do tomador lidos antes podem não valer: pede para tentar de novo.
+  if (res.patient_id !== (ctx.nota as unknown as { patient_id: string }).patient_id) {
+    await d.rpc('nfse_resultado', { p_owner: d.dono, p_invoice: notaId, p: { ok: false, erro: 'A nota mudou durante o envio. Toque em Emitir de novo.' } });
+    throw new ErroUsuario('A nota mudou durante o envio. Toque em Emitir de novo.', 409);
+  }
+  ctx.nota.amount = Number(res.amount); ctx.nota.competence = res.competence; ctx.nota.descricao = res.descricao;
   const dados = dadosDaNota(ctx, Number(res.numero), agora);
   dados.serie = res.serie; dados.ambiente = res.ambiente;
   const dps = montarDps(dados);
@@ -132,7 +140,8 @@ export async function emitir(d: Dependencias, notaId: string) {
     const msg = e instanceof ErroSefin
       ? (e.semResposta ? `${e.message} Toque em Emitir de novo: o app confere se a nota já foi gerada antes de reenviar.`
         : `O sistema nacional recusou: ${e.message}${e.codigos.includes('E0014') ? ' (Esse número de DPS já foi usado neste CNPJ/CPF, talvez em outro sistema. Em Perfil → Nota fiscal, mude a série ou o próximo número.)' : ''}`)
-      : `Falha ao emitir: ${(e as Error).message}`;
+      : 'Falha inesperada ao emitir. Tente de novo em instantes.';
+    if (!(e instanceof ErroSefin)) console.error('nfse emitir', (e as Error)?.message);
     await d.rpc('nfse_resultado', { p_owner: d.dono, p_invoice: notaId, p: { ok: false, erro: msg, dps_id: dps.id } });
     throw new ErroUsuario(msg, 422);
   }
@@ -166,11 +175,11 @@ export async function cancelar(d: Dependencias, notaId: string, codigo: '1' | '2
 
 export async function pdf(d: Dependencias, notaId: string) {
   const { ctx } = await conferir(d, notaId);
-  if (ctx.nota.emissao !== 'nfse_nacional' || !ctx.nota.access_key) throw new ErroUsuario('PDF disponível só para nota emitida pelo app.');
+  if (ctx.nota.emissao !== 'nfse_nacional' || !/^[0-9]{50}$/.test(ctx.nota.access_key ?? '')) throw new ErroUsuario('PDF disponível só para nota emitida pelo app.');
   const cert = await certificadoDa(d);
   const amb = ctx.nota.ambiente ?? ctx.prestador.ambiente;
   try {
-    const bytes = await clienteSefin(d.transporte(cert.certPem, cert.chavePem), amb, (d.urls ?? URLS)[amb]).danfse(ctx.nota.access_key);
+    const bytes = await clienteSefin(d.transporte(cert.certPem, cert.chavePem), amb, (d.urls ?? URLS)[amb]).danfse(ctx.nota.access_key!);
     return { pdf_b64: b64(bytes) };
   } catch (e) {
     if (e instanceof ErroSefin) throw new ErroUsuario(`Não consegui baixar o PDF agora: ${e.message}`, 422);

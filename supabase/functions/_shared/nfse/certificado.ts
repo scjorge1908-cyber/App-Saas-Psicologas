@@ -41,12 +41,38 @@ function documentoDoCertificado(cert: forge.pki.Certificate): string | null {
   return null;
 }
 
+/** Maior contagem de iterações aceita (PFX comuns usam 2.048 a 10.000). Evita arquivo feito para travar o servidor. */
+export const MAX_ITERACOES = 200_000;
+
+/** Procura as contagens de iterações (INTEGER logo após um OCTET STRING de salt) e recusa valores absurdos. */
+function iteracoesSeguras(asn1: forge.asn1.Asn1): boolean {
+  let ok = true;
+  const visitar = (n: forge.asn1.Asn1) => {
+    if (!ok || !Array.isArray(n.value)) return;
+    const filhos = n.value as forge.asn1.Asn1[];
+    for (let i = 0; i < filhos.length; i++) {
+      const a = filhos[i]; const b = filhos[i + 1];
+      if (b && a.type === forge.asn1.Type.OCTETSTRING && b.type === forge.asn1.Type.INTEGER && typeof b.value === 'string') {
+        const bytes = b.value as string;
+        if (bytes.length > 4) { ok = false; return; }
+        let v = 0; for (const c of bytes) v = v * 256 + c.charCodeAt(0);
+        if (v > MAX_ITERACOES) { ok = false; return; }
+      }
+      visitar(a);
+    }
+  };
+  visitar(asn1);
+  return ok;
+}
+
 export function lerPfx(pfx: Uint8Array, senha: string): CertificadoLido {
   let p12: forge.pkcs12.Pkcs12Pfx;
   try {
     const asn1 = forge.asn1.fromDer(deBytes(pfx));
+    if (!iteracoesSeguras(asn1)) throw new ErroCertificado('Arquivo de certificado fora do padrão (proteção exagerada). Exporte o .pfx novamente.');
     p12 = forge.pkcs12.pkcs12FromAsn1(asn1, false, senha);
   } catch (e) {
+    if (e instanceof ErroCertificado) throw e;
     const msg = String((e as Error)?.message ?? e);
     if (/mac|password|invalid/i.test(msg)) throw new ErroCertificado('Senha do certificado incorreta ou arquivo danificado.');
     if (/unsupported|oid/i.test(msg)) throw new ErroCertificado('Formato de certificado não suportado. Exporte o .pfx novamente (com chave privada).');

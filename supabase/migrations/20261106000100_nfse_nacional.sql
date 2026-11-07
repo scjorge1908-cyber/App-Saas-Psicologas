@@ -83,8 +83,11 @@ begin
     if new.emissao = 'nfse_nacional' and new.status <> 'a_emitir' then
       raise exception 'Nota pelo sistema nasce "a emitir"; quem emite é o servidor.' using errcode = '42501';
     end if;
-    if new.dps_id is not null or new.dps_numero is not null or new.nfse_xml is not null or new.emissao_estado is not null
-       or new.cancelada_em is not null or new.tomador_documento is not null then
+    if new.dps_id is not null or new.dps_numero is not null or new.dps_serie is not null or new.ambiente is not null
+       or new.nfse_xml is not null or new.emissao_estado is not null or new.emissao_erro is not null
+       or new.emissao_tentativas <> 0 or new.emissao_iniciada_em is not null or new.tomador_tipo is not null
+       or new.tomador_documento is not null or new.tomador_nome is not null
+       or new.cancelada_em is not null or new.cancelamento_motivo is not null then
       raise exception 'Campos da emissão são gravados só pelo servidor.' using errcode = '42501';
     end if;
     return new;
@@ -96,20 +99,28 @@ begin
     return old;
   end if;
   -- UPDATE
-  if old.emissao = 'nfse_nacional' or new.emissao = 'nfse_nacional' then
-    if new.emissao is distinct from old.emissao and old.dps_id is not null then
-      raise exception 'Nota já enviada ao sistema nacional não muda de tipo.' using errcode = '42501';
-    end if;
-    if (new.status, new.number, new.access_key, new.issued_on, new.dps_id, new.dps_serie, new.dps_numero, new.ambiente,
-        new.nfse_xml, new.emissao_estado, new.emissao_erro, new.emissao_tentativas, new.emissao_iniciada_em,
-        new.tomador_tipo, new.tomador_documento, new.tomador_nome, new.cancelada_em, new.cancelamento_motivo)
-       is distinct from
-       (old.status, old.number, old.access_key, old.issued_on, old.dps_id, old.dps_serie, old.dps_numero, old.ambiente,
-        old.nfse_xml, old.emissao_estado, old.emissao_erro, old.emissao_tentativas, old.emissao_iniciada_em,
-        old.tomador_tipo, old.tomador_documento, old.tomador_nome, old.cancelada_em, old.cancelamento_motivo) then
+  -- Campos que só o servidor grava: imutáveis pelo app em QUALQUER nota (revisão de segurança 06/11:
+  -- impede "montar" uma nota manual e depois virá-la em nota do sistema).
+  if (new.dps_id, new.dps_serie, new.dps_numero, new.ambiente, new.nfse_xml, new.emissao_estado, new.emissao_erro,
+      new.emissao_tentativas, new.emissao_iniciada_em, new.tomador_tipo, new.tomador_documento, new.tomador_nome,
+      new.cancelada_em, new.cancelamento_motivo)
+     is distinct from
+     (old.dps_id, old.dps_serie, old.dps_numero, old.ambiente, old.nfse_xml, old.emissao_estado, old.emissao_erro,
+      old.emissao_tentativas, old.emissao_iniciada_em, old.tomador_tipo, old.tomador_documento, old.tomador_nome,
+      old.cancelada_em, old.cancelamento_motivo) then
+    raise exception 'Dados da emissão são gravados só pelo servidor.' using errcode = '42501';
+  end if;
+  -- Tipo da nota: só um rascunho "a emitir", nunca enviado, troca de tipo.
+  if new.emissao is distinct from old.emissao
+     and (old.status <> 'a_emitir' or new.status <> 'a_emitir' or old.dps_numero is not null) then
+    raise exception 'Só um rascunho "a emitir" pode mudar entre nota manual e nota pelo sistema.' using errcode = '42501';
+  end if;
+  if old.emissao = 'nfse_nacional' then
+    if (new.status, new.number, new.access_key, new.issued_on) is distinct from (old.status, old.number, old.access_key, old.issued_on) then
       raise exception 'Situação, número e dados fiscais desta nota são gravados só pelo servidor.' using errcode = '42501';
     end if;
-    if old.dps_id is not null and (new.amount, new.competence, new.patient_id, new.payment_id, new.descricao)
+    -- Depois de reservado o número (enviando ou já enviada), valor/competência/tomador ficam travados.
+    if old.dps_numero is not null and (new.amount, new.competence, new.patient_id, new.payment_id, new.descricao)
        is distinct from (old.amount, old.competence, old.patient_id, old.payment_id, old.descricao) then
       raise exception 'Nota já enviada ao sistema nacional não pode ter valor, competência ou tomador alterados.' using errcode = '42501';
     end if;
@@ -270,8 +281,10 @@ begin
     dps_numero = _num, dps_serie = _serie, ambiente = _amb
   where id = p_invoice;
 
+  -- Devolve os valores da nota travada: a DPS é montada com eles (não com a leitura anterior à trava).
   return jsonb_build_object('numero', _num, 'serie', _serie, 'ambiente', _amb,
-    'reenvio', _i.dps_id is not null, 'dps_id', _i.dps_id);
+    'reenvio', _i.dps_id is not null, 'dps_id', _i.dps_id,
+    'amount', _i.amount, 'competence', _i.competence, 'patient_id', _i.patient_id, 'descricao', _i.descricao);
 end $$;
 
 -- Grava o resultado: sucesso (emitida) ou erro (volta a "a emitir" com a mensagem).
@@ -288,12 +301,12 @@ begin
       issued_on = (p ->> 'emitida_em')::date, nfse_xml = p ->> 'xml',
       descricao = coalesce(p ->> 'descricao', descricao),
       tomador_tipo = p ->> 'tomador_tipo', tomador_documento = p ->> 'tomador_documento', tomador_nome = p ->> 'tomador_nome'
-    where id = p_invoice and owner_id = p_owner;
+    where id = p_invoice and owner_id = p_owner and status = 'a_emitir';
   else
     update public.invoices set
       emissao_estado = 'erro', emissao_erro = left(p ->> 'erro', 2000),
       dps_id = coalesce(p ->> 'dps_id', dps_id)
-    where id = p_invoice and owner_id = p_owner;
+    where id = p_invoice and owner_id = p_owner and status = 'a_emitir'; -- erro tardio não estraga nota já emitida
   end if;
 end $$;
 

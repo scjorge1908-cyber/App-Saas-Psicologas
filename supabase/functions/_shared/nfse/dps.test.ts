@@ -8,6 +8,9 @@ import { SignedXml } from 'xml-crypto';
 import { montarDps, montarCancelamento, idDps, dataHoraLeiaute, textoLeiaute, ErroDados, type DadosDps } from './dps.ts';
 import { assinar, importarChave, gzipB64, deGzipB64 } from './assinatura.ts';
 import { lerPfx, verificarValidade, ErroCertificado } from './certificado.ts';
+import { clienteSefin } from './sefin.ts';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { gerarCertificadoFicticio, validarXsd, CNPJ_FICTICIO, SENHA_FICTICIA } from './teste-util.ts';
 
 const fx = gerarCertificadoFicticio();
@@ -111,6 +114,20 @@ test('certificado A1: lê titular, CNPJ e validade (PFX novo AES e legado 3DES)'
 test('certificado: senha errada e arquivo inválido dão mensagem clara', () => {
   assert.throws(() => lerPfx(fx.pfx, 'errada'), (e: unknown) => e instanceof ErroCertificado && /Senha/.test((e as Error).message));
   assert.throws(() => lerPfx(new Uint8Array([1, 2, 3]), 'x'), ErroCertificado);
+});
+
+test('certificado com iterações absurdas (arquivo feito para travar o servidor) é recusado antes de abrir', () => {
+  const d = fx.dir;
+  execFileSync('openssl', ['pkcs12', '-export', '-iter', '5000000', '-maciter', '-inkey', `${d}/chave.pem`, '-in', `${d}/cert.pem`, '-out', `${d}/pesado.pfx`, '-passout', `pass:${SENHA_FICTICIA}`], { stdio: 'ignore' });
+  const t0 = Date.now();
+  assert.throws(() => lerPfx(new Uint8Array(readFileSync(`${d}/pesado.pfx`)), SENHA_FICTICIA), (e: unknown) => e instanceof ErroCertificado && /fora do padrão/.test((e as Error).message));
+  assert.ok(Date.now() - t0 < 2000, 'recusa sem gastar CPU');
+});
+
+test('cliente da Sefin não monta endereço com chave fora do padrão', async () => {
+  const sefin = clienteSefin(async () => { throw new Error('não deveria chamar'); }, 'homologacao');
+  await assert.rejects(sefin.danfse('../../outra-rota'), /inválida/);
+  await assert.rejects(sefin.chaveDaDps('DPS123'), /inválida/);
 });
 
 test('certificado vencido é recusado', () => {

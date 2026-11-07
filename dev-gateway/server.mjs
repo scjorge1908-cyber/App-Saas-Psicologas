@@ -549,7 +549,10 @@ async function rpcServidor(nome, args) {
     return rows[0]?.r ?? null;
   } catch (e) {
     await client.query('rollback').catch(() => {});
-    throw new ErroUsuario(e.message, e.code === 'P0002' ? 404 : e.code === '55P03' ? 409 : 400);
+    // Mesmo critério da função do Supabase: só mensagens das funções nfse_* (em português) vão para a tela
+    if (['P0002', '55P03', '22023'].includes(e.code)) throw new ErroUsuario(e.message, e.code === 'P0002' ? 404 : e.code === '55P03' ? 409 : 400);
+    console.error('[gateway] nfse banco', e.code, e.message);
+    throw new ErroUsuario('Não consegui gravar no banco agora. Tente de novo em instantes.', 500);
   } finally { client.release(); }
 }
 
@@ -596,4 +599,4 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`[gateway] http://localhost:${PORT}  db=${DATABASE_URL.replace(/:[^:@/]+@/, ':***@')}`));
+server.listen(PORT, '127.0.0.1', () => console.log(`[gateway] http://localhost:${PORT}  db=${DATABASE_URL.replace(/:[^:@/]+@/, ':***@')}`));

@@ -17,6 +17,16 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
+// Só as mensagens que o próprio banco escreve em português (raise das funções nfse_*) vão para a tela;
+// o resto vira mensagem fixa, sem nomes de tabelas ou restrições (revisão de segurança 06/11).
+function erroDoBanco(code: string | undefined, message: string): ErroUsuario {
+  if (code === 'P0002') return new ErroUsuario(message, 404);
+  if (code === '55P03') return new ErroUsuario(message, 409);
+  if (code === '22023') return new ErroUsuario(message, 400);
+  console.error('nfse banco', code, message);
+  return new ErroUsuario('Não consegui gravar no banco agora. Tente de novo em instantes.', 500);
+}
+
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
 Deno.serve(async (req) => {
@@ -30,14 +40,20 @@ Deno.serve(async (req) => {
   const { data: u } = await db.auth.getUser(token);
   if (!u?.user) return json(401, { erro: 'Entre novamente no app.' });
 
+  // Limite de tamanho do pedido (certificado A1 tem poucos KB).
+  if (Number(req.headers.get('content-length') ?? '0') > 200_000) return json(413, { erro: 'Pedido grande demais.' });
   let corpo: Record<string, unknown>;
-  try { corpo = await req.json(); } catch { return json(400, { erro: 'Pedido inválido.' }); }
+  try {
+    const texto = await req.text();
+    if (texto.length > 200_000) return json(413, { erro: 'Pedido grande demais.' });
+    corpo = JSON.parse(texto);
+  } catch { return json(400, { erro: 'Pedido inválido.' }); }
 
   const deps: Dependencias = {
     dono: u.user.id,
     rpc: async (nome, args) => {
       const { data, error } = await db.rpc(nome, args);
-      if (error) throw new ErroUsuario(error.message, error.code === 'P0002' ? 404 : error.code === '55P03' ? 409 : 400);
+      if (error) throw erroDoBanco(error.code, error.message);
       return data;
     },
     transporte: transporteMtls,

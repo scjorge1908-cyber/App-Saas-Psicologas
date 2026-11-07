@@ -222,10 +222,16 @@ export async function deleteInvoice(id: string) {
 // ------------------------------------------------- NFS-e Nacional (06/11) ---
 // Emissão pela função do servidor "nfse" (certificado A1 fica só no servidor, cifrado).
 export type AcaoNfse = 'certificado' | 'conferir' | 'emitir' | 'cancelar' | 'pdf';
+/** Situação do município no sistema nacional da NFS-e (tabela pública nfse_municipios). */
+export type SituacaoMunicipioNfse = 'emissor_nacional' | 'sistema_proprio' | 'sem_convenio';
+export async function situacaoMunicipioNfse(ibge: string, ambiente: 'homologacao' | 'producao'): Promise<SituacaoMunicipioNfse | null> {
+  const { data } = await supabase.from('nfse_municipios').select('situacao').eq('ibge', ibge).eq('ambiente', ambiente).maybeSingle();
+  return (data?.situacao as SituacaoMunicipioNfse | undefined) ?? null;
+}
 export interface ConferenciaNfse {
   faltas: string[]; ambiente: 'homologacao' | 'producao'; tomador: { tipo: 'pf' | 'pj'; documento: string | null; nome: string | null };
   /** Situação do município no sistema nacional, consultada sozinha (06/11): sem convênio → modo assistido. */
-  municipio?: 'conveniado' | 'sem_convenio' | 'desconhecido';
+  municipio?: SituacaoMunicipioNfse | 'desconhecido';
   servico?: { codigo: string; descricao: string };
 }
 

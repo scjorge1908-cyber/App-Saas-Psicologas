@@ -5,7 +5,7 @@ import * as real from './api-real';
 import * as demo from './demo/api-demo';
 import { isDemo } from './demo/modo';
 
-export type { SeriesResult, AcaoNfse, ConferenciaNfse } from './api-real';
+export type { SeriesResult, AcaoNfse, ConferenciaNfse, SituacaoMunicipioNfse } from './api-real';
 
 const fonte = () => (isDemo() ? demo : real);
 
@@ -51,6 +51,7 @@ export const dashboard: typeof real.dashboard = (...a) => (fonte().dashboard as 
 export const listInvoices: typeof real.listInvoices = (...a) => (fonte().listInvoices as typeof real.listInvoices)(...a);
 export const saveInvoice: typeof real.saveInvoice = (...a) => (fonte().saveInvoice as typeof real.saveInvoice)(...a);
 export const deleteInvoice: typeof real.deleteInvoice = (...a) => (fonte().deleteInvoice as typeof real.deleteInvoice)(...a);
+export const situacaoMunicipioNfse: typeof real.situacaoMunicipioNfse = (...a) => (fonte().situacaoMunicipioNfse as typeof real.situacaoMunicipioNfse)(...a);
 export const nfse: typeof real.nfse = (...a) => (fonte().nfse as typeof real.nfse)(...a);
 export const meuCertificadoNfse: typeof real.meuCertificadoNfse = (...a) => (fonte().meuCertificadoNfse as typeof real.meuCertificadoNfse)(...a);
 export const removerCertificadoNfse: typeof real.removerCertificadoNfse = (...a) => (fonte().removerCertificadoNfse as typeof real.removerCertificadoNfse)(...a);

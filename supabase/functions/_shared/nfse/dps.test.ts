@@ -130,6 +130,34 @@ test('cliente da Sefin não monta endereço com chave fora do padrão', async ()
   await assert.rejects(sefin.chaveDaDps('DPS123'), /inválida/);
 });
 
+test('convênio: lê parametrosConvenio do ADN nos três casos e não decide quando a resposta é estranha', async () => {
+  const resp = (status: number, corpo: unknown, url = '') => ({ status, corpo: new TextEncoder().encode(JSON.stringify(corpo)), tipo: 'application/json', url });
+  const casos: Array<[number, unknown, string | null]> = [
+    [200, { parametrosConvenio: { aderenteAmbienteNacional: 1, aderenteEmissorNacional: 1 } }, 'emissor_nacional'],
+    [200, { parametrosConvenio: { aderenteAmbienteNacional: 1, aderenteEmissorNacional: 0 } }, 'sistema_proprio'],
+    [200, { parametrosConvenio: { aderenteAmbienteNacional: 0, aderenteEmissorNacional: 0 } }, 'sem_convenio'],
+    [404, { mensagem: 'não encontrado' }, 'sem_convenio'],
+    [500, { erro: 'x' }, null],
+    [200, { outraCoisa: true }, null],
+  ];
+  for (const [status, corpo, esperado] of casos) {
+    let pedido = '';
+    const c = clienteSefin(async (url) => { pedido = url; return resp(status, corpo); }, 'producao');
+    assert.equal((await c.convenio('4211900')).situacao, esperado, JSON.stringify(corpo));
+    assert.equal(pedido, 'https://adn.nfse.gov.br/parametrizacao/4211900/convenio');
+  }
+  await assert.rejects(clienteSefin(async () => resp(200, {}), 'producao').convenio('../x'), /inválida/);
+});
+
+test('produção restrita usa /API/SefinNacional; produção, /SefinNacional', async () => {
+  let pedido = '';
+  const t = async (url: string) => { pedido = url; return { status: 404, corpo: new Uint8Array(), tipo: '' }; };
+  await clienteSefin(t, 'homologacao').chaveDaDps(`DPS${'1'.repeat(42)}`);
+  assert.match(pedido, /^https:\/\/sefin\.producaorestrita\.nfse\.gov\.br\/API\/SefinNacional\/dps\//);
+  await clienteSefin(t, 'producao').chaveDaDps(`DPS${'1'.repeat(42)}`);
+  assert.match(pedido, /^https:\/\/sefin\.nfse\.gov\.br\/SefinNacional\/dps\//);
+});
+
 test('certificado vencido é recusado', () => {
   const msg = verificarValidade({ validoDe: new Date('2020-01-01'), validoAte: new Date('2021-01-01') }, new Date('2026-11-06'));
   assert.match(msg ?? '', /venceu/);

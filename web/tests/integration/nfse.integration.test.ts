@@ -168,11 +168,29 @@ describe('NFS-e Nacional (simulador local)', () => {
     expect((await ana.sb.from('invoices').update({ emissao: 'manual' }).eq('id', n5!.id)).error).toBeNull();
     await ana.sb.from('profiles').update({ nfse_ibge_municipio: '4211900' }).eq('id', ana.id).throwOnError();
     const ok = await chamar(ana.sb, { acao: 'conferir', nota_id: nota });
-    expect((ok.data as { municipio: string }).municipio).toBe('conveniado');
+    expect((ok.data as { municipio: string }).municipio).toBe('emissor_nacional');
+  });
+
+  it('prefeitura com sistema próprio (só envia dados ao nacional): também vai para o modo assistido', async () => {
+    await ana.sb.from('profiles').update({ nfse_ibge_municipio: '4200001' }).eq('id', ana.id).throwOnError();
+    const { data: n6 } = await ana.sb.from('invoices').insert({ patient_id: paciente, amount: 95, emissao: 'nfse_nacional' }).select('id').single();
+    expect(((await chamar(ana.sb, { acao: 'conferir', nota_id: n6!.id })).data as { municipio: string }).municipio).toBe('sistema_proprio');
+    expect((await chamar(ana.sb, { acao: 'emitir', nota_id: n6!.id })).erro).toMatch(/não emite pelo sistema nacional/);
+    await ana.sb.from('profiles').update({ nfse_ibge_municipio: '4211900' }).eq('id', ana.id).throwOnError();
+  });
+
+  it('retrato dos 5.571 municípios em produção já vem no banco e todas as contas leem', async () => {
+    const { count } = await ana.sb.from('nfse_municipios').select('*', { count: 'exact', head: true }).eq('ambiente', 'producao');
+    expect(count).toBeGreaterThanOrEqual(5571);
+    const { data } = await bia.sb.from('nfse_municipios').select('municipio, uf, situacao').in('ibge', ['4211900', '4205407']).eq('ambiente', 'producao').order('ibge');
+    expect(data).toEqual([
+      { municipio: 'Florianópolis', uf: 'SC', situacao: 'emissor_nacional' },
+      { municipio: 'Palhoça', uf: 'SC', situacao: 'sistema_proprio' },
+    ]);
   });
 
   it('o app não grava na tabela de municípios', async () => {
-    const { error } = await ana.sb.from('nfse_municipios').insert({ ibge: '1234567', ambiente: 'producao', situacao: 'conveniado' });
+    const { error } = await ana.sb.from('nfse_municipios').insert({ ibge: '1234567', ambiente: 'producao', situacao: 'emissor_nacional' });
     expect(error).not.toBeNull();
   });
 

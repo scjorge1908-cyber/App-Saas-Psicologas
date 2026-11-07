@@ -63,6 +63,13 @@ export function NfsePainel({ profile }: { profile: Profile }) {
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF({ ...f, [k]: e.target.value });
   const faltas = faltandoNfse({ ...profile, nfse_ibge_municipio: f.nfse_ibge_municipio, nfse_regime: (f.nfse_regime || null) as RegimeNfse | null }, !!cert.data);
   const salvoOk = faltandoNfse(profile, !!cert.data).length === 0;
+  // Situação do município no sistema nacional (tabela pública; 07/11): avisa antes de a psicóloga tentar emitir.
+  const ibgeAtual = /^\d{7}$/.test(f.nfse_ibge_municipio ?? '') ? f.nfse_ibge_municipio : null;
+  const municipio = useQuery({
+    queryKey: ['nfse-municipio', ibgeAtual, f.nfse_ambiente],
+    queryFn: () => api.situacaoMunicipioNfse(ibgeAtual!, (f.nfse_ambiente || 'homologacao') as AmbienteNfse),
+    enabled: !!ibgeAtual,
+  });
 
   async function salvar() {
     setError(null);
@@ -101,6 +108,13 @@ export function NfsePainel({ profile }: { profile: Profile }) {
           <p>O app emite a NFS-e pelo <b>sistema nacional do governo</b> (gratuito), com o seu certificado digital A1.</p>
           {!salvoOk && <p className="mt-1">Para emitir, falta: <b>{faltas.join(', ')}</b>.</p>}
         </Notice>
+        {municipio.data === 'emissor_nacional' && <p className="text-sm" data-testid="situacao-municipio"><Badge tone="ok">Emite pelo app</Badge> Seu município usa o sistema nacional da NFS-e.</p>}
+        {(municipio.data === 'sistema_proprio' || municipio.data === 'sem_convenio') && (
+          <Notice tone="ocre"><span data-testid="situacao-municipio">
+            <b>{municipio.data === 'sistema_proprio' ? 'Sua prefeitura emite a NFS-e no sistema próprio dela.' : 'Seu município ainda não está no sistema nacional da NFS-e.'}</b>{' '}
+            O app vai preparar os dados de cada nota para você copiar no portal da prefeitura e registrar a nota aqui. Quando o município passar a usar o sistema nacional, o app percebe e passa a emitir sozinho.
+          </span></Notice>
+        )}
         {error && <ErrorBox>{error}</ErrorBox>}
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Município (código IBGE)" required hint={buscandoIbge ? <span className="inline-flex items-center gap-1.5"><Spinner small /> Buscando pelo CEP…</span> : cidade || 'Vem do CEP do consultório.'}>{(id) => (

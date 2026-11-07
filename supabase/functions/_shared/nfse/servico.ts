@@ -11,7 +11,7 @@ import { assinar, b64, importarChave } from './assinatura.ts';
 import { lerPfx, verificarValidade, ErroCertificado } from './certificado.ts';
 import { cifrar, decifrar, deB64 } from './cofre.ts';
 import { montarCancelamento, montarDps, valorLeiaute, ErroDados, type Ambiente, type DadosDps, type Regime } from './dps.ts';
-import { clienteSefin, ErroSefin, URLS, type Transporte } from './sefin.ts';
+import { clienteSefin, ErroSefin, URLS, type SituacaoConvenio, type Transporte } from './sefin.ts';
 
 export interface Dependencias {
   dono: string;
@@ -88,21 +88,24 @@ export async function conferir(d: Dependencias, notaId: string) {
   return { faltas, ctx };
 }
 
-export type SituacaoMunicipio = 'conveniado' | 'sem_convenio' | 'desconhecido';
+export type SituacaoMunicipio = SituacaoConvenio | 'desconhecido';
 const MSG_SEM_CONVENIO = 'Seu município ainda não emite pelo sistema nacional. Emita no portal da prefeitura e registre a nota aqui (botão "Registrar como nota emitida na prefeitura").';
+/** Município onde o app não emite: só o sistema da prefeitura (ou sem convênio). */
+export const emitePeloApp = (s: SituacaoMunicipio) => s === 'emissor_nacional' || s === 'desconhecido';
 
 /**
  * Situação do município da psicóloga no sistema nacional, consultada automaticamente na API oficial e guardada
- * por município (válida 7 dias se conveniado, 1 dia se não — para perceber logo quando o município aderir).
+ * por município (válida 7 dias se emite pelo nacional, 1 dia se não — para perceber logo quando o município aderir).
+ * A tabela já nasce com o retrato de todos os municípios em produção (05/11/2026), usado enquanto não há consulta nova.
  * Sem certificado não há como consultar: fica "desconhecido" e não bloqueia nada.
  */
 export async function situacaoMunicipio(d: Dependencias, ibge: string | null, ambiente: Ambiente, temCertificado: boolean): Promise<SituacaoMunicipio> {
   if (!ibge || !/^[0-9]{7}$/.test(ibge)) return 'desconhecido';
   const agora = (d.agora?.() ?? new Date()).getTime();
-  const cache = (await d.rpc('nfse_municipio_obter', { p_ibge: ibge, p_ambiente: ambiente })) as { situacao: 'conveniado' | 'sem_convenio'; consultado_em: string } | null;
+  const cache = (await d.rpc('nfse_municipio_obter', { p_ibge: ibge, p_ambiente: ambiente })) as { situacao: SituacaoConvenio; consultado_em: string } | null;
   if (cache) {
     const idade = agora - new Date(cache.consultado_em).getTime();
-    if (idade < (cache.situacao === 'conveniado' ? 7 : 1) * 86_400_000) return cache.situacao;
+    if (idade < (cache.situacao === 'emissor_nacional' ? 7 : 1) * 86_400_000) return cache.situacao;
   }
   if (!temCertificado) return cache?.situacao ?? 'desconhecido';
   try {
@@ -122,7 +125,7 @@ export async function emitir(d: Dependencias, notaId: string) {
   if (ctx.nota.status !== 'a_emitir') throw new ErroUsuario('Esta nota não está "a emitir".');
   if (faltas.length) throw new ErroUsuario(`Antes de emitir, complete: ${faltas.join('; ')}.`);
   // Município sem convênio: para antes de reservar número (não gasta numeração nem tenta à toa).
-  if ((await situacaoMunicipio(d, ctx.prestador.ibge, ctx.prestador.ambiente, true)) === 'sem_convenio') throw new ErroUsuario(MSG_SEM_CONVENIO, 422);
+  if (!emitePeloApp(await situacaoMunicipio(d, ctx.prestador.ibge, ctx.prestador.ambiente, true))) throw new ErroUsuario(MSG_SEM_CONVENIO, 422);
   const cert = await certificadoDa(d);
   const chave = await importarChave(cert.chavePkcs8);
 

@@ -162,7 +162,8 @@ function NotaNfse({ id, onClose, onRegistrarManual }: { id: string; onClose: () 
 
   if (!nota) return <Dialog open onClose={onClose} title="NFS-e"><Spinner /></Dialog>;
   const faltas = conferencia.data?.faltas ?? [];
-  const semConvenio = conferencia.data?.municipio === 'sem_convenio';
+  // O app só emite onde o município usa o Emissor Nacional; nos demais, modo assistido (06–07/11).
+  const semConvenio = conferencia.data?.municipio === 'sem_convenio' || conferencia.data?.municipio === 'sistema_proprio';
 
   async function virarManual() {
     setError(null);
@@ -268,7 +269,7 @@ function ModoAssistido({ nota, conferencia, onRegistrar }: { nota: InvoiceItem; 
   };
   return (
     <section className="flex flex-col gap-3 rounded-campo border border-ocre/40 bg-ocre-fundo p-3" aria-label="Modo assistido" data-testid="modo-assistido">
-      <p><b>Seu município ainda não emite pelo sistema nacional.</b> O app conferiu isso sozinho. Emita no portal da sua prefeitura com os dados abaixo e depois registre a nota aqui.</p>
+      <p><b>{conferencia.municipio === 'sistema_proprio' ? 'Sua prefeitura emite a NFS-e no sistema próprio dela.' : 'Seu município ainda não emite pelo sistema nacional.'}</b> O app conferiu isso sozinho. Emita no portal da sua prefeitura com os dados abaixo e depois registre a nota aqui.</p>
       <ul className="flex flex-col gap-1.5">
         {campos.map(([rotulo, valor]) => (
           <li key={rotulo} className="flex items-center justify-between gap-2">

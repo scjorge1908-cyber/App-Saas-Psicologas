@@ -5,12 +5,17 @@ import { deGzipB64, gzipB64 } from './assinatura.ts';
 import type { Ambiente } from './dps.ts';
 
 export const URLS: Record<Ambiente, { sefin: string; adn: string }> = {
-  homologacao: { sefin: 'https://sefin.producaorestrita.nfse.gov.br/SefinNacional', adn: 'https://adn.producaorestrita.nfse.gov.br' },
+  // Produção restrita usa "/API/SefinNacional"; produção, "/SefinNacional" (página oficial de APIs; confirmado com A1 real
+  // por outro projeto em 05/11/2026 — o POST /nfse foi aceito em /API/SefinNacional).
+  homologacao: { sefin: 'https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional', adn: 'https://adn.producaorestrita.nfse.gov.br' },
   producao: { sefin: 'https://sefin.nfse.gov.br/SefinNacional', adn: 'https://adn.nfse.gov.br' },
 };
 
 export interface RespostaHttp { status: number; corpo: Uint8Array; tipo: string }
 export type Transporte = (url: string, init: { method: 'GET' | 'POST'; json?: unknown }) => Promise<RespostaHttp>;
+
+/** Situação do município no sistema nacional da NFS-e. */
+export type SituacaoConvenio = 'emissor_nacional' | 'sistema_proprio' | 'sem_convenio';
 
 export class ErroSefin extends Error {
   status: number;
@@ -98,20 +103,23 @@ export function clienteSefin(transporte: Transporte, ambiente: Ambiente, base = 
       falha(r, 'Cancelamento');
     },
     /**
-     * Convênio do município com o sistema nacional (GET parametros_municipais/{município}/convenio).
-     * O formato exato da resposta não é descrito no manual: 200 sem erros = conveniado; 404 ou erro de convênio
-     * (ex.: E0037) = sem convênio; um campo booleano "aderente/emissor" falso também conta como sem convênio.
+     * Convênio do município com o sistema nacional: GET {adn}/parametrizacao/{município}/convenio (Swagger oficial da
+     * parametrização; a rota via Sefin responde 404). Resposta: { parametrosConvenio: { aderenteAmbienteNacional,
+     * aderenteEmissorNacional, ... } } com 1/0.
+     *  - 404, ou aderenteAmbienteNacional ≠ 1 → sem_convenio;
+     *  - aderenteEmissorNacional ≠ 1 → sistema_proprio (envia dados ao nacional, mas emite no sistema da prefeitura);
+     *  - os dois = 1 → emissor_nacional (o app emite).
      * Qualquer outra resposta = não dá para saber (null), e o app não bloqueia por isso.
      */
-    async convenio(cMun: string): Promise<{ situacao: 'conveniado' | 'sem_convenio' | null; detalhe: string }> {
-      const r = await chamar(`${base.sefin}/parametros_municipais/${exigir(cMun, /^[0-9]{7}$/, 'Município')}/convenio`, { method: 'GET' });
+    async convenio(cMun: string): Promise<{ situacao: SituacaoConvenio | null; detalhe: string }> {
+      const r = await chamar(`${base.adn}/parametrizacao/${exigir(cMun, /^[0-9]{7}$/, 'Município')}/convenio`, { method: 'GET' });
       const j = json(r);
-      const erros = errosSefin(j);
       const detalhe = texto(r).slice(0, 500);
-      if (r.status === 404 || erros.some((e) => e.codigo === 'E0037' || /conv[eê]nio/i.test(e.descricao))) return { situacao: 'sem_convenio', detalhe };
-      if (r.status === 200 && j && !erros.length) {
-        const negado = Object.entries(j).some(([k, v]) => /aderen|emissor/i.test(k) && (v === false || v === 0 || v === '0' || v === 'N'));
-        return { situacao: negado ? 'sem_convenio' : 'conveniado', detalhe };
+      if (r.status === 404 && j) return { situacao: 'sem_convenio', detalhe };
+      const p = (j?.parametrosConvenio ?? null) as Record<string, unknown> | null;
+      if (r.status === 200 && p) {
+        if (Number(p.aderenteAmbienteNacional) !== 1) return { situacao: 'sem_convenio', detalhe };
+        return { situacao: Number(p.aderenteEmissorNacional) === 1 ? 'emissor_nacional' : 'sistema_proprio', detalhe };
       }
       return { situacao: null, detalhe: `HTTP ${r.status}` };
     },

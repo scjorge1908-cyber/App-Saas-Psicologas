@@ -200,4 +200,9 @@ test('município sem convênio nacional: app percebe sozinho, mostra modo assist
   await expect(page.getByText('Nota fiscal salva')).toBeVisible();
   await page.getByRole('tab', { name: 'Emitidas' }).click();
   await expect(page.getByRole('button', { name: /nº 2026123/ })).toBeVisible();
+  // A configuração também avisa a situação do município, antes de qualquer emissão
+  await page.goto('/configuracoes');
+  await page.getByText('Nota fiscal (NFS-e)', { exact: true }).click();
+  await expect(page.getByTestId('situacao-municipio')).toContainText('ainda não está no sistema nacional');
+  await page.getByTestId('painel-nfse').screenshot({ path: `${SHOTS}/nfse-09-municipio-configuracoes.png` });
 });

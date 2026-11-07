@@ -18,6 +18,12 @@ Legenda de situação: **Publicado** (na Play/produção) · **Pronto, não publ
 
 ---
 
+## 07/11/2026
+
+| Versão / PR | O que mudou | Por quê / quem pediu | Situação |
+|---|---|---|---|
+| Mesma branch (PR #27) | **Mapa dos municípios e correções da API.** (1) Consulta de convênio corrigida para a rota oficial do ADN `parametrizacao/{município}/convenio` (a da Sefin dá 404), lendo `aderenteAmbienteNacional` e `aderenteEmissorNacional`: agora são 3 situações — **emite pelo nacional** (app emite), **sistema próprio da prefeitura** e **sem convênio** (as duas últimas vão para o modo assistido). (2) Endereço do ambiente de Teste corrigido para `…/API/SefinNacional`. (3) Tabela `nfse_municipios` já nasce com o retrato dos **5.571 municípios em produção (05/11/2026)**: 3.469 emitem pelo nacional, 2.076 pelo sistema da prefeitura, 26 sem convênio; cópia em `docs/dados/nfse-municipios-2026-11-05.csv`. (4) **Configurações → Nota fiscal** mostra a situação do município assim que o código IBGE é preenchido. | Jorge, 07/11 05:35: lista de cidades atendidas pelo governo, para prospecção do app e estudo de parceria com outra API. Fonte: consulta município a município na API oficial feita por outro projeto aberto (ttrdcontabil, PR #10), conferida com casos conhecidos (Palhoça, Blumenau) e o painel do governo. | Pronto, não publicado (banco local + simulador) |
+
 ## 06/11/2026
 
 | Versão / PR | O que mudou | Por quê / quem pediu | Situação |

@@ -2,8 +2,9 @@
 import { supabase, STORAGE_BUCKET } from './supabase';
 import type {
   AgendaItem, AppointmentStatus, Attachment, AttachmentCategory, ChargeBalance, DashboardSummary, DocumentRow,
-  Expense, FinancialReportRow, InvoiceItem, Location, Patient, PaymentItem, RecordEntry, RecordEntryVersion, SeriesFrequency, Modality, WorkingHour, ScheduleBlock, BookingFrequency, BookingLink, BookingRequest, BookingSlot, BookingStatus } from './types';
+  CertificadoNfse, Expense, FinancialReportRow, InvoiceItem, Location, Patient, PaymentItem, RecordEntry, RecordEntryVersion, SeriesFrequency, Modality, WorkingHour, ScheduleBlock, BookingFrequency, BookingLink, BookingRequest, BookingSlot, BookingStatus } from './types';
 import { sha256Hex } from './hash';
+import { erroNfse } from './errors';
 import { resumirProntuarios, type ProntuarioResumo } from './prontuario';
 
 function check<T>(r: { data: T | null; error: unknown }): T {
@@ -212,6 +213,44 @@ export async function saveInvoice(i: Partial<InvoiceItem>) {
   void _n;
   if (id) return check(await supabase.from('invoices').update(rest).eq('id', id).select().single());
   return check(await supabase.from('invoices').insert(rest).select().single());
+}
+
+export async function deleteInvoice(id: string) {
+  check(await supabase.from('invoices').delete().eq('id', id));
+}
+
+// ------------------------------------------------- NFS-e Nacional (06/11) ---
+// Emissão pela função do servidor "nfse" (certificado A1 fica só no servidor, cifrado).
+export type AcaoNfse = 'certificado' | 'conferir' | 'emitir' | 'cancelar' | 'pdf';
+/** Situação do município no sistema nacional da NFS-e (tabela pública nfse_municipios). */
+export type SituacaoMunicipioNfse = 'emissor_nacional' | 'sistema_proprio' | 'sem_convenio';
+export async function situacaoMunicipioNfse(ibge: string, ambiente: 'homologacao' | 'producao'): Promise<SituacaoMunicipioNfse | null> {
+  const { data } = await supabase.from('nfse_municipios').select('situacao').eq('ibge', ibge).eq('ambiente', ambiente).maybeSingle();
+  return (data?.situacao as SituacaoMunicipioNfse | undefined) ?? null;
+}
+export interface ConferenciaNfse {
+  faltas: string[]; ambiente: 'homologacao' | 'producao'; tomador: { tipo: 'pf' | 'pj'; documento: string | null; nome: string | null };
+  /** Situação do município no sistema nacional, consultada sozinha (06/11): sem convênio → modo assistido. */
+  municipio?: SituacaoMunicipioNfse | 'desconhecido';
+  servico?: { codigo: string; descricao: string };
+}
+
+export async function nfse<T = unknown>(acao: AcaoNfse, dados: Record<string, unknown> = {}): Promise<T> {
+  const { data, error } = await supabase.functions.invoke('nfse', { body: { acao, ...dados } });
+  if (error) {
+    let msg = 'Não consegui falar com o servidor. Confira a internet e tente de novo.';
+    const ctx = (error as { context?: Response }).context;
+    try { const j = await ctx?.json(); if (j?.erro) msg = j.erro; } catch { /* corpo não é JSON */ }
+    throw erroNfse(msg);
+  }
+  return data as T;
+}
+export async function meuCertificadoNfse(): Promise<CertificadoNfse | null> {
+  const r = check(await supabase.rpc('meu_certificado_nfse')) as CertificadoNfse[] | null;
+  return r?.[0] ?? null;
+}
+export async function removerCertificadoNfse(): Promise<void> {
+  check(await supabase.rpc('remover_meu_certificado_nfse'));
 }
 
 // ------------------------------------------------------ exportação/backup ---

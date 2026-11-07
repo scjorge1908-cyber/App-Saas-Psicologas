@@ -19,6 +19,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import pg from 'pg';
 import { fileURLToPath } from 'node:url';
+import https from 'node:https';
+import { atender, ErroUsuario } from '../supabase/functions/_shared/nfse/servico.ts';
+import { chaveMestra } from '../supabase/functions/_shared/nfse/cofre.ts';
+import { iniciarSimulador, URL_SIMULADOR } from './simulador-sefin.mjs';
 
 const PORT = Number(process.env.PORT || 54321);
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-only-secret-change-me-0123456789abcdef';
@@ -507,6 +511,72 @@ async function handleStorage(req, res, url, claims) {
   return storageErr(404, 'rota de storage não suportada no gateway local');
 }
 
+// ------------------------------------------------- função do servidor: nfse ----
+// Mesmo código da função do Supabase (_shared/nfse/servico.ts). Diferenças só de ambiente local:
+// banco via papel service_role, API nacional trocada pelo SIMULADOR (nada sai da máquina) e
+// chave do cofre fixa de desenvolvimento.
+const PORTA_SIMULADOR = Number(process.env.SIMULADOR_SEFIN_PORT || 54400);
+const CHAVE_DEV = Buffer.alloc(32, 7).toString('base64'); // só desenvolvimento
+iniciarSimulador(PORTA_SIMULADOR).then(() => console.log(`[gateway] simulador da NFS-e Nacional em https://127.0.0.1:${PORTA_SIMULADOR}`));
+
+function transporteLocal(certPem, chavePem) {
+  return (url, init) => new Promise((resolve, reject) => {
+    const corpo = init.json ? JSON.stringify(init.json) : undefined;
+    const req = https.request(url, {
+      method: init.method, cert: certPem, key: chavePem, rejectUnauthorized: false, timeout: 20000,
+      headers: corpo ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(corpo) } : {},
+    }, (res) => {
+      const partes = []; res.on('data', (c) => partes.push(c));
+      res.on('end', () => resolve({ status: res.statusCode, corpo: new Uint8Array(Buffer.concat(partes)), tipo: String(res.headers['content-type'] || '') }));
+    });
+    req.on('timeout', () => req.destroy(new Error('tempo esgotado')));
+    req.on('error', reject);
+    if (corpo) req.write(corpo);
+    req.end();
+  });
+}
+
+async function rpcServidor(nome, args) {
+  if (!/^nfse_[a-z_]+$/.test(nome)) throw new Error('rpc não permitida');
+  const chaves = Object.keys(args);
+  const client = await pool.connect();
+  try {
+    await client.query('begin');
+    await client.query("select set_config('role', 'service_role', true)");
+    const sql = `select public.${nome}(${chaves.map((k, i) => `${k} => $${i + 1}`).join(', ')}) as r`;
+    const { rows } = await client.query(sql, chaves.map((k) => (args[k] !== null && typeof args[k] === 'object' ? JSON.stringify(args[k]) : args[k])));
+    await client.query('commit');
+    return rows[0]?.r ?? null;
+  } catch (e) {
+    await client.query('rollback').catch(() => {});
+    // Mesmo critério da função do Supabase: só mensagens das funções nfse_* (em português) vão para a tela
+    if (['P0002', '55P03', '22023'].includes(e.code)) throw new ErroUsuario(e.message, e.code === 'P0002' ? 404 : e.code === '55P03' ? 409 : 400);
+    console.error('[gateway] nfse banco', e.code, e.message);
+    throw new ErroUsuario('Não consegui gravar no banco agora. Tente de novo em instantes.', 500);
+  } finally { client.release(); }
+}
+
+async function handleFunctions(req, res, url, claims) {
+  if (url.pathname !== '/functions/v1/nfse') return send(res, 404, { erro: 'função não existe no gateway local' });
+  if (req.method !== 'POST') return send(res, 405, { erro: 'Método não permitido.' });
+  if (claims.role !== 'authenticated') return send(res, 401, { erro: 'Entre novamente no app.' });
+  let corpo;
+  try { corpo = JSON.parse((await readBody(req)).toString() || '{}'); } catch { return send(res, 400, { erro: 'Pedido inválido.' }); }
+  const sim = URL_SIMULADOR(PORTA_SIMULADOR);
+  try {
+    const r = await atender({
+      dono: claims.sub, rpc: rpcServidor, transporte: transporteLocal,
+      chaveMestra: () => chaveMestra(process.env.NFSE_CHAVE_CERTIFICADOS || CHAVE_DEV),
+      urls: { homologacao: sim, producao: sim },
+    }, corpo);
+    return send(res, 200, r);
+  } catch (e) {
+    if (e instanceof ErroUsuario) return send(res, e.status, { erro: e.message });
+    console.error(e);
+    return send(res, 500, { erro: 'Erro inesperado no servidor. Tente de novo em instantes.' });
+  }
+}
+
 // ---------------------------------------------------------------- server ----
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
@@ -520,6 +590,7 @@ const server = http.createServer(async (req, res) => {
     if (!claims) return send(res, 401, { code: 'PGRST301', message: 'JWT expired or invalid' });
     if (url.pathname.startsWith('/rest/v1/')) return await handleRest(req, res, url, claims);
     if (url.pathname.startsWith('/storage/v1/')) return await handleStorage(req, res, url, claims);
+    if (url.pathname.startsWith('/functions/v1/')) return await handleFunctions(req, res, url, claims);
     return send(res, 404, { message: 'not found' });
   } catch (e) {
     const [status, body] = pgErrorToHttp(e, claims);
@@ -528,4 +599,4 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => console.log(`[gateway] http://localhost:${PORT}  db=${DATABASE_URL.replace(/:[^:@/]+@/, ':***@')}`));
+server.listen(PORT, '127.0.0.1', () => console.log(`[gateway] http://localhost:${PORT}  db=${DATABASE_URL.replace(/:[^:@/]+@/, ':***@')}`));

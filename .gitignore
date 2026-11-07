@@ -13,3 +13,4 @@ web/e2e/.auth/
 .storage/
 web/test-results/
 dev-gateway/.storage/
+dev-gateway/.simulador-cert.pem

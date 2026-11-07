@@ -1,11 +1,11 @@
                  put                  
 --------------------------------------
- a9452a4a-4387-4f46-a30e-1d3bdbee082d
+ a87887d1-9cd0-4f4f-9241-4cf208494e74
 (1 row)
 
                  put                  
 --------------------------------------
- 2aa34e32-18ae-43db-8156-7f082d36daf9
+ e4b1b9d8-283c-4f86-ada0-d88f0e107b90
 (1 row)
 
  login 
@@ -15,27 +15,27 @@
 
                  put                  
 --------------------------------------
- 11366daf-75bd-4ae5-8f03-c782e7746370
+ c3644d16-f1f3-4cc1-b78d-e1ee447cddd0
 (1 row)
 
                  put                  
 --------------------------------------
- a9de751c-69cb-4d34-83bd-be9f987a9c23
+ e33e9940-106a-4682-8dd3-9d88fb03844f
 (1 row)
 
                  put                  
 --------------------------------------
- e8af19ee-c5c3-410d-ad87-922c87ede0ed
+ 2a255640-bb00-4ccc-886e-5f8f7e140383
 (1 row)
 
                  put                  
 --------------------------------------
- 7cdedaff-f5fe-4ef6-9d74-ea5dddef8617
+ d6292dc0-b912-4ead-84fc-e0bcc8fa7363
 (1 row)
 
                  put                  
 --------------------------------------
- 36044f86-6dca-4a02-8675-6031327a9e69
+ a5199fbe-c574-4e6a-a064-f072f13db619
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/01_isolation.sql:24: NOTICE:  ok - A: cobrança automática criada para sessão atendida
@@ -260,12 +260,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/01_isolation.sql:88: NOTICE
 
                  put                  
 --------------------------------------
- 8aaa544c-085e-44f0-ae3f-3941e9d9a20b
+ 16e964b9-4082-4ceb-80e0-eede3bad1b53
 (1 row)
 
                  put                  
 --------------------------------------
- 3b50e319-e9e6-43a2-b04e-4cad8af402f7
+ 37f9ffa1-332a-4cd3-8b9f-919bb14ccfc6
 (1 row)
 
  login 
@@ -275,17 +275,17 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/01_isolation.sql:88: NOTICE
 
                  put                  
 --------------------------------------
- 1758a7d6-4957-4394-9c1e-23d6edaf8508
+ 4e7e76b4-3427-4dc7-80cf-8e0dbf1a0531
 (1 row)
 
                  put                  
 --------------------------------------
- 5b9860ea-35e7-4335-b20b-ce944149f6a7
+ 81e5f98a-1882-4308-bed1-3acc7587b8e4
 (1 row)
 
                  put                  
 --------------------------------------
- b8a8cc58-ea84-467e-8c05-f9f54bbb409c
+ f3843946-bc68-407f-bbd6-084ebfa89a39
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:19: NOTICE:  ok - Sobreposição parcial é bloqueada pelo banco
@@ -337,7 +337,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:36: NOTICE:  
 
                  put                  
 --------------------------------------
- 61915036-cbcf-4f59-be8b-b2ffb3d9023e
+ 78c60894-7690-49e3-b5b4-de42e77eeb16
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:44: NOTICE:  ok - Mesmo horário em agendas de profissionais diferentes não conflita
@@ -371,7 +371,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:58: NOTICE:  
 
                  put                  
 --------------------------------------
- 327ba69c-591d-4e76-a20b-514378c70c68
+ 4197ba62-e570-4465-8b66-0cbf19906cef
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:63: NOTICE:  ok - Ocorrências semanais no horário local correto, pulando o conflito
@@ -448,7 +448,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:108: NOTICE: 
 
                  put                  
 --------------------------------------
- a893f3c1-5674-4e4e-a96c-dc2cbabf05fd
+ b7e46abf-2193-4aa7-bf64-74da3b8a5162
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:114: NOTICE:  ok - Sessão passada pode ser marcada como falta
@@ -465,7 +465,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:116: NOTICE: 
 
                  put                  
 --------------------------------------
- 27187862-c72e-46cf-910a-d07a9c61fbdf
+ 1a226c7e-01b8-4997-ad84-259033cdd889
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:124: NOTICE:  ok - Remarcação de sessão confirmada exige nova confirmação
@@ -476,7 +476,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:124: NOTICE: 
 
                  put                  
 --------------------------------------
- 0c833ffc-17df-4fbc-9da1-a25d1575c87b
+ 11425330-9921-41ff-9ba7-8540d9e7014b
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:129: NOTICE:  ok - Paciente sem histórico pode ser excluído
@@ -493,7 +493,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:130: NOTICE: 
 
                  put                  
 --------------------------------------
- 8845355c-db4f-4c04-88f0-7356c425a7a2
+ d6010965-210a-4c03-8494-573b3317f42c
 (1 row)
 
  login 
@@ -503,22 +503,22 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/02_agenda.sql:130: NOTICE: 
 
                  put                  
 --------------------------------------
- 23c76a3b-0abe-406e-bdef-3f20738fc313
+ 29d41f25-511c-4b18-9179-403ef1bdce79
 (1 row)
 
                  put                  
 --------------------------------------
- 1e5189c1-a8bc-4a0b-82e2-084d69d4b510
+ b69815a2-0d0f-452c-816d-96d8655c007d
 (1 row)
 
                  put                  
 --------------------------------------
- 26f341e2-ecfe-4333-b8db-c50ef7469cfa
+ 661c9643-cc78-4ff6-b8a3-682d0da1031e
 (1 row)
 
                  put                  
 --------------------------------------
- 185b97af-9cb3-4644-a271-efd122b78ef0
+ 41864183-88c5-480e-b80c-222a517aef6b
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/03_confirmation.sql:25: NOTICE:  ok - Token com 32 caracteres (192 bits)
@@ -701,7 +701,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/03_confirmation.sql:80: NOT
 
                  put                  
 --------------------------------------
- 431fa791-3ae9-47bd-a6f2-ef2d02b45192
+ c0e562dc-36f9-4534-8e8d-d6442ab8d55b
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/03_confirmation.sql:86: NOTICE:  ok - Sem link para sessão que já passou
@@ -712,7 +712,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/03_confirmation.sql:86: NOT
 
                  put                  
 --------------------------------------
- 2185c475-d843-49c0-8cf2-3f9e1fc06ddc
+ 78c0d4a7-1add-4ebd-b8d9-af39e32f16c2
 (1 row)
 
  login 
@@ -722,12 +722,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/03_confirmation.sql:86: NOT
 
                  put                  
 --------------------------------------
- 319cb2e2-063f-4a97-8a92-ea8a5ada3d96
+ 807507a8-6204-4a70-82cb-a7d5e4ef3fa0
 (1 row)
 
                  put                  
 --------------------------------------
- 191ead2d-1b30-424d-81be-a3f844b20d3f
+ c0792bb7-1a63-4700-af8c-de93be1e381b
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/04_records.sql:16: NOTICE:  ok - Versão incrementa a cada retificação
@@ -773,12 +773,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/04_records.sql:25: NOTICE: 
 
                  put                  
 --------------------------------------
- e6419235-0587-415f-a795-c463999de7b8
+ 88b63a29-21c6-4cc5-ab1e-8f96235e338e
 (1 row)
 
                  put                  
 --------------------------------------
- 7be7ecce-2e37-4bb5-a95e-274b8066202e
+ 5afa9c6b-1570-4f29-a5bb-0a184ca24258
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/04_records.sql:38: NOTICE:  ok - Anexo de avaliação não pode ser excluído
@@ -825,12 +825,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/04_records.sql:48: NOTICE: 
 
                  put                  
 --------------------------------------
- 0e5afb71-4f99-4bbc-bfb2-bb52ab71679a
+ e59317e8-e75a-4118-a1b5-7ab065eb97b1
 (1 row)
 
                  put                  
 --------------------------------------
- 09ce33e7-edbc-4bba-9b44-57d510d51ce8
+ 616ff737-b07b-44dc-a66e-a36d7afe2a42
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/04_records.sql:57: NOTICE:  ok - Documento emitido não pode ser editado
@@ -865,7 +865,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/04_records.sql:64: NOTICE: 
 
                  put                  
 --------------------------------------
- 3f957ab9-ffdb-436b-b797-f97462ff802d
+ 680700c0-744e-4dac-bb0f-91b866db2767
 (1 row)
 
  login 
@@ -887,7 +887,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/04_records.sql:73: NOTICE: 
 
                  put                  
 --------------------------------------
- 7523ecd2-4a48-4410-83a4-fa33489a5b8e
+ 6e663d09-5ee7-4183-abf5-dc39facedfef
 (1 row)
 
  login 
@@ -897,32 +897,32 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/04_records.sql:73: NOTICE: 
 
                  put                  
 --------------------------------------
- 40dda03a-6b0c-4553-bc44-14dcf62af2b1
+ c7f557bc-0e57-4b28-8b07-d28247ba3e62
 (1 row)
 
                  put                  
 --------------------------------------
- 94939c21-c5ad-4856-a046-b607b0d14180
+ 9e97fe83-ed52-4350-9f4e-28ed3879acc2
 (1 row)
 
                  put                  
 --------------------------------------
- 905db119-ff27-47a6-a4a5-de79415d5ae0
+ ea640221-a287-446b-83bb-0d8c3a0b5382
 (1 row)
 
                  put                  
 --------------------------------------
- ecfd5838-b32b-4b7e-a09b-f697df2ca500
+ 3101b4c3-7457-429d-b54d-69ead46075f1
 (1 row)
 
                  put                  
 --------------------------------------
- 0255864d-f8d0-4bb0-8f64-4ce9d0b08316
+ 0db8378e-010b-43f1-b7cd-2fe7baccee12
 (1 row)
 
                  put                  
 --------------------------------------
- a662bef6-33a6-4c46-991c-192d0c0fb15d
+ cce0b144-a6ce-45fa-b369-965b01cabacc
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/05_finance.sql:26: NOTICE:  ok - Cobranças automáticas: 2 sessões atendidas por sessão
@@ -969,7 +969,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/05_finance.sql:38: NOTICE: 
 
                  put                  
 --------------------------------------
- cec4cf9a-d2bd-43f9-86b8-43b297b92557
+ ab1a2c9b-5c97-4391-bcc5-1b30b6b1c0c3
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/05_finance.sql:53: NOTICE:  ok - Pagamento acima do saldo é rejeitado
@@ -1100,12 +1100,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/05_finance.sql:99: NOTICE: 
 
                  put                  
 --------------------------------------
- dd99237b-17ca-4208-8da9-3caa00bed42f
+ a77b67f3-f58e-43be-a4fb-05fd4710ca58
 (1 row)
 
                  put                  
 --------------------------------------
- 8d1b4c9b-a145-48be-ad8f-c9bbbbb81783
+ 472f1e4e-78a4-4120-9c67-143b0973c205
 (1 row)
 
  login 
@@ -1136,7 +1136,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:20: NOTICE
  
 (1 row)
 
-psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:27: NOTICE:  ok - L2: anon só executa get_confirmation e respond_confirmation
+psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:27: NOTICE:  ok - L2: anon só executa as RPCs públicas (confirmação e agendamento pelo link)
  eq 
 ----
  
@@ -1149,17 +1149,17 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:27: NOTICE
 
                  put                  
 --------------------------------------
- 2ba1e85f-46cd-4ab5-9d27-984979229c22
+ f9356ecd-d788-4cb1-8f5f-090ada6cb43c
 (1 row)
 
                  put                  
 --------------------------------------
- d0fc29c0-e083-4c79-b6c4-ec9cb507ec2b
+ cb348033-121d-4748-b6b7-be9074b01c44
 (1 row)
 
                  put                  
 --------------------------------------
- ba8c4756-0c58-43c0-a16b-6ad02473d9a5
+ 73bc438f-6145-4b01-9ee6-19fb7fa209a9
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:35: NOTICE:  ok - H2: sessão atendida não pode ser excluída
@@ -1194,7 +1194,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:42: NOTICE
 
                  put                  
 --------------------------------------
- 59745649-44b6-431b-9e7b-0c54402c0b29
+ cc905087-bb7c-462b-9165-1be1463533c2
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:46: NOTICE:  ok - H2: anexo de avaliação não é desvinculado
@@ -1211,7 +1211,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:47: NOTICE
 
                  put                  
 --------------------------------------
- 092fb9ed-c0f8-49b7-b81b-10ec84359697
+ 102d7a9a-d8d8-4bbe-a633-47839e3d68a4
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:53: NOTICE:  ok - M1: versão e data de criação forçadas no INSERT
@@ -1234,7 +1234,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:56: NOTICE
 
                  put                  
 --------------------------------------
- 6f7236de-50a3-4a77-931b-15641a1b3fc5
+ 1dfdf58a-50b5-4d0a-8513-050f6826e40c
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:61: NOTICE:  ok - L1: PDF de documento precisa ser anexo do tipo documento emitido
@@ -1245,12 +1245,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:61: NOTICE
 
                  put                  
 --------------------------------------
- 81323d13-3ba2-4af0-b855-e2699e9d1d22
+ 92f35d89-8800-4c10-b032-b54b8694b4ac
 (1 row)
 
                  put                  
 --------------------------------------
- 3c03f7ac-88c1-4b7e-b643-0c348f92c0fb
+ 40915571-02a0-4b67-ac86-0331848c5f6d
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:66: NOTICE:  ok - M1: documento nasce com data real e sem entrega
@@ -1279,7 +1279,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:70: NOTICE
 
                  put                  
 --------------------------------------
- 893569a1-1c5d-4313-9d4d-04939bc47d59
+ b167b2b2-e447-43b8-94ac-3e5dff415649
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:79: NOTICE:  ok - Profissional não forja resposta do paciente
@@ -1329,12 +1329,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:96: NOTICE
 
                  put                  
 --------------------------------------
- 4e99bb4d-1557-4100-8647-57e3e14a8b4b
+ b23292f4-a200-41b5-acb9-9e2d0cd964d0
 (1 row)
 
                  put                  
 --------------------------------------
- 893cd1fa-2b0b-4451-a89d-797f2474ec86
+ 96337cfe-7208-43ab-96ab-acafdca1fdd7
 (1 row)
 
  login 
@@ -1344,12 +1344,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/06_hardening.sql:96: NOTICE
 
                  put                  
 --------------------------------------
- 3f3a9ec4-e099-41e1-addf-fadf4a304ba8
+ 083b60f5-17bb-405c-9097-9a8e1fd44e65
 (1 row)
 
                  put                  
 --------------------------------------
- fc46134d-324b-4cc7-bbad-a683e8611426
+ fefcee01-2162-46cd-82e2-9ed45e00fcc6
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/07_horarios.sql:12: NOTICE:  ok - Nome de local repetido é recusado
@@ -1390,12 +1390,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/07_horarios.sql:23: NOTICE:
 
                  put                  
 --------------------------------------
- 7552296e-11e4-483a-88f9-11b9c893a857
+ ce287a1e-e694-4d97-a8a6-68466ac06067
 (1 row)
 
                  put                  
 --------------------------------------
- 000dcbcc-2883-46d0-a014-90966ca6de48
+ 32c80716-1893-4332-806a-71dd98fd482a
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/07_horarios.sql:29: NOTICE:  ok - Agenda mostra o nome do local
@@ -1464,7 +1464,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/07_horarios.sql:50: NOTICE:
 
                  put                  
 --------------------------------------
- f8caca6c-cf47-4b4f-b8e5-a648bb948fa4
+ 1311048b-53df-4a3e-b688-82f3f69982e7
 (1 row)
 
  login 
@@ -1474,7 +1474,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/07_horarios.sql:50: NOTICE:
 
                  put                  
 --------------------------------------
- 3c5a974a-c926-4cc5-a3f7-e0c451b33a95
+ 7b1010de-bb72-4710-ad3b-a5f40b9460d7
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:12: NOTICE:  ok - Endereço em campos é gravado
@@ -1485,7 +1485,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:12: 
 
                  put                  
 --------------------------------------
- 3d8c0314-6e99-40d1-95f1-840b28a7d9d8
+ bf7683f9-2e86-49a7-8216-4d74ed99e101
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:16: NOTICE:  ok - Agenda traz a data de nascimento
@@ -1514,7 +1514,7 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:19: 
 
                  put                  
 --------------------------------------
- 56446d7e-9b68-460e-bf05-eeb54043773e
+ a64f28d5-905a-4515-a839-40e12928f51b
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:23: NOTICE:  ok - Faixa com duração e intervalo próprios
@@ -1531,27 +1531,38 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:25: 
 
                  put                  
 --------------------------------------
- 33585ea2-fc57-4916-8a52-fdceef7c2e04
+ f4ab8c19-1725-4468-96b2-822a3b3f6e79
 (1 row)
 
                  put                  
 --------------------------------------
- 1c85dffc-eecd-45c8-a3fe-4ad980e826e2
+ 905a4187-eab7-460a-befa-09075ee5868a
 (1 row)
 
-psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:34: NOTICE:  ok - Laudo não pode ser excluído
+                 put                  
+--------------------------------------
+ 984178e5-671f-4e74-8536-9081f1010a7c
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:38: NOTICE:  ok - Exame não pode ser excluído
  throws 
 --------
  
 (1 row)
 
-psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:35: NOTICE:  ok - Laudo não muda de categoria
+psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:39: NOTICE:  ok - Exame não muda de categoria
  throws 
 --------
  
 (1 row)
 
-psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:36: NOTICE:  ok - Anexo comum pode ser excluído
+psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:40: NOTICE:  ok - Laudo pode ser excluído
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:41: NOTICE:  ok - Anexo comum pode ser excluído
  eq 
 ----
  
@@ -1559,23 +1570,23 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:36: 
 
                  put                  
 --------------------------------------
- e594eb73-9249-404f-a294-0f9993cba180
+ 41dacb3a-9af1-4e69-8749-aae2937545e8
 (1 row)
 
-psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:40: NOTICE:  ok - Encaminhamento médico não pode ser excluído
- throws 
---------
+psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:45: NOTICE:  ok - Encaminhamento médico pode ser excluído
+ eq 
+----
  
 (1 row)
 
                  put                  
 --------------------------------------
- 59e67e31-fca3-4604-926e-9e95147a0848
+ b5fede4f-d959-4726-8393-a471651fbd11
 (1 row)
 
                  put                  
 --------------------------------------
- dd80ccef-51fe-4ae2-99f8-1a6c0fa83f1b
+ 15cbcf81-35c1-460f-acd9-0e389ff6abc6
 (1 row)
 
  login 
@@ -1585,12 +1596,12 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/08_endereco_faixas.sql:40: 
 
                  put                  
 --------------------------------------
- 6bfed36d-a2c8-4077-a2fd-2e4ed5b43ae9
+ 33ce48ef-5c78-4ba0-8aea-ec27aed64c25
 (1 row)
 
                  put                  
 --------------------------------------
- c0ff8234-837d-4b69-bad2-e293201a3fd8
+ 363c18ac-e5ca-4c0d-b623-013a4279b8a0
 (1 row)
 
 psql:/home/claude/app-saas-psicologas/supabase/tests/09_prontuario_anotacoes.sql:13: NOTICE:  ok - Anotação pessoal gravada
@@ -1625,6 +1636,807 @@ psql:/home/claude/app-saas-psicologas/supabase/tests/09_prontuario_anotacoes.sql
 psql:/home/claude/app-saas-psicologas/supabase/tests/09_prontuario_anotacoes.sql:21: NOTICE:  ok - Outra psicóloga não vê o registro
  eq 
 ----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 3d2c335c-22c9-4dbe-819b-99a5e58fc426
+(1 row)
+
+                 put                  
+--------------------------------------
+ 5cc133a4-c60a-4e85-a6e5-3f5e2b4a6920
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ c921322f-02b7-44be-8d36-6500f8691947
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:15: NOTICE:  ok - Endereço de quem paga é gravado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:16: NOTICE:  ok - Nota no nome do próprio paciente
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:17: NOTICE:  ok - Tomador desconhecido é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:18: NOTICE:  ok - E-mail inválido é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:19: NOTICE:  ok - CEP com traço é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:20: NOTICE:  ok - Telefone sem DDD é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:21: NOTICE:  ok - UF minúscula é recusada
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:25: NOTICE:  ok - Empresa (CNPJ) como tomadora da nota
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:26: NOTICE:  ok - Tipo de pagador desconhecido é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:27: NOTICE:  ok - CNPJ com pontuação é recusado
+ throws 
+--------
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/10_nota_fiscal_tomador.sql:30: NOTICE:  ok - Outra psicóloga não vê os dados da nota
+ eq 
+----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ ee28c05c-ae57-49bc-9102-c09c22ab2d2d
+(1 row)
+
+                 put                  
+--------------------------------------
+ 83279e00-f73a-4b97-b976-57641b67f243
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 7da46353-0c17-499d-a264-6742ee0fd079
+(1 row)
+
+                 put                  
+--------------------------------------
+ 2e9dfb59-7602-4550-aaf2-800a33fd2043
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/11_link_confirmacao.sql:14: NOTICE:  ok - Sem link gerado: "Falta enviar link"
+ eq 
+----
+ 
+(1 row)
+
+ ?column? 
+----------
+ t
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/11_link_confirmacao.sql:16: NOTICE:  ok - Link gerado: "Aguardando confirmação"
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/11_link_confirmacao.sql:20: NOTICE:  ok - Remarcada: precisa enviar link de novo
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/11_link_confirmacao.sql:23: NOTICE:  ok - Outra psicóloga não vê a data do link
+ eq 
+----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 428f15ea-8390-41d9-b8b0-6e01440885e0
+(1 row)
+
+                 put                  
+--------------------------------------
+ 1bce7a58-8765-4fde-a6f4-315a3a8c6169
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/12_bloqueios.sql:10: NOTICE:  ok - Férias de dia inteiro
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/12_bloqueios.sql:11: NOTICE:  ok - Folga só à tarde
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/12_bloqueios.sql:12: NOTICE:  ok - Fim antes do início é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/12_bloqueios.sql:13: NOTICE:  ok - Horário pela metade é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/12_bloqueios.sql:14: NOTICE:  ok - Tipo desconhecido é recusado
+ throws 
+--------
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/12_bloqueios.sql:17: NOTICE:  ok - Outra psicóloga não vê os bloqueios
+ eq 
+----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 62cafc37-73a1-4520-a8ba-e49d9093027d
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/13_perfil_endereco_aniversario.sql:9: NOTICE:  ok - Endereço completo do consultório
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/13_perfil_endereco_aniversario.sql:10: NOTICE:  ok - CEP fora do formato é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/13_perfil_endereco_aniversario.sql:11: NOTICE:  ok - Razão social da psicóloga PJ
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/13_perfil_endereco_aniversario.sql:12: NOTICE:  ok - Bloqueio de aniversário
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/13_perfil_endereco_aniversario.sql:13: NOTICE:  ok - Tipo desconhecido continua recusado
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 98ba8c53-ae26-4287-91d1-db21d5a95b62
+(1 row)
+
+                 put                  
+--------------------------------------
+ bdd9fb14-d3b8-4c2b-8f84-45db7175ffa1
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 58cf1d4e-5dd2-4dbe-866c-8d985077126d
+(1 row)
+
+                 put                  
+--------------------------------------
+ fe0b1262-0a85-4867-a1fd-98e035879506
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:26: NOTICE:  ok - Token com 32 caracteres
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:27: NOTICE:  ok - Link sem horário é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:28: NOTICE:  ok - Horário que já passou é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:29: NOTICE:  ok - Cliente não cria link direto (só pela função)
+ throws 
+--------
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:35: NOTICE:  ok - Link aberto
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:36: NOTICE:  ok - Mostra só o horário escolhido que ainda está livre
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:37: NOTICE:  ok - Mostra a sala
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:38: NOTICE:  ok - Sem dados internos na resposta
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:39: NOTICE:  ok - Token malformado é inválido
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:46: NOTICE:  ok - Cadastro sem CPF é recusado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:48: NOTICE:  ok - Campo da nota fora do formato é recusado (o pedido não poderia ser aprovado)
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:50: NOTICE:  ok - Data que não existe é recusada sem erro
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:52: NOTICE:  ok - Horário ocupado por sessão é recusado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:54: NOTICE:  ok - Horário fora do link é recusado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:56: NOTICE:  ok - Pedido feito: fica pendente
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:57: NOTICE:  ok - Link de uma pessoa: depois do pedido, deixa de valer
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:59: NOTICE:  ok - Não dá para pedir duas vezes no mesmo link
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:61: NOTICE:  ok - Horário pedido fica reservado para os outros links
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:62: NOTICE:  ok - Anônimo não lê os pedidos
+ throws 
+--------
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:67: NOTICE:  ok - Psicóloga vê o pedido
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:68: NOTICE:  ok - Só os campos do cadastro são guardados
+ ok 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:69: NOTICE:  ok - Cadastro guardado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:70: NOTICE:  ok - Não muda o horário do pedido (só aprova ou recusa)
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:71: NOTICE:  ok - Aprovar sem paciente é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:72: NOTICE:  ok - Recusar o pedido
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:73: NOTICE:  ok - Ao decidir, o cadastro guardado no pedido é apagado (LGPD)
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:74: NOTICE:  ok - Pedido decidido não volta para pendente
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:76: NOTICE:  ok - Link cancelado não volta a valer
+ throws 
+--------
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:79: NOTICE:  ok - Recusado: o horário volta a ficar livre
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:83: NOTICE:  ok - Outra psicóloga não vê os pedidos
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/14_agendamento_paciente.sql:84: NOTICE:  ok - Outra psicóloga não vê os links
+ eq 
+----
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ efaecfac-6fab-48c7-a289-367bbc03e108
+(1 row)
+
+                 put                  
+--------------------------------------
+ b03e676c-d3da-4ec8-9ff8-be4d41bac950
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/15_notificacao_push.sql:8: NOTICE:  ok - Psicóloga registra o celular
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/15_notificacao_push.sql:9: NOTICE:  ok - Token inválido é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/15_notificacao_push.sql:10: NOTICE:  ok - Controle de avisos não é lido pelo app
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/15_notificacao_push.sql:11: NOTICE:  ok - Configuração do servidor não é lida pelo app
+ throws 
+--------
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/15_notificacao_push.sql:14: NOTICE:  ok - Outra psicóloga não vê os celulares
+ eq 
+----
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/15_notificacao_push.sql:17: NOTICE:  ok - Anônimo não vê os celulares
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ e7987209-66b6-4544-b1f8-98e09eea205a
+(1 row)
+
+                 put                  
+--------------------------------------
+ 29457a2b-0183-4d05-9bbb-94635857f869
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 6e2fc9f2-61c2-4ed0-8a33-7cb67bfa90a7
+(1 row)
+
+                 put                  
+--------------------------------------
+ 280f4f6a-7571-489c-885f-999257c3bc9d
+(1 row)
+
+                 put                  
+--------------------------------------
+ c569883a-f140-49ce-b475-fd335e8db11e
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:18: NOTICE:  ok - Código padrão = psicologia (4.16)
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:19: NOTICE:  ok - Ambiente padrão = teste (sem valor fiscal)
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:20: NOTICE:  ok - IBGE precisa de 7 números
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:21: NOTICE:  ok - Regime desconhecido é recusado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:22: NOTICE:  ok - Alíquota do ISS acima de 5% é recusada
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:25: NOTICE:  ok - Nota pelo sistema não nasce emitida
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:26: NOTICE:  ok - Id da DPS só pelo servidor
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:27: NOTICE:  ok - Situação da nota pelo sistema só muda pelo servidor
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:28: NOTICE:  ok - Rascunho (antes do envio) pode ter o valor ajustado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:29: NOTICE:  ok - Segunda nota ativa para o mesmo recebimento é recusada
+ throws 
+--------
+ 
+(1 row)
+
+                 put                  
+--------------------------------------
+ 7ef991ac-b666-44bc-8a82-0bac9283de24
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:34: NOTICE:  ok - Nota manual continua editável como antes
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:35: NOTICE:  ok - XML da NFS-e não é gravado pelo app nem em nota manual
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:36: NOTICE:  ok - Nota manual emitida não vira nota do sistema
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:37: NOTICE:  ok - Campos da DPS não são gravados pelo app
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:40: NOTICE:  ok - App não reserva número da DPS
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:41: NOTICE:  ok - App não lê o certificado cifrado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:42: NOTICE:  ok - Tabela do certificado sem acesso pelo app
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:50: NOTICE:  ok - Servidor reserva o número 1
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:51: NOTICE:  ok - Próximo número avança
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:52: NOTICE:  ok - Envio em andamento não é reservado de novo
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:54: NOTICE:  ok - Reenvio reaproveita o mesmo número
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:55: NOTICE:  ok - Reenvio não gasta número
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:56: NOTICE:  ok - Outra profissional não reserva nota alheia
+ throws 
+--------
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:60: NOTICE:  ok - Valor travado depois de reservado o número
+ throws 
+--------
+ 
+(1 row)
+
+ nfse_resultado 
+----------------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:65: NOTICE:  ok - Resultado grava a nota como emitida
+ eq 
+----
+ 
+(1 row)
+
+ nfse_certificado_salvar 
+-------------------------
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:71: NOTICE:  ok - Nota emitida não muda de valor
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:72: NOTICE:  ok - Nota emitida não pode ser apagada
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:73: NOTICE:  ok - Recebimento com NFS-e emitida não pode ser apagado
+ throws 
+--------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:74: NOTICE:  ok - Observação continua editável
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:75: NOTICE:  ok - App vê só os dados públicos do certificado
+ eq 
+----
+ 
+(1 row)
+
+ login 
+-------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:78: NOTICE:  ok - Outra profissional não vê o certificado
+ eq 
+----
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:79: NOTICE:  ok - Outra profissional não vê a nota
+ eq 
+----
+ 
+(1 row)
+
+ login_anon 
+------------
+ 
+(1 row)
+
+psql:/home/claude/app-saas-psicologas/supabase/tests/16_nfse_nacional.sql:82: NOTICE:  ok - Anônimo não consulta certificado
+ throws 
+--------
  
 (1 row)
 

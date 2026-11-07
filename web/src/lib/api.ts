@@ -5,7 +5,7 @@ import * as real from './api-real';
 import * as demo from './demo/api-demo';
 import { isDemo } from './demo/modo';
 
-export type { SeriesResult } from './api-real';
+export type { SeriesResult, AcaoNfse, ConferenciaNfse } from './api-real';
 
 const fonte = () => (isDemo() ? demo : real);
 
@@ -50,6 +50,10 @@ export const financialReport: typeof real.financialReport = (...a) => (fonte().f
 export const dashboard: typeof real.dashboard = (...a) => (fonte().dashboard as typeof real.dashboard)(...a);
 export const listInvoices: typeof real.listInvoices = (...a) => (fonte().listInvoices as typeof real.listInvoices)(...a);
 export const saveInvoice: typeof real.saveInvoice = (...a) => (fonte().saveInvoice as typeof real.saveInvoice)(...a);
+export const deleteInvoice: typeof real.deleteInvoice = (...a) => (fonte().deleteInvoice as typeof real.deleteInvoice)(...a);
+export const nfse: typeof real.nfse = (...a) => (fonte().nfse as typeof real.nfse)(...a);
+export const meuCertificadoNfse: typeof real.meuCertificadoNfse = (...a) => (fonte().meuCertificadoNfse as typeof real.meuCertificadoNfse)(...a);
+export const removerCertificadoNfse: typeof real.removerCertificadoNfse = (...a) => (fonte().removerCertificadoNfse as typeof real.removerCertificadoNfse)(...a);
 export const exportAll: typeof real.exportAll = (...a) => (fonte().exportAll as typeof real.exportAll)(...a);
 export const importAll: typeof real.importAll = (...a) => (fonte().importAll as typeof real.importAll)(...a);
 export const listLocations: typeof real.listLocations = (...a) => (fonte().listLocations as typeof real.listLocations)(...a);

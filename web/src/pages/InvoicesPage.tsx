@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { InvoiceItem, InvoiceStatus } from '../lib/types';
@@ -7,6 +8,7 @@ import { formatDate, money, onlyDigits, parseMoney, startOfMonth, todayIn } from
 import { useAuth, useProfile } from '../auth/AuthProvider';
 import { Badge, Button, Dialog, Empty, ErrorBox, Field, Input, Loading, Notice, PageHeader, Select, Tabs, TextField, useToast } from '../components/ui';
 import { saveBlob } from '../components/patients/DocumentsTab';
+import { AmbienteBadge, NfseDialog } from '../components/NfseDialog';
 
 const STATUS: Record<InvoiceStatus, { label: string; tone: 'atencao' | 'ok' | 'neutro' }> = {
   a_emitir: { label: 'A emitir', tone: 'atencao' }, emitida: { label: 'Emitida', tone: 'ok' }, cancelada: { label: 'Cancelada', tone: 'neutro' },
@@ -16,15 +18,33 @@ export function InvoicesPage() {
   const q = useQuery({ queryKey: ['invoices'], queryFn: api.listInvoices });
   const [filter, setFilter] = useState<InvoiceStatus | 'todas'>('a_emitir');
   const [editing, setEditing] = useState<Partial<InvoiceItem> | null>(null);
+  // Emissão pelo app (06/11/2026): diálogo próprio; o registro manual (acima) continua igual.
+  const [emitindo, setEmitindo] = useState<Partial<InvoiceItem> | null>(null);
+  const [params, setParams] = useSearchParams();
+  const recebimento = params.get('recebimento');
   const { tz } = useProfile();
   const list = (q.data ?? []).filter((i) => filter === 'todas' || i.status === filter);
 
+  // Atalho do Financeiro: /notas-fiscais?recebimento=<id> abre a emissão já preenchida (ou a nota existente).
+  const atalhoAberto = useRef<string | null>(null);
+  useEffect(() => {
+    if (!recebimento || !q.data || atalhoAberto.current === recebimento) return;
+    atalhoAberto.current = recebimento; // abre uma vez só (não reabre quando a lista atualiza)
+    const existente = q.data.find((i) => i.payment_id === recebimento && i.status !== 'cancelada');
+    if (existente) (existente.emissao === 'nfse_nacional' ? setEmitindo : setEditing)(existente);
+    else setEmitindo({});
+  }, [recebimento, q.data]);
+  const fechar = () => { setEmitindo(null); setEditing(null); if (recebimento) { setParams({}, { replace: true }); atalhoAberto.current = null; } };
+
   return (
     <div>
-      <PageHeader title="Notas fiscais" subtitle="Acompanhe as NFS-e dos seus atendimentos." actions={<Button onClick={() => setEditing({ status: 'a_emitir', competence: startOfMonth(todayIn(tz)) })}>Registrar nota</Button>} />
+      <PageHeader title="Notas fiscais" subtitle="Emita e acompanhe as NFS-e dos seus atendimentos." actions={<>
+        <Button variant="secondary" onClick={() => setEditing({ status: 'a_emitir', competence: startOfMonth(todayIn(tz)) })}>Registrar nota</Button>
+        <Button onClick={() => setEmitindo({})}>Emitir NFS-e</Button>
+      </>} />
       <Notice>
-        <p>O sistema <strong>não emite</strong> notas fiscais. Emita a NFS-e no portal da sua prefeitura ou no Emissor Nacional (gov.br/nfse) e registre aqui o número, a chave e os arquivos para manter o controle.</p>
-        <p className="mt-1">A emissão automática exige certificado digital e, conforme o município, integração paga; está prevista como evolução do produto.</p>
+        <p><strong>Emitir NFS-e</strong>: o app emite pelo sistema nacional do governo (gratuito), com o seu certificado digital A1. Configure em Configurações → Nota fiscal (NFS-e).</p>
+        <p className="mt-1"><strong>Registrar nota</strong>: para notas emitidas fora do app (portal da prefeitura ou Emissor Nacional), guarde aqui o número, a chave e os arquivos.</p>
       </Notice>
       <div className="mt-5">
         <Tabs label="Situação" value={filter} onChange={setFilter} items={[
@@ -38,17 +58,23 @@ export function InvoicesPage() {
       <ul className="divide-y divide-linha rounded-lg border border-linha bg-papel empty:hidden">
         {list.map((i) => (
           <li key={i.id}>
-            <button onClick={() => setEditing(i)} className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gesso">
+            <button onClick={() => (i.emissao === 'nfse_nacional' ? setEmitindo : setEditing)(i)} className="flex w-full flex-wrap items-center justify-between gap-3 px-4 py-3 text-left hover:bg-gesso">
               <span>
                 <span className="block font-bold">{i.patient_name}</span>
-                <span className="num text-sm text-tinta-2">Competência {formatDate(i.competence).slice(3)}{i.number ? `, nº ${i.number}` : ''}{i.issued_on ? `, emitida em ${formatDate(i.issued_on)}` : ''}</span>
+                <span className="num text-sm text-tinta-2">Competência {formatDate(i.competence).slice(3)}{i.number ? `, nº ${i.number}` : ''}{i.issued_on ? `, emitida em ${formatDate(i.issued_on)}` : ''}{i.emissao === 'nfse_nacional' ? ' · pelo app' : ''}</span>
               </span>
-              <span className="flex items-center gap-3"><span className="num font-bold">{money(i.amount)}</span><Badge tone={STATUS[i.status].tone}>{STATUS[i.status].label}</Badge></span>
+              <span className="flex items-center gap-2">
+                <span className="num font-bold">{money(i.amount)}</span>
+                <AmbienteBadge ambiente={i.ambiente} />
+                {i.emissao_estado === 'erro' && i.status === 'a_emitir' && <Badge tone="erro">Recusada</Badge>}
+                <Badge tone={STATUS[i.status].tone}>{STATUS[i.status].label}</Badge>
+              </span>
             </button>
           </li>
         ))}
       </ul>
-      <InvoiceDialog invoice={editing} onClose={() => setEditing(null)} />
+      <InvoiceDialog invoice={editing} onClose={fechar} />
+      <NfseDialog nota={emitindo} recebimentoInicial={recebimento} notas={q.data ?? []} onClose={fechar} />
     </div>
   );
 }

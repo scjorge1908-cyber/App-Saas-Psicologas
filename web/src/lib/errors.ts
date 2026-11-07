@@ -32,6 +32,7 @@ export function errorMessage(err: unknown, fallback = 'Não foi possível conclu
       return 'Este horário já está ocupado por outra sessão. Escolha outro horário ou cancele a sessão existente.';
     case '23505':
       if (/locations/i.test(msg)) return 'Já existe um local com esse nome.';
+      if (/invoices_payment_ativa/i.test(msg)) return 'Este recebimento já tem nota fiscal. Abra a nota existente em Notas fiscais.';
       return 'Já existe um registro com estes dados.';
     case '23503':
       return 'Registro relacionado não encontrado ou sem permissão.';
@@ -46,6 +47,8 @@ export function errorMessage(err: unknown, fallback = 'Não foi possível conclu
       if (/working_hours_order/i.test(msg)) return 'O horário de fim precisa ser depois do início.';
       return 'Algum campo está com valor inválido. Revise e tente de novo.';
     case '42501':
+      // Regras da NFS-e (06/11): mensagens já escritas em português nos gatilhos do banco
+      if (/servidor|NFS-e|Nota |nota /.test(msg) && !/row-level security|permission denied/i.test(msg)) return msg;
       return 'Você não tem permissão para esta ação.';
     case 'P0001':
     case 'P0002':
@@ -59,5 +62,14 @@ export function errorMessage(err: unknown, fallback = 'Não foi possível conclu
     if (/maximum allowed size/i.test(msg)) return 'Arquivo acima do limite de 10 MB.';
     if (/row-level security/i.test(msg)) return 'Sem permissão para salvar este arquivo.';
   }
+  // Função do servidor "nfse" (06/11): a mensagem já vem pronta em português
+  if (e.name === 'ErroNfse') return msg || fallback;
   return fallback;
+}
+
+/** Erro da emissão de NFS-e com mensagem pronta para a psicóloga. */
+export function erroNfse(msg: string): Error {
+  const e = new Error(msg);
+  e.name = 'ErroNfse';
+  return e;
 }

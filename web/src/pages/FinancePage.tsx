@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import * as api from '../lib/api';
 import type { Expense, PaymentItem } from '../lib/types';
@@ -73,7 +73,8 @@ function ReceivablesTab() {
 }
 
 function PaymentsTab() {
-  const { tz } = useProfile();
+  const { tz, profile } = useProfile();
+  const fiscalPj = profile?.fiscal_type === 'pj';
   const [month, setMonth] = useState(startOfMonth(todayIn(tz)));
   const to = addDays(month, daysInMonth(month) - 1);
   const q = useQuery({ queryKey: ['payments', month], queryFn: () => api.listPayments({ from: month, to }) });
@@ -106,6 +107,8 @@ function PaymentsTab() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="num font-bold">{money(p.amount)}</span>
+                  {/* NFS-e pelo app (06/11): atalho do recebimento para a emissão, já com valor e paciente */}
+                  {fiscalPj && <Link to={`/notas-fiscais?recebimento=${p.id}`} className="inline-flex min-h-9 items-center rounded-campo px-2.5 text-sm font-bold text-anil hover:bg-gesso">Nota fiscal</Link>}
                   <Button size="sm" variant="ghost" onClick={async () => {
                     if (!(await confirm({ title: 'Excluir recebimento?', body: `${money(p.amount)} de ${p.patient_name} em ${formatDate(p.paid_on)}. A cobrança volta a ficar em aberto.`, confirmLabel: 'Excluir', danger: true }))) return;
                     try { await api.deletePayment(p.id); await invalidate(); toast('Recebimento excluído'); } catch (e) { toast(errorMessage(e), 'erro'); }

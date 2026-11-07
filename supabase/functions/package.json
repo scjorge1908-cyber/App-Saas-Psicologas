@@ -1,0 +1,16 @@
+{
+  "name": "psi-functions-testes",
+  "private": true,
+  "description": "Só para testes locais (node --test) do núcleo fiscal compartilhado. O Supabase usa deno.json de cada função.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test _shared/nfse/*.test.ts"
+  },
+  "dependencies": {
+    "node-forge": "1.3.1"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "0.8.10",
+    "xml-crypto": "6.0.1"
+  }
+}

@@ -3,10 +3,11 @@
 // Nada sai do aparelho; ao sair da demonstração (ou fechar o app) tudo é descartado.
 import type {
   AgendaItem, AppointmentStatus, Attachment, AttachmentCategory, ChargeBalance, DashboardSummary, DocumentRow,
-  Expense, FinancialReportRow, InvoiceItem, Location, Modality, Patient, PaymentItem, Profile, RecordEntry, RecordEntryVersion,
+  CertificadoNfse, Expense, FinancialReportRow, InvoiceItem, Location, Modality, Patient, PaymentItem, Profile, RecordEntry, RecordEntryVersion,
   SeriesFrequency, WorkingHour, ScheduleBlock, BookingFrequency, BookingLink, BookingRequest, BookingSlot, BookingStatus } from '../types';
 import { DEFAULT_TZ, addDays, todayIn, zonedParts, zonedToUtc } from '../format';
 import { sha256Hex } from '../hash';
+import { erroNfse } from '../errors';
 import { DEMO_USER_ID } from './modo';
 import { montarEvolucao, resumirProntuarios, type ProntuarioResumo } from '../prontuario';
 import type { SeriesResult } from '../api-real';
@@ -576,6 +577,43 @@ export async function saveInvoice(i: Partial<InvoiceItem>) {
   db().invoices.push(nova);
   return nova;
 }
+
+export async function deleteInvoice(id: string) {
+  await atraso();
+  const i = db().invoices.findIndex((x) => x.id === id);
+  if (i >= 0) db().invoices.splice(i, 1);
+}
+
+// ------------------------------------------------- NFS-e Nacional (06/11) ---
+// Demonstração: simula a emissão no aparelho (nenhum envio ao governo, nenhum certificado guardado).
+let certificadoDemo: CertificadoNfse | null = null;
+export async function nfse<T = unknown>(acao: string, dados: Record<string, unknown> = {}): Promise<T> {
+  await atraso();
+  const nota = db().invoices.find((x) => x.id === dados.nota_id);
+  if (acao === 'certificado') {
+    certificadoDemo = { titular: 'CERTIFICADO DE DEMONSTRAÇÃO', documento: db().profile.cnpj ?? db().profile.cpf ?? '00000000000', valido_ate: '2027-12-31T23:59:59Z', enviado_em: new Date().toISOString() };
+    return { titular: certificadoDemo.titular, documento: certificadoDemo.documento, valido_ate: certificadoDemo.valido_ate } as T;
+  }
+  if (!nota) throw erroNfse('Nota não encontrada.');
+  const p = pacienteDe(nota.patient_id);
+  if (acao === 'conferir') return { faltas: certificadoDemo ? [] : ['certificado A1 (Perfil → Nota fiscal)'], ambiente: 'homologacao', tomador: { tipo: 'pf', documento: p.cpf, nome: p.full_name } } as T;
+  if (acao === 'emitir') {
+    if (!certificadoDemo) throw erroNfse('Antes de emitir, complete: certificado A1 (Perfil → Nota fiscal).');
+    const n = db().invoices.filter((x) => x.emissao === 'nfse_nacional' && x.number).length + 1;
+    Object.assign(nota, { emissao: 'nfse_nacional', status: 'emitida', number: String(n), access_key: '4211900' + '2'.padEnd(43, '0').slice(0, 42) + String(n % 10),
+      issued_on: todayIn(tz), ambiente: 'homologacao', emissao_estado: null, emissao_erro: null, dps_numero: n, tomador_tipo: 'pf', tomador_documento: p.cpf, tomador_nome: p.full_name,
+      nfse_xml: `<NFSe><nNFSe>${n}</nNFSe><!-- demonstração --></NFSe>` });
+    return { ok: true, numero: String(n), ambiente: 'homologacao' } as T;
+  }
+  if (acao === 'cancelar') {
+    if (String(dados.motivo ?? '').trim().length < 15) throw erroNfse('Confira: motivo do cancelamento (mínimo 15 letras).');
+    Object.assign(nota, { status: 'cancelada', cancelada_em: new Date().toISOString(), cancelamento_motivo: String(dados.motivo) });
+    return { ok: true } as T;
+  }
+  throw erroNfse('Na demonstração não há PDF da nota. Crie sua conta para emitir de verdade.');
+}
+export async function meuCertificadoNfse(): Promise<CertificadoNfse | null> { await atraso(); return certificadoDemo; }
+export async function removerCertificadoNfse(): Promise<void> { await atraso(); certificadoDemo = null; }
 
 // ------------------------------------------------------ exportação/backup ---
 export async function exportAll(): Promise<Record<string, unknown>> {

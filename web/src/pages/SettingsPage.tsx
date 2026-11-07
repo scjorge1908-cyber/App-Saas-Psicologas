@@ -17,6 +17,7 @@ import { saveBlob } from '../components/patients/DocumentsTab';
 import { isDemo } from '../lib/demo/modo';
 import { atualizarPerfilDemo } from '../lib/demo/api-demo';
 import { TEMAS, definirAparencia, useAparencia, type Modo } from '../lib/tema';
+import { NfsePainel } from '../components/NfsePainel';
 
 export function SettingsPage() {
   const { profile, isLoading } = useProfile();
@@ -26,6 +27,7 @@ export function SettingsPage() {
       <PageHeader title="Configurações" />
       <AparenciaPanel />
       <ProfileForm profile={profile} />
+      <NfsePainel profile={profile} />
       <BackupPanel />
       <SecurityPanel />
       <Panel recolhivel title="Sobre e privacidade">

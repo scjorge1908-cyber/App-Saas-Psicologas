@@ -1,5 +1,5 @@
 // Consulta de CEP no ViaCEP (serviço público e gratuito). Só o CEP sai do aparelho, nenhum dado do paciente.
-export interface EnderecoCep { street: string; neighborhood: string; city: string; uf: string }
+export interface EnderecoCep { street: string; neighborhood: string; city: string; uf: string; /** Código IBGE do município (7 dígitos), usado na NFS-e. */ ibge?: string }
 
 export async function buscarCep(cep: string, f: typeof fetch = fetch): Promise<EnderecoCep | null> {
   const d = cep.replace(/\D/g, '');
@@ -9,9 +9,9 @@ export async function buscarCep(cep: string, f: typeof fetch = fetch): Promise<E
   try {
     const r = await f(`https://viacep.com.br/ws/${d}/json/`, { signal: ctl.signal });
     if (!r.ok) return null;
-    const j = (await r.json()) as { erro?: boolean | string; logradouro?: string; bairro?: string; localidade?: string; uf?: string };
+    const j = (await r.json()) as { erro?: boolean | string; logradouro?: string; bairro?: string; localidade?: string; uf?: string; ibge?: string };
     if (j.erro) return null;
-    return { street: j.logradouro ?? '', neighborhood: j.bairro ?? '', city: j.localidade ?? '', uf: (j.uf ?? '').toUpperCase() };
+    return { street: j.logradouro ?? '', neighborhood: j.bairro ?? '', city: j.localidade ?? '', uf: (j.uf ?? '').toUpperCase(), ibge: /^\d{7}$/.test(j.ibge ?? '') ? j.ibge : undefined };
   } catch {
     return null; // sem internet ou serviço fora do ar: a psicóloga digita o endereço
   } finally {

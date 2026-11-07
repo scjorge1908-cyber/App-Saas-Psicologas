@@ -3,6 +3,14 @@
   "private": true,
   "type": "module",
   "description": "Gateway local compatível com Supabase (somente desenvolvimento/testes)",
-  "scripts": { "start": "node server.mjs" },
-  "dependencies": { "pg": "^8.23.1" }
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "^0.8.10",
+    "xml-crypto": "^6.0.1"
+  }
 }

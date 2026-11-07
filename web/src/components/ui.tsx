@@ -205,6 +205,8 @@ export function Tabs<T extends string>({ value, onChange, items, label }: { valu
 // ---------------------------------------------------------------- Diálogo ---
 export function Dialog({ open, onClose, title, children, footer, wide }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode; wide?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
+  // Id único por diálogo (06/11): com dois abertos (ex.: confirmação por cima de outro), cada um tem o próprio nome.
+  const tituloId = useId();
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -223,12 +225,12 @@ export function Dialog({ open, onClose, title, children, footer, wide }: { open:
         'm-0 mt-auto w-full max-w-none rounded-t-grande bg-papel p-0 text-tinta shadow-flutuante backdrop:bg-black/45 sm:m-auto sm:rounded-grande',
         wide ? 'sm:max-w-2xl' : 'sm:max-w-lg',
       )}
-      aria-labelledby="dlg-title"
+      aria-labelledby={tituloId}
     >
       {open && (
         <div className="flex max-h-[92dvh] flex-col">
           <div className="flex items-center justify-between gap-3 border-b border-linha px-5 py-4">
-            <h2 id="dlg-title" className="text-xl font-bold">{title}</h2>
+            <h2 id={tituloId} className="text-xl font-bold">{title}</h2>
             <button onClick={onClose} className="grid size-11 shrink-0 place-items-center rounded-full text-tinta-3 hover:bg-cinza-fundo" aria-label="Fechar">
               <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
             </button>

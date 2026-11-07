@@ -34,6 +34,16 @@ export interface Profile {
   neighborhood?: string | null;
   /** Razão social (PJ), preenchida pelo CNPJ (28/10). */
   company_name?: string | null;
+  /** Emissão de NFS-e pelo padrão nacional (06/11/2026). */
+  nfse_ibge_municipio?: string | null;
+  nfse_inscricao_municipal?: string | null;
+  nfse_regime?: RegimeNfse | null;
+  nfse_cod_trib_nac?: string;
+  nfse_aliquota_iss?: number | null;
+  nfse_descricao?: string;
+  nfse_serie?: string;
+  nfse_proximo_numero?: number;
+  nfse_ambiente?: AmbienteNfse;
   timezone: string;
   session_minutes: number;
   buffer_minutes: number;
@@ -261,6 +271,12 @@ export interface Expense {
   notes: string | null;
 }
 
+export type RegimeNfse = 'mei' | 'me_epp' | 'nao_optante';
+export type AmbienteNfse = 'homologacao' | 'producao';
+
+/** Dados públicos do certificado A1 guardado (o arquivo em si nunca volta ao app). */
+export interface CertificadoNfse { titular: string; documento: string; valido_ate: string; enviado_em: string }
+
 export interface InvoiceItem {
   id: string;
   patient_id: string;
@@ -276,6 +292,20 @@ export interface InvoiceItem {
   xml_attachment_id: string | null;
   notes: string | null;
   patient_name: string;
+  /** manual = registrada à mão; nfse_nacional = emitida pelo app (06/11/2026). */
+  emissao?: 'manual' | 'nfse_nacional';
+  emissao_estado?: 'processando' | 'erro' | null;
+  emissao_erro?: string | null;
+  ambiente?: AmbienteNfse | null;
+  dps_id?: string | null;
+  dps_numero?: number | null;
+  descricao?: string | null;
+  tomador_tipo?: 'pf' | 'pj' | null;
+  tomador_documento?: string | null;
+  tomador_nome?: string | null;
+  nfse_xml?: string | null;
+  cancelada_em?: string | null;
+  cancelamento_motivo?: string | null;
 }
 
 export interface DashboardSummary {

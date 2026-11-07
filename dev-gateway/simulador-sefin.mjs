@@ -61,6 +61,8 @@ export function iniciarSimulador(porta = 54400) {
         if (dps.has(id)) return erro(res, 400, 'E0014', 'DPS já existe (Id repetido).');
         const valor = tag(xml, 'vServ');
         if (valor === '666.00') return erro(res, 400, 'E0310', 'Regra de teste do simulador: valor recusado.');
+        // Regra de teste: município sem convênio com o sistema nacional (caso real visto em 04/11 com Palhoça no Teste)
+        if (tag(xml, 'cLocEmi') === '4200000') return erro(res, 400, 'E0037', 'O código do município emissor informado na DPS é inexistente no cadastro de convênio municipal do sistema nacional.');
         const cMun = tag(xml, 'cLocEmi'); const cnpj = tag(xml, 'CNPJ') ?? tag(xml, 'CPF').padStart(14, '0');
         seq += 1;
         const n = String(seq);

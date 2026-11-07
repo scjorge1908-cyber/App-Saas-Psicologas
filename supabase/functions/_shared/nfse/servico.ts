@@ -139,7 +139,7 @@ export async function emitir(d: Dependencias, notaId: string) {
   } catch (e) {
     const msg = e instanceof ErroSefin
       ? (e.semResposta ? `${e.message} Toque em Emitir de novo: o app confere se a nota já foi gerada antes de reenviar.`
-        : `O sistema nacional recusou: ${e.message}${e.codigos.includes('E0014') ? ' (Esse número de DPS já foi usado neste CNPJ/CPF, talvez em outro sistema. Em Perfil → Nota fiscal, mude a série ou o próximo número.)' : ''}`)
+        : `O sistema nacional recusou: ${e.message}${e.codigos.includes('E0014') ? ' (Esse número de DPS já foi usado neste CNPJ/CPF, talvez em outro sistema. Em Perfil → Nota fiscal, mude a série ou o próximo número.)' : ''}${e.codigos.includes('E0037') ? ' (Seu município ainda não emite pelo sistema nacional. Emita no portal da prefeitura e guarde a nota aqui em Notas fiscais → Registrar nota.)' : ''}`)
       : 'Falha inesperada ao emitir. Tente de novo em instantes.';
     if (!(e instanceof ErroSefin)) console.error('nfse emitir', (e as Error)?.message);
     await d.rpc('nfse_resultado', { p_owner: d.dono, p_invoice: notaId, p: { ok: false, erro: msg, dps_id: dps.id } });

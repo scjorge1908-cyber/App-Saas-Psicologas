@@ -152,6 +152,15 @@ describe('NFS-e Nacional (simulador local)', () => {
     expect(b).toMatchObject({ status: 'emitida', dps_id: a!.dps_id, dps_numero: a!.dps_numero });
   });
 
+  it('município sem convênio nacional (E0037): mensagem orienta emitir na prefeitura e registrar aqui', async () => {
+    await ana.sb.from('profiles').update({ nfse_ibge_municipio: '4200000' }).eq('id', ana.id).throwOnError();
+    const { data: n5 } = await ana.sb.from('invoices').insert({ patient_id: paciente, amount: 90, emissao: 'nfse_nacional' }).select('id').single();
+    const r = await chamar(ana.sb, { acao: 'emitir', nota_id: n5!.id });
+    expect(r.erro).toMatch(/E0037/);
+    expect(r.erro).toMatch(/portal da prefeitura/);
+    await ana.sb.from('profiles').update({ nfse_ibge_municipio: '4211900' }).eq('id', ana.id).throwOnError();
+  });
+
   it('baixa o PDF (DANFSe) da nota emitida', async () => {
     const r = await chamar(ana.sb, { acao: 'pdf', nota_id: nota });
     expect(atob((r.data as { pdf_b64: string }).pdf_b64).slice(0, 5)).toBe('%PDF-');

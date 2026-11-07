@@ -175,3 +175,29 @@ test('emissão com dado faltando mostra o que completar e links para corrigir', 
   // Sem rolagem horizontal no celular
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
 });
+
+test('município sem convênio nacional: app percebe sozinho, mostra modo assistido e registra a nota da prefeitura', async () => {
+  const sb = createClient('http://localhost:54321', 'dev-anon-key', { auth: { persistSession: false } });
+  const { data: login } = await sb.auth.signInWithPassword({ email: EMAIL, password: SENHA });
+  await sb.from('patients').update({ cpf: '52998224725' }).eq('full_name', 'Paciente Nota Fictícia').throwOnError();
+  await sb.from('profiles').update({ nfse_ibge_municipio: '4200000' }).eq('id', login.user!.id).throwOnError();
+  await page.goto('/notas-fiscais');
+  await page.getByRole('tab', { name: /A emitir/ }).click();
+  await page.getByRole('button', { name: /Paciente Nota Fictícia/ }).first().click();
+  const assistido = page.getByTestId('modo-assistido');
+  await expect(assistido).toBeVisible();
+  await expect(assistido).toContainText('529.982.247-25'.replace(/\D/g, ''));
+  await expect(assistido).toContainText('041601');
+  await expect(page.getByRole('dialog', { name: 'Emitir NFS-e' }).getByRole('button', { name: 'Emitir NFS-e', exact: true })).toBeDisabled();
+  await page.screenshot({ path: `${SHOTS}/nfse-08-modo-assistido.png` });
+  await assistido.getByRole('button', { name: 'Registrar como nota emitida na prefeitura' }).click();
+  const manual = page.getByRole('dialog', { name: 'Nota fiscal' });
+  await expect(manual).toBeVisible();
+  await manual.getByLabel('Situação').selectOption('emitida');
+  await manual.getByLabel('Número da nota').fill('2026123');
+  await manual.getByLabel('Data de emissão').fill(hoje);
+  await manual.getByRole('button', { name: 'Salvar nota' }).click();
+  await expect(page.getByText('Nota fiscal salva')).toBeVisible();
+  await page.getByRole('tab', { name: 'Emitidas' }).click();
+  await expect(page.getByRole('button', { name: /nº 2026123/ })).toBeVisible();
+});

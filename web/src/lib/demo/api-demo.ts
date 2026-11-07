@@ -596,7 +596,7 @@ export async function nfse<T = unknown>(acao: string, dados: Record<string, unkn
   }
   if (!nota) throw erroNfse('Nota não encontrada.');
   const p = pacienteDe(nota.patient_id);
-  if (acao === 'conferir') return { faltas: certificadoDemo ? [] : ['certificado A1 (Perfil → Nota fiscal)'], ambiente: 'homologacao', tomador: { tipo: 'pf', documento: p.cpf, nome: p.full_name } } as T;
+  if (acao === 'conferir') return { faltas: certificadoDemo ? [] : ['certificado A1 (Perfil → Nota fiscal)'], ambiente: 'homologacao', tomador: { tipo: 'pf', documento: p.cpf, nome: p.full_name }, municipio: 'conveniado', servico: { codigo: '041601', descricao: nota.descricao ?? 'Atendimento psicológico' } } as T;
   if (acao === 'emitir') {
     if (!certificadoDemo) throw erroNfse('Antes de emitir, complete: certificado A1 (Perfil → Nota fiscal).');
     const n = db().invoices.filter((x) => x.emissao === 'nfse_nacional' && x.number).length + 1;

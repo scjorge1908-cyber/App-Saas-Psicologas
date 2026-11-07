@@ -222,7 +222,12 @@ export async function deleteInvoice(id: string) {
 // ------------------------------------------------- NFS-e Nacional (06/11) ---
 // Emissão pela função do servidor "nfse" (certificado A1 fica só no servidor, cifrado).
 export type AcaoNfse = 'certificado' | 'conferir' | 'emitir' | 'cancelar' | 'pdf';
-export interface ConferenciaNfse { faltas: string[]; ambiente: 'homologacao' | 'producao'; tomador: { tipo: 'pf' | 'pj'; documento: string | null; nome: string | null } }
+export interface ConferenciaNfse {
+  faltas: string[]; ambiente: 'homologacao' | 'producao'; tomador: { tipo: 'pf' | 'pj'; documento: string | null; nome: string | null };
+  /** Situação do município no sistema nacional, consultada sozinha (06/11): sem convênio → modo assistido. */
+  municipio?: 'conveniado' | 'sem_convenio' | 'desconhecido';
+  servico?: { codigo: string; descricao: string };
+}
 
 export async function nfse<T = unknown>(acao: AcaoNfse, dados: Record<string, unknown> = {}): Promise<T> {
   const { data, error } = await supabase.functions.invoke('nfse', { body: { acao, ...dados } });

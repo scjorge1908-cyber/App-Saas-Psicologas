@@ -88,11 +88,41 @@ export async function conferir(d: Dependencias, notaId: string) {
   return { faltas, ctx };
 }
 
+export type SituacaoMunicipio = 'conveniado' | 'sem_convenio' | 'desconhecido';
+const MSG_SEM_CONVENIO = 'Seu município ainda não emite pelo sistema nacional. Emita no portal da prefeitura e registre a nota aqui (botão "Registrar como nota emitida na prefeitura").';
+
+/**
+ * Situação do município da psicóloga no sistema nacional, consultada automaticamente na API oficial e guardada
+ * por município (válida 7 dias se conveniado, 1 dia se não — para perceber logo quando o município aderir).
+ * Sem certificado não há como consultar: fica "desconhecido" e não bloqueia nada.
+ */
+export async function situacaoMunicipio(d: Dependencias, ibge: string | null, ambiente: Ambiente, temCertificado: boolean): Promise<SituacaoMunicipio> {
+  if (!ibge || !/^[0-9]{7}$/.test(ibge)) return 'desconhecido';
+  const agora = (d.agora?.() ?? new Date()).getTime();
+  const cache = (await d.rpc('nfse_municipio_obter', { p_ibge: ibge, p_ambiente: ambiente })) as { situacao: 'conveniado' | 'sem_convenio'; consultado_em: string } | null;
+  if (cache) {
+    const idade = agora - new Date(cache.consultado_em).getTime();
+    if (idade < (cache.situacao === 'conveniado' ? 7 : 1) * 86_400_000) return cache.situacao;
+  }
+  if (!temCertificado) return cache?.situacao ?? 'desconhecido';
+  try {
+    const cert = await certificadoDa(d);
+    const r = await clienteSefin(d.transporte(cert.certPem, cert.chavePem), ambiente, (d.urls ?? URLS)[ambiente]).convenio(ibge);
+    if (!r.situacao) return cache?.situacao ?? 'desconhecido';
+    await d.rpc('nfse_municipio_salvar', { p_ibge: ibge, p_ambiente: ambiente, p_situacao: r.situacao, p_detalhe: r.detalhe });
+    return r.situacao;
+  } catch {
+    return cache?.situacao ?? 'desconhecido'; // rede fora ou certificado com problema: não bloqueia por isso
+  }
+}
+
 export async function emitir(d: Dependencias, notaId: string) {
   const agora = d.agora?.() ?? new Date();
   const { faltas, ctx } = await conferir(d, notaId);
   if (ctx.nota.status !== 'a_emitir') throw new ErroUsuario('Esta nota não está "a emitir".');
   if (faltas.length) throw new ErroUsuario(`Antes de emitir, complete: ${faltas.join('; ')}.`);
+  // Município sem convênio: para antes de reservar número (não gasta numeração nem tenta à toa).
+  if ((await situacaoMunicipio(d, ctx.prestador.ibge, ctx.prestador.ambiente, true)) === 'sem_convenio') throw new ErroUsuario(MSG_SEM_CONVENIO, 422);
   const cert = await certificadoDa(d);
   const chave = await importarChave(cert.chavePkcs8);
 
@@ -142,6 +172,9 @@ export async function emitir(d: Dependencias, notaId: string) {
         : `O sistema nacional recusou: ${e.message}${e.codigos.includes('E0014') ? ' (Esse número de DPS já foi usado neste CNPJ/CPF, talvez em outro sistema. Em Perfil → Nota fiscal, mude a série ou o próximo número.)' : ''}${e.codigos.includes('E0037') ? ' (Seu município ainda não emite pelo sistema nacional. Emita no portal da prefeitura e guarde a nota aqui em Notas fiscais → Registrar nota.)' : ''}`)
       : 'Falha inesperada ao emitir. Tente de novo em instantes.';
     if (!(e instanceof ErroSefin)) console.error('nfse emitir', (e as Error)?.message);
+    if (e instanceof ErroSefin && e.codigos.includes('E0037')) {
+      await d.rpc('nfse_municipio_salvar', { p_ibge: dados.prestador.ibge, p_ambiente: res.ambiente, p_situacao: 'sem_convenio', p_detalhe: e.message.slice(0, 500) }).catch(() => {});
+    }
     await d.rpc('nfse_resultado', { p_owner: d.dono, p_invoice: notaId, p: { ok: false, erro: msg, dps_id: dps.id } });
     throw new ErroUsuario(msg, 422);
   }
@@ -193,7 +226,13 @@ export async function atender(d: Dependencias, corpo: Record<string, unknown>): 
   const idOk = /^[0-9a-f-]{36}$/i.test(id);
   switch (corpo.acao) {
     case 'certificado': return await enviarCertificado(d, String(corpo.pfx_b64 ?? ''), String(corpo.senha ?? ''));
-    case 'conferir': if (!idOk) break; { const r = await conferir(d, id); return { faltas: r.faltas, ambiente: r.ctx.prestador.ambiente, tomador: r.ctx.tomador }; }
+    case 'conferir': if (!idOk) break; {
+      const r = await conferir(d, id);
+      const certOk = !!r.ctx.certificado && !r.faltas.some((f) => /certificado/.test(f));
+      const municipio = await situacaoMunicipio(d, r.ctx.prestador.ibge, r.ctx.prestador.ambiente, certOk);
+      return { faltas: r.faltas, ambiente: r.ctx.prestador.ambiente, tomador: r.ctx.tomador, municipio,
+        servico: { codigo: r.ctx.prestador.cod_trib_nac, descricao: r.ctx.nota.descricao || r.ctx.prestador.descricao } };
+    }
     case 'emitir': if (!idOk) break; return await emitir(d, id);
     case 'cancelar': if (!idOk) break; return await cancelar(d, id, String(corpo.codigo ?? '9') as '1' | '2' | '9', String(corpo.motivo ?? ''));
     case 'pdf': if (!idOk) break; return await pdf(d, id);

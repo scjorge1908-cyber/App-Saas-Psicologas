@@ -22,12 +22,14 @@ export function AmbienteBadge({ ambiente }: { ambiente?: string | null }) {
   return <Badge tone="anil">Teste</Badge>;
 }
 
-export function NfseDialog({ nota, recebimentoInicial, notas, onClose }: {
+export function NfseDialog({ nota, recebimentoInicial, notas, onClose, onRegistrarManual }: {
   nota: Partial<InvoiceItem> | null; recebimentoInicial?: string | null; notas: InvoiceItem[]; onClose: () => void;
+  /** Município sem convênio nacional: o rascunho vira nota manual, para registrar a nota emitida na prefeitura. */
+  onRegistrarManual?: (nota: InvoiceItem) => void;
 }) {
   if (!nota) return null;
   if (!nota.id) return <NovaNfse recebimentoInicial={recebimentoInicial} notas={notas} onClose={onClose} />;
-  return <NotaNfse id={nota.id} onClose={onClose} />;
+  return <NotaNfse id={nota.id} onClose={onClose} onRegistrarManual={onRegistrarManual} />;
 }
 
 /** Passo 1: paciente + recebimento → rascunho "a emitir". */
@@ -103,7 +105,7 @@ function NovaNfse({ recebimentoInicial, notas, onClose }: { recebimentoInicial?:
 }
 
 /** Passos 2 e 3: conferir/emitir; nota emitida (PDF, XML, cancelar). */
-function NotaNfse({ id, onClose }: { id: string; onClose: () => void }) {
+function NotaNfse({ id, onClose, onRegistrarManual }: { id: string; onClose: () => void; onRegistrarManual?: (nota: InvoiceItem) => void }) {
   const qc = useQueryClient();
   const toast = useToast();
   const confirm = useConfirm();
@@ -160,13 +162,24 @@ function NotaNfse({ id, onClose }: { id: string; onClose: () => void }) {
 
   if (!nota) return <Dialog open onClose={onClose} title="NFS-e"><Spinner /></Dialog>;
   const faltas = conferencia.data?.faltas ?? [];
+  const semConvenio = conferencia.data?.municipio === 'sem_convenio';
+
+  async function virarManual() {
+    setError(null);
+    try {
+      await api.saveInvoice({ id, emissao: 'manual' });
+      await atualizar();
+      const n = (await api.listInvoices()).find((x) => x.id === id);
+      if (n && onRegistrarManual) onRegistrarManual(n); else onClose();
+    } catch (e) { setError(errorMessage(e)); }
+  }
   const tomador = conferencia.data?.tomador;
 
   return (
     <Dialog open onClose={onClose} title={nota.status === 'emitida' ? `NFS-e nº ${nota.number}` : nota.status === 'cancelada' ? 'NFS-e cancelada' : 'Emitir NFS-e'} footer={
       nota.status === 'a_emitir' ? <>
         <Button variant="secondary" onClick={onClose}>Voltar</Button>
-        <Button busy={busy === 'emitir'} disabled={conferencia.isLoading || faltas.length > 0} onClick={() => void emitir()}>Emitir NFS-e</Button>
+        <Button busy={busy === 'emitir'} disabled={conferencia.isLoading || faltas.length > 0 || semConvenio} onClick={() => void emitir()}>Emitir NFS-e</Button>
       </> : <Button variant="secondary" onClick={onClose}>Fechar</Button>
     }>
       <div className="flex flex-col gap-4" data-testid="dialogo-nfse">
@@ -178,6 +191,9 @@ function NotaNfse({ id, onClose }: { id: string; onClose: () => void }) {
           {nota.emissao_estado === 'erro' && nota.emissao_erro && <ErrorBox><b>Última tentativa recusada.</b> {nota.emissao_erro}</ErrorBox>}
           {conferencia.isLoading && <p className="flex items-center gap-2 text-tinta-2"><Spinner small /> Conferindo os dados…</p>}
           {conferencia.error && <ErrorBox>{errorMessage(conferencia.error)}</ErrorBox>}
+          {semConvenio && (
+            <ModoAssistido nota={nota} conferencia={conferencia.data!} onRegistrar={() => void virarManual()} />
+          )}
           {faltas.length > 0 && (
             <Notice tone="ocre">
               <p><b>Antes de emitir, complete:</b></p>
@@ -229,5 +245,39 @@ function NotaNfse({ id, onClose }: { id: string; onClose: () => void }) {
         </>}
       </div>
     </Dialog>
+  );
+}
+
+/**
+ * Modo assistido (06/11): o município ainda não emite pelo sistema nacional. A psicóloga emite no portal da
+ * prefeitura copiando os dados daqui e depois registra a nota (número, data, PDF/XML) — sem perder o controle no app.
+ */
+function ModoAssistido({ nota, conferencia, onRegistrar }: { nota: InvoiceItem; conferencia: api.ConferenciaNfse; onRegistrar: () => void }) {
+  const toast = useToast();
+  const t = conferencia.tomador;
+  const campos: Array<[string, string]> = [
+    [t.tipo === 'pj' ? 'CNPJ de quem recebe' : 'CPF de quem recebe', t.documento ?? ''],
+    ['Nome de quem recebe', t.nome ?? ''],
+    ['Valor', String(Number(nota.amount).toFixed(2)).replace('.', ',')],
+    ['Competência', formatDate(nota.competence).slice(3)],
+    ['Código do serviço', conferencia.servico?.codigo ?? '041601'],
+    ['Descrição', conferencia.servico?.descricao ?? ''],
+  ];
+  const copiar = async (texto: string, rotulo: string) => {
+    try { await navigator.clipboard.writeText(texto); toast(`${rotulo} copiado`); } catch { toast('Não consegui copiar. Selecione e copie à mão.', 'erro'); }
+  };
+  return (
+    <section className="flex flex-col gap-3 rounded-campo border border-ocre/40 bg-ocre-fundo p-3" aria-label="Modo assistido" data-testid="modo-assistido">
+      <p><b>Seu município ainda não emite pelo sistema nacional.</b> O app conferiu isso sozinho. Emita no portal da sua prefeitura com os dados abaixo e depois registre a nota aqui.</p>
+      <ul className="flex flex-col gap-1.5">
+        {campos.map(([rotulo, valor]) => (
+          <li key={rotulo} className="flex items-center justify-between gap-2">
+            <span className="min-w-0"><span className="block text-xs text-tinta-2">{rotulo}</span><span className="num block break-words">{valor || '—'}</span></span>
+            {valor && <Button variant="ghost" size="sm" onClick={() => void copiar(valor, rotulo)}>Copiar</Button>}
+          </li>
+        ))}
+      </ul>
+      <Button variant="secondary" onClick={onRegistrar}>Registrar como nota emitida na prefeitura</Button>
+    </section>
   );
 }

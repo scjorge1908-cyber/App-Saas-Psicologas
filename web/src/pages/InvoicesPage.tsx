@@ -74,7 +74,7 @@ export function InvoicesPage() {
         ))}
       </ul>
       <InvoiceDialog invoice={editing} onClose={fechar} />
-      <NfseDialog nota={emitindo} recebimentoInicial={recebimento} notas={q.data ?? []} onClose={fechar} />
+      <NfseDialog nota={emitindo} recebimentoInicial={recebimento} notas={q.data ?? []} onClose={fechar} onRegistrarManual={(n) => { setEmitindo(null); setEditing(n); }} />
     </div>
   );
 }

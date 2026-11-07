@@ -75,6 +75,11 @@ export function iniciarSimulador(porta = 54400) {
         return envia(res, 201, { tipoAmbiente: 2, idDps: id, chaveAcesso: chave, nfseXmlGZipB64: gzip(nfse), dataHoraProcessamento: hoje });
       }
       let m;
+      // Convênio do município (parametros_municipais/{município}/convenio). Regra de teste: 4200000 sem convênio.
+      if (req.method === 'GET' && (m = p.match(/^\/parametros_municipais\/(\d{7})\/convenio$/))) {
+        if (m[1] === '4200000') return erro(res, 404, 'E0037', 'Município sem convênio com o sistema nacional.');
+        return envia(res, 200, { codigoMunicipio: m[1], situacao: 'Ativo' });
+      }
       if (req.method === 'GET' && (m = p.match(/^\/dps\/(DPS\d{42})$/))) {
         return dps.has(m[1]) ? envia(res, 200, { chaveAcesso: dps.get(m[1]) }) : envia(res, 404, { erro: 'não encontrada' });
       }

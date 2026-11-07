@@ -97,6 +97,24 @@ export function clienteSefin(transporte: Transporte, ambiente: Ambiente, base = 
       if (r.status >= 200 && r.status < 300) return;
       falha(r, 'Cancelamento');
     },
+    /**
+     * Convênio do município com o sistema nacional (GET parametros_municipais/{município}/convenio).
+     * O formato exato da resposta não é descrito no manual: 200 sem erros = conveniado; 404 ou erro de convênio
+     * (ex.: E0037) = sem convênio; um campo booleano "aderente/emissor" falso também conta como sem convênio.
+     * Qualquer outra resposta = não dá para saber (null), e o app não bloqueia por isso.
+     */
+    async convenio(cMun: string): Promise<{ situacao: 'conveniado' | 'sem_convenio' | null; detalhe: string }> {
+      const r = await chamar(`${base.sefin}/parametros_municipais/${exigir(cMun, /^[0-9]{7}$/, 'Município')}/convenio`, { method: 'GET' });
+      const j = json(r);
+      const erros = errosSefin(j);
+      const detalhe = texto(r).slice(0, 500);
+      if (r.status === 404 || erros.some((e) => e.codigo === 'E0037' || /conv[eê]nio/i.test(e.descricao))) return { situacao: 'sem_convenio', detalhe };
+      if (r.status === 200 && j && !erros.length) {
+        const negado = Object.entries(j).some(([k, v]) => /aderen|emissor/i.test(k) && (v === false || v === 0 || v === '0' || v === 'N'));
+        return { situacao: negado ? 'sem_convenio' : 'conveniado', detalhe };
+      }
+      return { situacao: null, detalhe: `HTTP ${r.status}` };
+    },
     async danfse(chave: string): Promise<Uint8Array> {
       const r = await chamar(`${base.adn}/danfse/${exigir(chave, CHAVE, 'Chave')}`, { method: 'GET' });
       if (r.status === 200 && r.tipo.includes('pdf')) return r.corpo;

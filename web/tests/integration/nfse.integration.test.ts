@@ -152,13 +152,28 @@ describe('NFS-e Nacional (simulador local)', () => {
     expect(b).toMatchObject({ status: 'emitida', dps_id: a!.dps_id, dps_numero: a!.dps_numero });
   });
 
-  it('município sem convênio nacional (E0037): mensagem orienta emitir na prefeitura e registrar aqui', async () => {
+  it('município sem convênio: detectado sozinho, não gasta número e orienta o modo assistido', async () => {
+    const { data: antes } = await ana.sb.from('profiles').select('nfse_proximo_numero').single();
     await ana.sb.from('profiles').update({ nfse_ibge_municipio: '4200000' }).eq('id', ana.id).throwOnError();
     const { data: n5 } = await ana.sb.from('invoices').insert({ patient_id: paciente, amount: 90, emissao: 'nfse_nacional' }).select('id').single();
+    const c = await chamar(ana.sb, { acao: 'conferir', nota_id: n5!.id });
+    expect(c.data).toMatchObject({ municipio: 'sem_convenio', servico: { codigo: '041601' } });
     const r = await chamar(ana.sb, { acao: 'emitir', nota_id: n5!.id });
-    expect(r.erro).toMatch(/E0037/);
-    expect(r.erro).toMatch(/portal da prefeitura/);
+    expect(r.erro).toMatch(/não emite pelo sistema nacional/);
+    const { data: depois } = await ana.sb.from('profiles').select('nfse_proximo_numero').single();
+    expect(depois!.nfse_proximo_numero).toBe(antes!.nfse_proximo_numero);
+    const { data: cache } = await ana.sb.from('nfse_municipios').select('situacao').eq('ibge', '4200000');
+    expect(cache).toEqual([{ situacao: 'sem_convenio' }]); // guardado para todas as contas (informação pública)
+    // Rascunho vira nota manual (emitida na prefeitura)
+    expect((await ana.sb.from('invoices').update({ emissao: 'manual' }).eq('id', n5!.id)).error).toBeNull();
     await ana.sb.from('profiles').update({ nfse_ibge_municipio: '4211900' }).eq('id', ana.id).throwOnError();
+    const ok = await chamar(ana.sb, { acao: 'conferir', nota_id: nota });
+    expect((ok.data as { municipio: string }).municipio).toBe('conveniado');
+  });
+
+  it('o app não grava na tabela de municípios', async () => {
+    const { error } = await ana.sb.from('nfse_municipios').insert({ ibge: '1234567', ambiente: 'producao', situacao: 'conveniado' });
+    expect(error).not.toBeNull();
   });
 
   it('baixa o PDF (DANFSe) da nota emitida', async () => {
